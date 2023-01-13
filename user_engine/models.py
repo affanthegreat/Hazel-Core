@@ -1,0 +1,20 @@
+from django.db import models
+
+
+class UserProfile(models.Model):
+    user_email = models.EmailField(unique=True)
+    user_name = models.CharField(max_length=60)
+    user_password = models.CharField(max_length=30)
+    user_id = models.CharField(max_length=120, primary_key=True, unique=True,)
+    user_public_leaf_count = models.BigIntegerField()
+    user_private_leaf_count = models.BigIntegerField()
+    user_experience_points = models.BigIntegerField()
+    user_verified = models.BooleanField(default=False)
+    user_followers = models.BigIntegerField(default=0)
+    user_following = models.BigIntegerField(default=0)
+    user_level = models.BigIntegerField(default=1)
+
+
+class UserFollowing(models.Model):
+    slave = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="slave")
+    master = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="master")
