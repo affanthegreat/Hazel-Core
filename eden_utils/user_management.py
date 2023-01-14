@@ -1,3 +1,4 @@
+import crypt
 from user_engine.models import *
 
 
@@ -5,6 +6,9 @@ class EdenUserManagement():
     def __init__(self) -> None:
         pass
 
+    def make_password(self,txt) -> str:
+        return crypt.crypt(txt)
+        
     def create_user(self, data):
         user_name = data['user_name']
         user_id = data['user_id']
@@ -37,7 +41,7 @@ class EdenUserManagement():
             user_profile_object.user_public_leaf_count = user_public_leaf_count
             user_profile_object.user_experience_points = user_experience_points
             user_profile_object.user_verified = user_verified
-            user_profile_object.user_password = user_password
+            user_profile_object.user_password = self.make_password(user_password)
             user_profile_object.user_name = user_name
             user_profile_object.user_followers = user_followers
             user_profile_object.user_following = user_following
@@ -53,6 +57,7 @@ class EdenUserManagement():
                     "status": False,
                     "issue": "object creation failed."
                 }
+            return response
 
     def check_user_exists(self, data) -> bool:
         user_name = data.get('user_name', None)
@@ -64,12 +69,10 @@ class EdenUserManagement():
 
     def validate_user(self, data) -> bool:
         user_password = data['user_password']
-        is_valid = (user_password == self.retrieve_user_password(data))
+        is_valid = (self.make_password(user_password) == self.retrieve_user_password(data))
         return is_valid
 
     def retrieve_user_password(self, data):
-        print(data)
-        print(self.check_user_exists(data))
         if self.check_user_exists(data):
             user_id = data['user_id']
             user_object = UserProfile.objects.filter(user_id=user_id).all()
@@ -107,7 +110,7 @@ class EdenUserManagement():
             }
 
     def get_user_followers(self, data):
-        user_profile = data['user_id']
+        user_profile = data['user_name']
         if self.check_user_exists(data):
             user_profile_object = UserProfile.objects.filter(user_id=user_profile)
             followers_query_set = UserFollowing.objects.filter(master=user_profile).all()
@@ -115,7 +118,7 @@ class EdenUserManagement():
         pass
 
     def get_user_following(self, data):
-        user_profile = data['user_id']
+        user_profile = data['user_name']
         if self.check_user_exists(data):
             user_profile_object = UserProfile.objects.filter(user_id=user_profile)
             following_query_set = UserFollowing.objects.filter(slave=user_profile).all()
@@ -128,5 +131,7 @@ class EdenUserManagement():
     def edit_user(self, data):
         pass
 
-    def get_user_object(self, user_id):
-        return UserProfile.objects.filter(user_id=user_id).first()
+    def get_user_object(self, user_name):
+        return UserProfile.objects.filter(user_name=user_name).first()
+
+

@@ -1,10 +1,10 @@
 from django.db import models
-
+import datetime
 
 class UserProfile(models.Model):
     user_email = models.EmailField(unique=True)
     user_name = models.CharField(max_length=60)
-    user_password = models.CharField(max_length=30)
+    user_password = models.CharField(max_length=200)
     user_id = models.CharField(max_length=120, primary_key=True, unique=True,)
     user_public_leaf_count = models.BigIntegerField()
     user_private_leaf_count = models.BigIntegerField()
@@ -18,3 +18,10 @@ class UserProfile(models.Model):
 class UserFollowing(models.Model):
     slave = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="slave")
     master = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="master")
+
+
+class UserAccessToken(models.Model):
+    user = models.ForeignKey(UserProfile,on_delete=models.CASCADE, related_name="holy")
+    access_token = models.CharField(max_length=100)
+    refresh_token = models.CharField(max_length=100)
+    expire_date = models.DateTimeField(default = datetime.datetime.now())
