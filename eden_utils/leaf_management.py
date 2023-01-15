@@ -1,15 +1,40 @@
-from leaf_engine.models import Leaf, LeafComments, LeafLikes
+import uuid
+
+from leaf_engine.models import Leaf, LeafComments, LeafLikes, LeafType
+from user_engine.backends import EdenSessionManagement
 from user_engine.models import UserProfile
 
+session_management_object = EdenSessionManagement()
 
 class EdenLeafManagement:
+    def generate_leaf_id(self):
+        session_id = str(uuid.uuid4()).upper().replace("-","") 
+        return session_id
+    
     def __init__(self, request) -> None:
         self.request = request
-
-    def create_leaf(self, data):
-        pass
+    
+    def create_leaf(self, request, data):
+        response = {}
+        if session_management_object.current_session(request) != None:
+            new_leaf_object = Leaf
+            new_leaf_object.leaf_id = self.generate_leaf_id()
+            new_leaf_object.owner = session_management_object.get_session_user(request)
+            new_leaf_object.text_content = data['text_content']
+            new_leaf_object.image_content = None
+            new_leaf_object.leaf_type = LeafType(data['leaf_type'])
+            new_leaf_object.save()
+            response['status'] = 200
+            response['message'] = "Leaf successfully created."
+            response['code'] = True
+        else:
+            response['status'] = 200
+            response['message'] = "User Authenication Failed."
+            response['code'] = False
+        return response
 
     def read_leaf(self):
+        
         pass
 
     def delete_leaf(self):
