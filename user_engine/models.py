@@ -16,11 +16,11 @@ class UserProfile(models.Model):
 
 
 class UserFollowing(models.Model):
-    slave = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="slave")
-    master = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="master")
+    slave = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="slave")
+    master = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="master")
 
 
 class UserAccessToken(models.Model):
-    user = models.ForeignKey(UserProfile,on_delete=models.CASCADE, related_name="holy")
+    user = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING, related_name="holy")
     user_session_id = models.CharField(max_length=100,unique=True)
     creation_date = models.DateTimeField(default = datetime.datetime.now())

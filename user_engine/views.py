@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.contrib.auth import authenticate
 
 from eden_utils.user_management import EdenUserManagement
+from user_engine.backends import EdenSessionManagement
 
 user_control_object = EdenUserManagement()
 
@@ -75,9 +76,10 @@ def login(request):
         username = data['user_name']
         password = data['password']
         user = authenticate(request, username=username, password=password)
-        print(user)
+ 
         if user != None:
-            request.session['user_name'] = user.user_name
+            session_management_object = EdenSessionManagement()
+            session_management_object.create_session(request,user)
             return HttpResponse(content=json.dumps({
             'status': 200,
             'message': "Login successful."
@@ -91,7 +93,8 @@ def login(request):
 @csrf_exempt
 def logout(request):
     try:
-        del request.session['user_name']
+        session_management_object = EdenSessionManagement()
+        session_management_object.delete_session(request)
     except KeyError:
         pass
     return HttpResponse("You're logged out.")

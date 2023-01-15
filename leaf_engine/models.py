@@ -5,8 +5,8 @@ from user_engine.models import UserProfile
 
 
 class LeafType(models.TextChoices):
-    Public = "public", _("public")
-    Private = "private", _("private")
+    Public = "public", "public"
+    Private = "private", "private"
 
 
 class Leaf(models.Model):
@@ -19,12 +19,12 @@ class Leaf(models.Model):
     image_content = models.ImageField()
     likes_count = models.BigIntegerField(default=0)
     comments_count = models.BigIntegerField(default=0)
-    leaf_type = models.CharField(choices=LeafType, max_length=30)
+    leaf_type = models.CharField(choices=LeafType.choices, max_length=30)
 
 
 class LeafLikes(models.Model):
     leaf = models.ForeignKey(
-        Leaf, related_name="creator_leaf", on_delete=models.CASCADE
+        Leaf, related_name="creator_comment_leaf", on_delete=models.CASCADE
     )
     liked_by = models.ForeignKey(
         UserProfile, related_name="liked_user", on_delete=models.DO_NOTHING
@@ -36,6 +36,6 @@ class LeafComments(models.Model):
         Leaf, related_name="creator_leaf", on_delete=models.CASCADE
     )
     commented_by = models.ForeignKey(
-        UserProfile, related_name="commented_user", on_delete=models.CASCADE
+        UserProfile, related_name="commented_user", on_delete=models.DO_NOTHING
     )
     comment = models.CharField(max_length=100, null=False)

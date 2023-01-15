@@ -10,6 +10,7 @@ class EdenLoginManagement(EdenUserManagement,ModelBackend):
 
     def authenticate(self,request, username= None, password= None):
         if UserProfile.objects.filter(user_name= username).exists():
+            print("here")
             user_object =  self.get_user_object(username)
             if crypt.crypt(password, user_object.user_password) == user_object.user_password:
                 print("password correct")
@@ -23,7 +24,7 @@ class EdenLoginManagement(EdenUserManagement,ModelBackend):
             return None
 
 
-class EdenSessionManagement(EdenUserManagement):
+class EdenSessionManagement():
 
     def __init__(self) -> None:
         pass
@@ -32,7 +33,7 @@ class EdenSessionManagement(EdenUserManagement):
         session_id = str(uuid.uuid4()).upper().replace("-","") 
         return session_id
         
-    def update_session(self,request, user):
+    def create_session(self,request, user):
         session_id = self.generate_session_id()
         encrypted = self.encrypt_session_id(session_id,user.user_password)
         access_token_object = UserAccessToken()
@@ -64,4 +65,5 @@ class EdenSessionManagement(EdenUserManagement):
 
     def get_session_object(self,auth_token):
         return UserAccessToken.objects.filter(user_session_id = auth_token).first()
+
 
