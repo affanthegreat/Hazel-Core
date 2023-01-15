@@ -1,11 +1,12 @@
 from django.contrib.auth.backends import ModelBackend
 
 import crypt
+import uuid
 
 from eden_utils.user_management import EdenUserManagement
-from user_engine.models import UserProfile
+from user_engine.models import UserAccessToken, UserProfile
 
-class LoginManagement(EdenUserManagement,ModelBackend):
+class EdenLoginManagement(EdenUserManagement,ModelBackend):
 
     def authenticate(self,request, username= None, password= None):
         if UserProfile.objects.filter(user_name= username).exists():
@@ -20,3 +21,47 @@ class LoginManagement(EdenUserManagement,ModelBackend):
             return UserProfile.objects.get(user_id=user_id)
         except UserProfile.DoesNotExist:
             return None
+
+
+class EdenSessionManagement(EdenUserManagement):
+
+    def __init__(self) -> None:
+        pass
+
+    def generate_session_id(self):
+        session_id = str(uuid.uuid4()).upper().replace("-","") 
+        return session_id
+        
+    def update_session(self,request, user):
+        session_id = self.generate_session_id()
+        encrypted = self.encrypt_session_id(session_id,user.user_password)
+        access_token_object = UserAccessToken()
+        access_token_object.user_session_id = session_id
+        access_token_object.user = user
+        access_token_object.save()
+        request.session["token"] = encrypted
+        request.session["auth_token"] = session_id
+        
+    
+    def delete_session(self,request):
+        user = self.get_session_user(request)
+        user.delete()
+
+    def encrypt_session_id(self,session_id, key):
+        return crypt.crypt(session_id,key)
+
+    def get_session_user(self,request):
+        token = request.session.get('token',None)
+        auth_token = request.session.get('auth_token',None)
+        rehashed_cipher = crypt.crypt(auth_token,token)
+        if token == rehashed_cipher and self.check_session(auth_token):
+            return self.get_session_object(auth_token).user
+        else:
+            return None
+
+    def check_session(self,auth_token):
+        return UserAccessToken.objects.filter(user_session_id = auth_token).exists()
+
+    def get_session_object(self,auth_token):
+        return UserAccessToken.objects.filter(user_session_id = auth_token).first()
+

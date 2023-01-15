@@ -107,7 +107,7 @@ MIGRATION_MODULES = {"sites": "eden_backend.contrib.sites.migrations"}
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
-    "user_engine.backends.LoginManagement"
+    "user_engine.backends.EdenLoginManagement"
 ]
 
 LOGIN_REDIRECT_URL = "users:redirect"

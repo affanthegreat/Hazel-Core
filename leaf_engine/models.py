@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils.translation import gettext as _
 
 from user_engine.models import UserProfile
 
@@ -9,7 +10,7 @@ class LeafType(models.TextChoices):
 
 
 class Leaf(models.Model):
-    created_date = models.DateTimeField()
+    created_date = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(
         UserProfile, related_name="creator", on_delete=models.CASCADE
     )
@@ -37,4 +38,4 @@ class LeafComments(models.Model):
     commented_by = models.ForeignKey(
         UserProfile, related_name="commented_user", on_delete=models.CASCADE
     )
-    comment = models.CharField(max_length=100, null=False, on_delete=models.CASCADE)
+    comment = models.CharField(max_length=100, null=False)
