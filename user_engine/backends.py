@@ -57,13 +57,13 @@ class EdenSessionManagement():
         rehashed_cipher = crypt.crypt(auth_token,token)
         if token == rehashed_cipher and self.check_session(auth_token):
             return self.get_session_object(auth_token).user
-        else:
-            return None
 
     def check_session(self,auth_token):
-        return UserAccessToken.objects.filter(user_session_id = auth_token).exists()
+        return UserAccessToken.objects.filter(user_session_id = auth_token).exists() 
 
     def get_session_object(self,auth_token):
         return UserAccessToken.objects.filter(user_session_id = auth_token).first()
 
-
+    def current_session(self,request):
+        if request.session.get('token',None) and  request.session.get('auth_token',None):
+            return request.session['auth_token']

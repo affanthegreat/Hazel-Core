@@ -9,6 +9,7 @@ from eden_utils.user_management import EdenUserManagement
 from user_engine.backends import EdenSessionManagement
 
 user_control_object = EdenUserManagement()
+session_management_object = EdenSessionManagement()
 
 
 @csrf_exempt
@@ -21,8 +22,6 @@ def create_user_api(request):
             'status': 200,
             'message': pre_response["issue"]
         }))
-
-
 
 
 @csrf_exempt
@@ -76,24 +75,23 @@ def login(request):
         username = data['user_name']
         password = data['password']
         user = authenticate(request, username=username, password=password)
- 
+
         if user != None:
-            session_management_object = EdenSessionManagement()
-            session_management_object.create_session(request,user)
+            session_management_object.create_session(request, user)
             return HttpResponse(content=json.dumps({
-            'status': 200,
-            'message': "Login successful."
-        }))
+                'status': 200,
+                'message': "Login successful."
+            }))
 
         return HttpResponse(content=json.dumps({
             'status': 200,
             'message': "Login failed."
         }))
 
+
 @csrf_exempt
 def logout(request):
     try:
-        session_management_object = EdenSessionManagement()
         session_management_object.delete_session(request)
     except KeyError:
         pass
@@ -102,7 +100,7 @@ def logout(request):
 
 @csrf_exempt
 def current_user(request):
-     return HttpResponse(content=json.dumps({
-            'status': 200,
-            'user_id': request.session.get('user_name',None)
-        }))
+    return HttpResponse(content=json.dumps({
+        'status': 200,
+        'user_id': request.session.get('user_name', None)
+    }))
