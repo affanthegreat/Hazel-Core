@@ -6,7 +6,7 @@ class EdenLeafManagement:
     def __init__(self, request) -> None:
         self.request = request
 
-    def create_leaf(self):
+    def create_leaf(self, data):
         pass
 
     def read_leaf(self):
@@ -70,7 +70,7 @@ class EdenLeafManagement:
         else:
             None
 
-    #remove these 2 methods
+    #TODO remove these 2 methods
     def is_authorised(self) -> bool:
         return self.request.session.get('user_id', None) == None
 
