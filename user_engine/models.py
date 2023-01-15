@@ -3,7 +3,7 @@ import datetime
 
 class UserProfile(models.Model):
     user_email = models.EmailField(unique=True)
-    user_name = models.CharField(max_length=60)
+    user_name = models.CharField(max_length=60, unique= True)
     user_password = models.CharField(max_length=200)
     user_id = models.CharField(max_length=120, primary_key=True, unique=True,)
     user_public_leaf_count = models.BigIntegerField()

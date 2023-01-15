@@ -65,9 +65,11 @@ class EdenUserManagement:
 
     def validate_user(self, data) -> bool:
         user_password = data["user_password"]
-        is_valid = self.make_password(user_password) == self.retrieve_user_password(
-            data
-        )
+        user_name = data['user_name']
+        is_valid = False
+        if self.check_user_exists({"user_name": user_name}):
+            user_object = self.get_user_object(user_name)
+            is_valid = crypt.crypt(user_password, user_object.user_password) == user_object.user_password
         return is_valid
 
     def retrieve_user_password(self, data):
@@ -122,9 +124,29 @@ class EdenUserManagement:
         pass
 
     def password_reset(self, data) -> bool:
-        pass
+        user_name = data['user_name']
+        user_password1 = data['user_password1']
+        user_password2 = data['user_password2']
+        response = {}
+        if self.check_user_exists(user_name):
+            response['status'] = 200
+            if self.validate_user(data):
+                user_object = self.get_user_object(user_name)
+                if user_password1 == user_password2:
+                    new_pass = self.make_password(user_password1)
+                    user_object.user_password = new_pass
+                    user_object.save()
+                    response['message'] = "Password changed sucessfully"
+                else:
+                    response['message'] = "New passwords does not match"
+            else:
+                response['message'] = "Invalid current password"
+        else:
+            response['message'] = "User doesn't exist"
+        return response
 
     def edit_user(self, data):
+        user_name = data['user_name']
         pass
 
     def get_user_object(self, user_name):
