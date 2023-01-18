@@ -52,6 +52,7 @@ class EdenUserManagement:
             return response
 
     def check_user_exists(self, data) -> bool:
+        print(data,type(data))
         user_name = data.get("user_name", None)
         user_id = data.get("user_id", None)
         user_email = data.get("user_email", None)
@@ -65,10 +66,10 @@ class EdenUserManagement:
 
     def validate_user(self, data) -> bool:
         user_password = data["user_password"]
-        user_name = data['user_name']
+        user_id = data['user_id']
         is_valid = False
-        if self.check_user_exists({"user_name": user_name}):
-            user_object = self.get_user_object(user_name)
+        if self.check_user_exists({"user_id": user_id}):
+            user_object = self.get_user_object(user_id)
             is_valid = crypt.crypt(user_password, user_object.user_password) == user_object.user_password
         return is_valid
 
@@ -83,6 +84,7 @@ class EdenUserManagement:
     def user_follow(self, data):
         follower = data["follower"]
         follows = data["follows"]
+        print(self.check_user_exists({"user_id": follower}),self.check_user_exists({"user_id": follows}))
         if self.check_user_exists({"user_id": follower}) and self.check_user_exists(
             {"user_id": follows}
         ):
@@ -91,47 +93,48 @@ class EdenUserManagement:
             following_object = self.get_user_object(follows)
             follower_relationship.slave = follower_object
             follower_relationship.master = following_object
+            print(follower_object,follower_object)
             try:
                 follower_relationship.save()
                 response = {
                     "status": 200,
                     "message": f"{follower} added as follower added to {follows}",
                 }
-            except Exception:
+            except Exception as E:
+                print(E)
                 response = {"status": 200, "message": "Error while adding the follower"}
             print(response)
             return response
         else:
-            print(response)
             response = {"status": 200, "message": "One of the user does not exists."}
+            print(response)
 
     def get_user_followers(self, data):
-        user_profile = data["user_name"]
+        user_profile = data["user_id"]
         if self.check_user_exists(data):
             user_profile_object = UserProfile.objects.filter(user_id=user_profile)
             followers_query_set = UserFollowing.objects.filter(
                 master=user_profile
             ).all()
-            print(followers_query_set, user_profile_object)
-        pass
+            return list(followers_query_set.values())
 
     def get_user_following(self, data):
-        user_profile = data["user_name"]
+        user_profile = data["user_id"]
         if self.check_user_exists(data):
             user_profile_object = UserProfile.objects.filter(user_id=user_profile)
             following_query_set = UserFollowing.objects.filter(slave=user_profile).all()
-            print(following_query_set, user_profile_object)
-        pass
+            return list(following_query_set.values())
 
     def password_reset(self, data) -> bool:
-        user_name = data['user_name']
+        user_id = data['user_id']
+        old_password = data['user_password']
         user_password1 = data['user_password1']
         user_password2 = data['user_password2']
         response = {}
-        if self.check_user_exists(user_name):
+        if self.check_user_exists(data):
             response['status'] = 200
             if self.validate_user(data):
-                user_object = self.get_user_object(user_name)
+                user_object = self.get_user_object(user_id)
                 if user_password1 == user_password2:
                     new_pass = self.make_password(user_password1)
                     user_object.user_password = new_pass
@@ -150,5 +153,5 @@ class EdenUserManagement:
         user_name = data['user_name']
         pass
 
-    def get_user_object(self, user_name):
-        return UserProfile.objects.filter(user_name=user_name).first()
+    def get_user_object(self, user_id):
+        return UserProfile.objects.filter(user_id=user_id).first()
