@@ -7,13 +7,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('user_engine', '0001_initial'),
+        ('user_engine', '0002_alter_useraccesstoken_creation_date'),
     ]
 
     operations = [
         migrations.AlterField(
             model_name='useraccesstoken',
             name='creation_date',
-            field=models.DateTimeField(default=datetime.datetime(2023, 1, 18, 9, 41, 1, 60897)),
+            field=models.DateTimeField(default=datetime.datetime(2023, 1, 18, 9, 41, 42, 605397)),
         ),
     ]

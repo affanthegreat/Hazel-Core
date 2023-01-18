@@ -9,5 +9,6 @@ urlpatterns = [
     path('get_following', get_following),
     path('login', login ),
     path('logout',logout),
-    path('current_user',current_user)
+    path('current_user',current_user),
+    path('password_reset',password_reset)
 ]

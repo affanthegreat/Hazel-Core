@@ -11,15 +11,15 @@ class EdenLoginManagement(EdenUserManagement,ModelBackend):
     def authenticate(self,request, username= None, password= None):
         if UserProfile.objects.filter(user_name= username).exists():
             print("here")
-            user_object =  self.get_user_object(username)
+            user_object =  self.get_user(username)
             if crypt.crypt(password, user_object.user_password) == user_object.user_password:
                 print("password correct")
                 return user_object
         return None
 
-    def get_user(self, user_id):
+    def get_user(self, user_name):
         try:
-            return UserProfile.objects.get(user_id=user_id)
+            return UserProfile.objects.get(user_name=user_name)
         except UserProfile.DoesNotExist:
             return None
 
