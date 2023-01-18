@@ -6,14 +6,15 @@ from user_engine.models import UserProfile
 
 session_management_object = EdenSessionManagement()
 
+
 class EdenLeafManagement:
     def generate_leaf_id(self):
-        session_id = str(uuid.uuid4()).upper().replace("-","") 
+        session_id = str(uuid.uuid4()).upper().replace("-", "")
         return session_id
-    
-    def __init__(self, request) -> None:
-        self.request = request
-    
+
+    def __init__(self) -> None:
+        pass
+
     def create_leaf(self, request, data):
         response = {}
         if session_management_object.current_session(request) != None:
@@ -33,41 +34,106 @@ class EdenLeafManagement:
             response['code'] = False
         return response
 
-    def read_leaf(self):
-        
-        pass
+    def get_user_public_leaves(self, request):
+        if self.is_authorised(request):
+            user_object = self.get_logged_in_user(request)
+            return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public)
 
-    def delete_leaf(self):
-        pass
+    def get_user_public_leaves(self, request):
+        if self.is_authorised(request):
+            user_object = self.get_logged_in_user(request)
+            return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Private)
 
-    def like_leaf(self):
-        pass
+    def delete_leaf(self, request, leaf_id):
+        if self.is_authorised(request):
+            response = {}
+            user_object = self.get_logged_in_user(request)
+            leaf_object = self.get_leaf_object(leaf_id)
+            if leaf_object.owner == user_object:
+                leaf_object.delete()
+                response['message'] = f"Leaf {leaf_id} is deleted."
+            else:
+                response['message'] = "You don't have access to delete the leaf."
+            return response
 
-    def dislike_leaf(self):
-        pass
+    def like_leaf(self,request, leaf_id):
+        if self.is_authorised(request):
+            user_object = self.get_logged_in_user(request)
+            if self.check_leaf(leaf_id) and not self.check_like(leaf_id, user_object.user_id)['message']:
+                like_object = LeafLikes()
+                like_object.leaf = self.get_leaf_object(leaf_id)
+                like_object.liked_by = user_object
+                like_object.save()
+    
+    def dislike_leaf(self,request,leaf_id):
+        if self.is_authorised(request):
+            user_object = self.get_logged_in_user(request)
+            like_status = self.check_like(leaf_id, user_object.user_id)
+            try:
+                if self.check_leaf(leaf_id) and like_status['message'] :
+                    like_object = self.get_like_object(leaf_id,user_object.user_id)
+                    like_object.delete()
+            except Exception:
+                return None                
 
-    def add_comment(self):
-        pass
+    def add_comment(self,request ,leaf_id, comment_string):
+        if self.is_authorised(request):
+            user_object = self.get_logged_in_user(request)
+            comment_status = self.check_like(leaf_id, user_object.user_id)
+            if comment_string != None:
+                try:
+                    if self.check_leaf(leaf_id) and comment_status['message']:
+                        leaf_comment_object = LeafComments()
+                        leaf_comment_object.commented_by = user_object
+                        leaf_comment_object.leaf = self.get_leaf_object(leaf_id)
+                        leaf_comment_object.comment = comment_string
+                except Exception:
+                    return None
 
-    def remove_comment(self):
+    def remove_comment(self,request, leaf_id):
+        if self.is_authorised(request):
+            user_object = self.get_logged_in_user(request)
+            comment_status = self.check_comment(leaf_id, user_object.user_id)
+            try:
+                if self.check_leaf(leaf_id) and comment_status['message'] :
+                    comment_object = self.get_comment_object(leaf_id,user_object.user_id)
+                    comment_object.delete()
+            except Exception:
+                return None       
         pass
 
     def check_leaf(self, leaf_id):
         leaf_object = Leaf.objects.filter(leaf_id=leaf_id).first()
         return leaf_object is not None
 
-    def check_comment(self):
-        pass
+    def check_comment(self,leaf_id,user_id):
+        user_object = self.get_user_object(user_id)
+        leaf_valid = self.check_leaf(leaf_id)
+        response = {}
+        if user_object is not None and leaf_valid:
+            leaf_object = self.get_leaf_object(leaf_id)
+            leaf_comment_object = LeafComments.objects.filter(leaf_id=leaf_object.leaf_id, commented_by=user_object.user_id)
+            response['status'] = 200
+            response['message'] = leaf_comment_object.exists()
+            response['code'] = True
+        else:
+            response['status'] = 200
+            response['code'] = False
+            if not leaf_valid:
+                response['message'] = "Leaf doesn't exist."
+            else:
+                response['message'] = "User doesn't exist"
+        return response
 
-    def check_like(self, leaf_id, user_name):
-        user_object = self.get_user_object(user_name)
+    def check_like(self, leaf_id, user_id):
+        user_object = self.get_user_object(user_id)
         leaf_valid = self.check_leaf(leaf_id)
         response = {}
         if user_object is not None and leaf_valid:
             leaf_object = self.get_leaf_object(leaf_id)
             leaf_like_object = LeafLikes.objects.filter(leaf_id=leaf_object.leaf_id, liked_by=user_object.user_id)
             response['status'] = 200
-            response['message'] = str(leaf_like_object.exists())
+            response['message'] = leaf_like_object.exists()
             response['code'] = True
         else:
             response['status'] = 200
@@ -81,30 +147,25 @@ class EdenLeafManagement:
     def get_leaf_object(self, leaf_id):
         if self.check_leaf(leaf_id):
             return Leaf.objects.filter(leaf_id=leaf_id)
-        else:
-            return None
 
-    def get_comment_object(self):
-        pass
+    def get_comment_object(self,leaf_id,user_id):
+        if self.check_leaf(leaf_id):
+            return Leaf.objects.filter(leaf_id=leaf_id)
 
-    def get_like_object(self, leaf_id, user_name):
-        if self.check_like(leaf_id, user_name)['code']:
-            user_object = self.get_user_object(user_name)
+    def get_like_object(self, leaf_id, user_id):
+        leaf_info = self.check_like(leaf_id, user_id)['message'] 
+        if leaf_info['message'] and leaf_info['code'] :
+            user_object = self.get_user_object(user_id)
             leaf_object = self.get_leaf_object(leaf_id)
             return LeafLikes.objects.filter(leaf=leaf_object, liked_by=user_object)
         else:
             None
 
-    #TODO remove these 2 methods
-    def is_authorised(self) -> bool:
-        return self.request.session.get('user_id', None) == None
+    def is_authorised(self, request) -> bool:
+        return session_management_object.current_session(request) != None and session_management_object.check_session(request.session['auth_token'])
 
-    def get_logged_in_user(self):
-        if self.is_authorised():
-            user_id = self.request.session['user_id']
-            return UserProfile.objects.filter(user_id=user_id)
-        else:
-            return None
+    def get_logged_in_user(self, request):
+        return session_management_object.get_session_user(request)
 
-    def get_user_object(self, user_name):
-        return UserProfile.objects.filter(user_name=user_name).first()
+    def get_user_object(self, user_id):
+        return UserProfile.objects.filter(user_name=user_id).first()

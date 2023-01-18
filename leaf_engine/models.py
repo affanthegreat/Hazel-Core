@@ -12,7 +12,7 @@ class LeafType(models.TextChoices):
 class Leaf(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(
-        UserProfile, related_name="creator", on_delete=models.CASCADE
+        UserProfile, related_name="creator", on_delete=models.DO_NOTHING
     )
     text_content = models.CharField(max_length=400, null=False)
     leaf_id = models.CharField(max_length=100, primary_key=True)
