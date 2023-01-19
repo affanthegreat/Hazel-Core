@@ -1,8 +1,9 @@
 import json
 from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
-from eden_utils.leaf_management import EdenLeafManagement
+from .leaf_management import EdenLeafManagement
 
 ELM_object = EdenLeafManagement()
 
@@ -11,6 +12,7 @@ def return_response(map):
     return HttpResponse(content=json.dumps(map))
 
 
+@csrf_exempt
 def create_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
@@ -20,7 +22,7 @@ def create_leaf_view(request):
             if field not in data.keys():
                 condition = False
         if condition:
-            response = ELM_object.create_leaf(request, request.body)
+            response = ELM_object.create_leaf(request, data)
             return return_response(response)
         else:
             response = {}
@@ -29,6 +31,7 @@ def create_leaf_view(request):
             return return_response(response)
 
 
+@csrf_exempt
 def get_user_public_leaves_view(request):
     if request.method == "GET":
         data = json.loads(request.body)
@@ -38,9 +41,10 @@ def get_user_public_leaves_view(request):
             response['message'] = 'Auth Error.'
             return response
         else:
-            return JsonResponse(response.values())
+            return JsonResponse(list(response_status.values()), safe= False)
 
 
+@csrf_exempt
 def get_user_private_leaves_view(request):
     if request.method == "GET":
         data = json.loads(request.body)
@@ -50,9 +54,10 @@ def get_user_private_leaves_view(request):
             response['message'] = 'Auth Error.'
             return response
         else:
-            return JsonResponse(response.values())
+            return JsonResponse(list(response_status.values()), safe= False)
 
 
+@csrf_exempt
 def delete_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
@@ -71,6 +76,7 @@ def delete_leaf_view(request):
             return return_response(response)
 
 
+@csrf_exempt
 def like_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
@@ -89,6 +95,7 @@ def like_leaf_view(request):
             return return_response(response)
 
 
+@csrf_exempt
 def dislike_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
@@ -107,6 +114,7 @@ def dislike_leaf_view(request):
             return return_response(response)
 
 
+@csrf_exempt
 def add_comment_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
@@ -117,6 +125,7 @@ def add_comment_view(request):
                 condition = False
         if condition:
             response = ELM_object.add_comment(request, data['leaf_id'], data['comment_string'])
+            print("here",response)
             return return_response(response)
         else:
             response = {}
@@ -125,6 +134,7 @@ def add_comment_view(request):
             return return_response(response)
 
 
+@csrf_exempt
 def remove_comment_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
@@ -143,6 +153,7 @@ def remove_comment_view(request):
             return return_response(response)
 
 
+@csrf_exempt
 def get_all_likes(request):
     if request.method == "GET":
         data = json.loads(request.body)
@@ -153,8 +164,8 @@ def get_all_likes(request):
             if field not in data.keys():
                 condition = False
         if condition:
-            response = ELM_object.get_total_likes(request, data['leaf_id'])
-            return JsonResponse(response.values())
+            response = ELM_object.get_total_likes( data['leaf_id'])
+            return JsonResponse(list(response.values()), safe= False)
         else:
             response = {}
             response['messaage'] = "Valid fields not found in request body"
@@ -162,6 +173,7 @@ def get_all_likes(request):
             return return_response(response)
 
 
+@csrf_exempt
 def get_all_comments(request):
     if request.method == "GET":
         data = json.loads(request.body)
@@ -172,8 +184,8 @@ def get_all_comments(request):
             if field not in data.keys():
                 condition = False
         if condition:
-            response = ELM_object.get_total_comment(request, data['leaf_id'])
-            return JsonResponse(response.values())
+            response = ELM_object.get_total_comments(request, data['leaf_id'])
+            return JsonResponse(list(response.values()), safe= False)
         else:
             response = {}
             response['messaage'] = "Valid fields not found in request body"

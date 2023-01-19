@@ -18,7 +18,7 @@ class EdenLeafManagement:
     def create_leaf(self, request, data):
         response = {}
         if self.get_logged_in_user(request):
-            new_leaf_object = Leaf
+            new_leaf_object = Leaf()
             new_leaf_object.leaf_id = self.generate_leaf_id()
             new_leaf_object.owner = session_management_object.get_session_user(request)
             new_leaf_object.text_content = data["text_content"]
@@ -36,14 +36,15 @@ class EdenLeafManagement:
     def get_user_public_leaves(self, request):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public)
+            print(user_object)
+            return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public).all()
         else:
             return -101
 
     def get_user_private_leaves(self, request):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Private)
+            return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Private).all()
         else:
             return -101
 
@@ -63,6 +64,9 @@ class EdenLeafManagement:
     def like_leaf(self, request, leaf_id):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
+            print(user_object)
+            print(  self.check_leaf(leaf_id))
+            print("-----------")
             if (
                 self.check_leaf(leaf_id)
                 and not self.check_like(leaf_id, user_object.user_id)["message"]
@@ -80,13 +84,14 @@ class EdenLeafManagement:
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_like(leaf_id, user_object.user_id)
-            try:
-                if self.check_leaf(leaf_id) and like_status["message"]:
-                    like_object = self.get_like_object(leaf_id, user_object.user_id)
-                    like_object.delete()
-                    return -100
-            except Exception:
+            print(like_status)
+            if self.check_leaf(leaf_id) and like_status["message"]:
+                like_object = self.get_like_object(leaf_id, user_object.user_id)
+                like_object.delete()
+                return -100
+            else:
                 return -105
+      
 
     def get_total_likes(self, leaf_id):
         if self.check_leaf(leaf_id):
@@ -104,17 +109,21 @@ class EdenLeafManagement:
     def add_comment(self, request, leaf_id, comment_string):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            comment_status = self.check_like(leaf_id, user_object.user_id)
+            comment_status = self.check_comment(leaf_id, user_object.user_id)
+            print(user_object,comment_status,comment_string)
             if comment_string != None:
                 try:
-                    if self.check_leaf(leaf_id) and comment_status["message"]:
+                    if self.check_leaf(leaf_id) and not comment_status["message"]:
                         leaf_comment_object = LeafComments()
                         leaf_comment_object.commented_by = user_object
                         leaf_comment_object.leaf = self.get_leaf_object(leaf_id)
                         leaf_comment_object.comment = comment_string
+                        leaf_comment_object.save()
                         return -100
-                except Exception:
+                except Exception as E:
                     return -103
+            else:
+                return -106
         else:
             return -101
 
@@ -145,10 +154,10 @@ class EdenLeafManagement:
         if user_object is not None and leaf_valid:
             leaf_object = self.get_leaf_object(leaf_id)
             leaf_comment_object = LeafComments.objects.filter(
-                leaf_id=leaf_object.leaf_id, commented_by=user_object.user_id
-            )
+                leaf=leaf_object, commented_by=user_object.user_id
+            ).first()
             response["status"] = -100
-            response["message"] = leaf_comment_object.exists()
+            response["message"] = leaf_comment_object != None
             response["code"] = True
         else:
             response["status"] = -104
@@ -166,10 +175,10 @@ class EdenLeafManagement:
         if user_object is not None and leaf_valid:
             leaf_object = self.get_leaf_object(leaf_id)
             leaf_like_object = LeafLikes.objects.filter(
-                leaf_id=leaf_object.leaf_id, liked_by=user_object.user_id
-            )
+                leaf=leaf_object, liked_by=user_object.user_id
+            ).first()
             response["status"] = -100
-            response["message"] = leaf_like_object.exists()
+            response["message"] = leaf_like_object != None
             response["code"] = True
         else:
             response["status"] = -100
@@ -182,7 +191,7 @@ class EdenLeafManagement:
 
     def get_leaf_object(self, leaf_id):
         if self.check_leaf(leaf_id):
-            return Leaf.objects.filter(leaf_id=leaf_id)
+            return Leaf.objects.filter(leaf_id=leaf_id).first()
 
     def get_comment_object(self, leaf_id, user_id):
         if self.check_leaf(leaf_id):
@@ -190,7 +199,7 @@ class EdenLeafManagement:
 
     def get_like_object(self, leaf_id, user_id):
         leaf_info = self.check_like(leaf_id, user_id)["message"]
-        if leaf_info["message"] and leaf_info["code"]:
+        if leaf_info:
             user_object = self.get_user_object(user_id)
             leaf_object = self.get_leaf_object(leaf_id)
             return LeafLikes.objects.filter(leaf=leaf_object, liked_by=user_object)
@@ -208,4 +217,4 @@ class EdenLeafManagement:
         return session_management_object.get_session_user(request)
 
     def get_user_object(self, user_id):
-        return UserProfile.objects.filter(user_name=user_id).first()
+        return UserProfile.objects.filter(user_id=user_id).first()

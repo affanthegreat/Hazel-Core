@@ -6,3 +6,4 @@ ELM Module Status Codes:
 '-103": Object creation failed due to either missing Leaf or Object already exists.
 "-104": Object does not exists
 "-105": Combination of -102 and -103
+"-106": issue while parsing.

@@ -3,7 +3,7 @@ from django.contrib.auth.backends import ModelBackend
 import crypt
 import uuid
 
-from eden_utils.user_management import EdenUserManagement
+from .user_management import EdenUserManagement
 from user_engine.models import UserAccessToken, UserProfile
 
 
@@ -54,9 +54,12 @@ class EdenSessionManagement():
     def get_session_user(self, request):
         token = request.session.get('token', None)
         auth_token = request.session.get('auth_token', None)
-        rehashed_cipher = crypt.crypt(auth_token, token)
-        if token == rehashed_cipher and self.check_session(auth_token):
-            return self.get_session_object(auth_token).user
+        try:
+            rehashed_cipher = crypt.crypt(auth_token, token)
+            if token == rehashed_cipher and self.check_session(auth_token):
+                return self.get_session_object(auth_token).user
+        except Exception as E:
+            pass
 
     def check_session(self, auth_token):
         return UserAccessToken.objects.filter(user_session_id=auth_token).exists()

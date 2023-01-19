@@ -18,6 +18,7 @@ urlpatterns = [
     # User management
     path("accounts/", include("allauth.urls")),
     path("user_engine/", include("user_engine.urls")),
+    path("leaf_engine/", include("leaf_engine.urls"))
     # Your stuff: custom urls includes go here
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:

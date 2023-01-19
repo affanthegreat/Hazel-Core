@@ -7,10 +7,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate
 
-from eden_utils.user_management import EdenUserManagement
+from user_engine.backends import EdenSessionManagement
+
+from .user_management import EdenUserManagement
 
 user_control_object = EdenUserManagement()
-
+session_management_object = EdenSessionManagement()
 
 @csrf_exempt
 def create_user_api(request):
@@ -67,7 +69,7 @@ def login(request):
         password = data["password"]
         user = authenticate(request, username=username, password=password)
         if user != None:
-            request.session["user_name"] = user.user_name
+            session_management_object.create_session(request,user)
             return HttpResponse(
                 content=json.dumps({"status": 200, "message": "Login successful."})
             )
