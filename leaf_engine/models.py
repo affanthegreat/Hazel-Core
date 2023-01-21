@@ -18,6 +18,7 @@ class Leaf(models.Model):
     leaf_id = models.CharField(max_length=100, primary_key=True)
     image_content = models.ImageField()
     likes_count = models.BigIntegerField(default=0)
+    dilikes_count = models.BigIntegerField(default=0)
     comments_count = models.BigIntegerField(default=0)
     leaf_type = models.CharField(choices=LeafType.choices, max_length=30)
 
@@ -28,6 +29,14 @@ class LeafLikes(models.Model):
     )
     liked_by = models.ForeignKey(
         UserProfile, related_name="liked_user", on_delete=models.DO_NOTHING
+    )
+
+class LeafDisLikes(models.Model):
+    leaf = models.ForeignKey(
+        Leaf, related_name="content_leaf", on_delete=models.CASCADE
+    )
+    disliked_by = models.ForeignKey(
+        UserProfile, related_name="disliked_user", on_delete=models.DO_NOTHING
     )
 
 

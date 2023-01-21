@@ -1,6 +1,6 @@
 import uuid
 
-from leaf_engine.models import Leaf, LeafComments, LeafLikes, LeafType
+from leaf_engine.models import Leaf, LeafComments, LeafDisLikes, LeafLikes, LeafType
 from user_engine.backends import EdenSessionManagement
 from user_engine.models import UserProfile
 
@@ -64,9 +64,6 @@ class EdenLeafManagement:
     def like_leaf(self, request, leaf_id):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            print(user_object)
-            print(  self.check_leaf(leaf_id))
-            print("-----------")
             if (
                 self.check_leaf(leaf_id)
                 and not self.check_like(leaf_id, user_object.user_id)["message"]
@@ -79,8 +76,23 @@ class EdenLeafManagement:
             else:
                 return -103
 
-    # TODO add User Engine value updation mechanism
     def dislike_leaf(self, request, leaf_id):
+        if self.is_authorised(request):
+            user_object = self.get_logged_in_user(request)
+            if (
+                self.check_leaf(leaf_id)
+                and not self.check_dislike(leaf_id, user_object.user_id)["message"]
+            ):
+                dislike_object = LeafDisLikes()
+                dislike_object.leaf = self.get_leaf_object(leaf_id)
+                dislike_object.disliked_by = user_object
+                dislike_object.save()
+                return -100
+            else:
+                return -103
+
+    # TODO add User Engine value updation mechanism
+    def remove_like(self, request, leaf_id):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_like(leaf_id, user_object.user_id)
@@ -91,11 +103,29 @@ class EdenLeafManagement:
                 return -100
             else:
                 return -105
+    
+    # TODO add User Engine value updation mechanism
+    def remove_dislike(self, request, leaf_id):
+        if self.is_authorised(request):
+            user_object = self.get_logged_in_user(request)
+            like_status = self.check_dislike(leaf_id, user_object.user_id)
+            if self.check_leaf(leaf_id) and like_status["message"]:
+                dislike_object = self.get_dislike_object(leaf_id, user_object.user_id)
+                dislike_object.delete()
+                return -100
+            else:
+                return -105
       
 
     def get_total_likes(self, leaf_id):
         if self.check_leaf(leaf_id):
             return LeafLikes.objects.filter(leaf_id=leaf_id)
+        else:
+            return -104
+    
+    def get_total_dislikes(self, leaf_id):
+        if self.check_leaf(leaf_id):
+            return LeafDisLikes.objects.filter(leaf_id=leaf_id)
         else:
             return -104
 
@@ -188,6 +218,27 @@ class EdenLeafManagement:
             else:
                 response["message"] = "User doesn't exist"
         return response
+    
+    def check_dislike(self, leaf_id, user_id):
+        user_object = self.get_user_object(user_id)
+        leaf_valid = self.check_leaf(leaf_id)
+        response = {}
+        if user_object is not None and leaf_valid:
+            leaf_object = self.get_leaf_object(leaf_id)
+            leaf_like_object = LeafDisLikes.objects.filter(
+                leaf=leaf_object, disliked_by=user_object.user_id
+            ).first()
+            response["status"] = -100
+            response["message"] = leaf_like_object != None
+            response["code"] = True
+        else:
+            response["status"] = -100
+            response["code"] = False
+            if not leaf_valid:
+                response["message"] = "Leaf doesn't exist."
+            else:
+                response["message"] = "User doesn't exist"
+        return response
 
     def get_leaf_object(self, leaf_id):
         if self.check_leaf(leaf_id):
@@ -203,6 +254,15 @@ class EdenLeafManagement:
             user_object = self.get_user_object(user_id)
             leaf_object = self.get_leaf_object(leaf_id)
             return LeafLikes.objects.filter(leaf=leaf_object, liked_by=user_object)
+        else:
+            None
+    
+    def get_like_object(self, leaf_id, user_id):
+        leaf_info = self.check_dislike(leaf_id, user_id)["message"]
+        if leaf_info:
+            user_object = self.get_user_object(user_id)
+            leaf_object = self.get_leaf_object(leaf_id)
+            return LeafDisLikes.objects.filter(leaf=leaf_object, disliked_by=user_object)
         else:
             None
 

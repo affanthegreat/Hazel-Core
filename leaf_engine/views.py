@@ -96,7 +96,7 @@ def like_leaf_view(request):
 
 
 @csrf_exempt
-def dislike_leaf_view(request):
+def remove_like_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
@@ -186,6 +186,61 @@ def get_all_comments(request):
         if condition:
             response = ELM_object.get_total_comments(request, data['leaf_id'])
             return JsonResponse(list(response.values()), safe= False)
+        else:
+            response = {}
+            response['messaage'] = "Valid fields not found in request body"
+            response['status'] = 200
+            return return_response(response)
+
+@csrf_exempt
+def get_all_dislikes(request):
+    if request.method == "GET":
+        data = json.loads(request.body)
+        response = {}
+        valid_fields = ['leaf_id']
+        condition = True
+        for field in valid_fields:
+            if field not in data.keys():
+                condition = False
+        if condition:
+            response = ELM_object.get_total_dislikes( data['leaf_id'])
+            return JsonResponse(list(response.values()), safe= False)
+        else:
+            response = {}
+            response['messaage'] = "Valid fields not found in request body"
+            response['status'] = 200
+            return return_response(response)
+
+@csrf_exempt
+def remove_dislike_view(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        valid_fields = ['leaf_id']
+        condition = True
+        for field in valid_fields:
+            if field not in data.keys():
+                condition = False
+        if condition:
+            response = ELM_object.remove_dislike(request, data['leaf_id'])
+            return return_response(response)
+        else:
+            response = {}
+            response['messaage'] = "Valid fields not found in request body"
+            response['status'] = 200
+            return return_response(response)
+
+@csrf_exempt
+def dislike_leaf_view(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        valid_fields = ['leaf_id']
+        condition = True
+        for field in valid_fields:
+            if field not in data.keys():
+                condition = False
+        if condition:
+            response = ELM_object.dislike_leaf(request, data['leaf_id'])
+            return return_response(response)
         else:
             response = {}
             response['messaage'] = "Valid fields not found in request body"
