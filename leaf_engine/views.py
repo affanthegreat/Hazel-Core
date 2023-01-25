@@ -191,6 +191,8 @@ def get_all_comments(request):
             response['messaage'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
+    else:
+        pass
 
 @csrf_exempt
 def get_all_dislikes(request):
