@@ -14,6 +14,9 @@ class UserProfile(models.Model):
     user_followers = models.BigIntegerField(default=0)
     user_following = models.BigIntegerField(default=0)
     user_level = models.BigIntegerField(default=1)
+    user_universal_likes = models.BigIntegerField(default=0)
+    user_universal_dislikes = models.BigIntegerField(default=0)
+    user_universal_comments = models.BigIntegerField(default=0)
 
 
 class UserFollowing(models.Model):

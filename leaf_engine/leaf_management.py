@@ -3,6 +3,7 @@ import uuid
 from leaf_engine.models import Leaf, LeafComments, LeafDisLikes, LeafLikes, LeafType
 from user_engine.backends import EdenSessionManagement
 from user_engine.models import UserProfile
+from user_engine.middleware import EdenUserMiddleWare
 
 session_management_object = EdenSessionManagement()
 
@@ -72,6 +73,7 @@ class EdenLeafManagement:
                 like_object.leaf = self.get_leaf_object(leaf_id)
                 like_object.liked_by = user_object
                 like_object.save()
+
                 return -100
             else:
                 return -103
@@ -103,7 +105,7 @@ class EdenLeafManagement:
                 return -100
             else:
                 return -105
-    
+
     # TODO add User Engine value updation mechanism
     def remove_dislike(self, request, leaf_id):
         if self.is_authorised(request):
@@ -115,14 +117,13 @@ class EdenLeafManagement:
                 return -100
             else:
                 return -105
-      
 
     def get_total_likes(self, leaf_id):
         if self.check_leaf(leaf_id):
             return LeafLikes.objects.filter(leaf_id=leaf_id)
         else:
             return -104
-    
+
     def get_total_dislikes(self, leaf_id):
         if self.check_leaf(leaf_id):
             return LeafDisLikes.objects.filter(leaf_id=leaf_id)
@@ -140,7 +141,7 @@ class EdenLeafManagement:
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             comment_status = self.check_comment(leaf_id, user_object.user_id)
-            print(user_object,comment_status,comment_string)
+            print(user_object, comment_status, comment_string)
             if comment_string != None:
                 try:
                     if self.check_leaf(leaf_id) and not comment_status["message"]:
@@ -218,7 +219,7 @@ class EdenLeafManagement:
             else:
                 response["message"] = "User doesn't exist"
         return response
-    
+
     def check_dislike(self, leaf_id, user_id):
         user_object = self.get_user_object(user_id)
         leaf_valid = self.check_leaf(leaf_id)
@@ -256,7 +257,7 @@ class EdenLeafManagement:
             return LeafLikes.objects.filter(leaf=leaf_object, liked_by=user_object)
         else:
             None
-    
+
     def get_like_object(self, leaf_id, user_id):
         leaf_info = self.check_dislike(leaf_id, user_id)["message"]
         if leaf_info:
@@ -278,3 +279,23 @@ class EdenLeafManagement:
 
     def get_user_object(self, user_id):
         return UserProfile.objects.filter(user_id=user_id).first()
+
+    def run_user_middleware(self, user_object, operation, value):
+        user_middleware_object = EdenUserMiddleWare(user_object)
+        allowed_operations = ['update_public_leaf', "update_private_leaf", "update_followers", "update_following", "update_user_exp", "update_user_level"]
+        if operation not in allowed_operations:
+            return False
+        else:
+            match operation:
+                case "update_public_leaf":
+                    return user_middleware_object.update_public_leafs_count(value)
+                case "update_private_leaf":
+                    return user_middleware_object.update_private_leafs_count(value)
+                case "update_followers":
+                    return user_middleware_object.update_followers(value)
+                case "update_following":
+                    return user_middleware_object.update_following(value)
+                case "update_user_exp":
+                    return user_middleware_object.update_user_exp(value)
+                case "update_user_level":
+                    return user_middleware_object.update_user_level(value)
