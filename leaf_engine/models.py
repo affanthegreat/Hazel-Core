@@ -20,8 +20,11 @@ class Leaf(models.Model):
     likes_count = models.BigIntegerField(default=0)
     dilikes_count = models.BigIntegerField(default=0)
     comments_count = models.BigIntegerField(default=0)
+    view_count = models.BigIntegerField(default=0)
     leaf_type = models.CharField(choices=LeafType.choices, max_length=30)
-
+    engagement_rating = models.DecimalField(default=0)
+    experience_rating = models.DecimalField(default=0)
+    previous_analytics_run = models.DateTimeField(default=None) 
 
 class LeafLikes(models.Model):
     leaf = models.ForeignKey(
@@ -30,7 +33,6 @@ class LeafLikes(models.Model):
     liked_by = models.ForeignKey(
         UserProfile, related_name="liked_user", on_delete=models.DO_NOTHING
     )
-
 
 class LeafDisLikes(models.Model):
     leaf = models.ForeignKey(
