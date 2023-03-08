@@ -26,6 +26,10 @@ class EdenLeafManagement:
             new_leaf_object.image_content = None
             new_leaf_object.leaf_type = LeafType(data["leaf_type"])
             new_leaf_object.save()
+            if LeafType(data['leaf_type']) == LeafType.Private:
+                self.run_user_middleware(self.get_logged_in_user(request),"update_private_leaf",1)
+            else:
+                self.run_user_middleware(self.get_logged_in_user(request),"update_public_leaf",1)
             response["status"] = -100
             response["message"] = "Leaf successfully created."
             response["code"] = True
@@ -61,7 +65,7 @@ class EdenLeafManagement:
                 response["message"] = "-102"
             return response
 
-    # TODO add User Engine value updation mechanism
+ 
     def like_leaf(self, request, leaf_id):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
@@ -73,7 +77,7 @@ class EdenLeafManagement:
                 like_object.leaf = self.get_leaf_object(leaf_id)
                 like_object.liked_by = user_object
                 like_object.save()
-
+                self.run_leaf_middleware(self.get_leaf_object(leaf_id),"update_likes",1)
                 return -100
             else:
                 return -103
@@ -89,11 +93,12 @@ class EdenLeafManagement:
                 dislike_object.leaf = self.get_leaf_object(leaf_id)
                 dislike_object.disliked_by = user_object
                 dislike_object.save()
+                self.run_leaf_middleware(self.get_leaf_object(leaf_id),"update_dislikes",1)
                 return -100
             else:
                 return -103
 
-    # TODO add User Engine value updation mechanism
+
     def remove_like(self, request, leaf_id):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
@@ -102,11 +107,11 @@ class EdenLeafManagement:
             if self.check_leaf(leaf_id) and like_status["message"]:
                 like_object = self.get_like_object(leaf_id, user_object.user_id)
                 like_object.delete()
+                self.run_leaf_middleware(self.get_leaf_object(leaf_id),"update_likes",-1)
                 return -100
             else:
                 return -105
 
-    # TODO add User Engine value updation mechanism
     def remove_dislike(self, request, leaf_id):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
@@ -114,6 +119,7 @@ class EdenLeafManagement:
             if self.check_leaf(leaf_id) and like_status["message"]:
                 dislike_object = self.get_dislike_object(leaf_id, user_object.user_id)
                 dislike_object.delete()
+                self.run_leaf_middleware(self.get_leaf_object(leaf_id),"update_dislikes",-1)
                 return -100
             else:
                 return -105
@@ -136,7 +142,6 @@ class EdenLeafManagement:
         else:
             return -104
 
-    # TODO add User Engine value updation mechanism
     def add_comment(self, request, leaf_id, comment_string):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
@@ -150,6 +155,7 @@ class EdenLeafManagement:
                         leaf_comment_object.leaf = self.get_leaf_object(leaf_id)
                         leaf_comment_object.comment = comment_string
                         leaf_comment_object.save()
+                        self.run_leaf_middleware(self.get_leaf_object(leaf_id),"update_comments",1)
                         return -100
                 except Exception as E:
                     return -103
@@ -158,7 +164,6 @@ class EdenLeafManagement:
         else:
             return -101
 
-    # TODO add User Engine value updation mechanism
     def remove_comment(self, request, leaf_id):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
@@ -169,10 +174,22 @@ class EdenLeafManagement:
                         leaf_id, user_object.user_id
                     )
                     comment_object.delete()
+                    self.run_leaf_middleware(self.get_leaf_object(leaf_id),"update_comments",-1)
                     return -100
             except Exception:
                 return -105
         pass
+    
+    def add_view(self,request,leaf_id):
+        if self.is_authorised(request):
+            try:
+                if self.check_leaf(leaf_id):
+                    leaf_object = self.get_leaf_object(leaf_id)
+                    self.run_leaf_middleware(leaf_object,"update_view",1)
+                    return -100
+            except Exception:
+                return -105
+                       
 
     def check_leaf(self, leaf_id):
         leaf_object = Leaf.objects.filter(leaf_id=leaf_id).first()
@@ -299,3 +316,20 @@ class EdenLeafManagement:
                     return user_middleware_object.update_user_exp(value)
                 case "update_user_level":
                     return user_middleware_object.update_user_level(value)
+                
+    def run_leaf_middleware(self, leaf_object, operation, value):
+        leaf_middleware_object = EdenLeafManagement(leaf_object)
+        allowed_operations = ["update_likes","update_dislikes","update_comments","update_views"]
+        if operation not in allowed_operations:
+            return False
+        else:
+            match operation:
+                case "update_likes":
+                    return leaf_middleware_object.update_likes(value)
+                case "update_dislikes":
+                    return leaf_middleware_object.update_dislikes(value)
+                case "update_comments":
+                    return leaf_middleware_object.update_comments(value)
+                case "update_views":
+                    return leaf_middleware_object.update_views(value)
+    

@@ -45,8 +45,11 @@ class EdenSessionManagement():
         request.session["auth_token"] = session_id
 
     def delete_session(self, request):
-        user = self.get_session_user(request)
-        user.delete()
+        token = request.session.get('token', None)
+        auth_token = request.session.get('auth_token', None)
+        if self.check_session(auth_token):
+            auth_object  = self.get_session_object(auth_token)
+            auth_object.delete()
 
     def encrypt_session_id(self, session_id, key):
         return crypt.crypt(session_id, key)
@@ -54,6 +57,7 @@ class EdenSessionManagement():
     def get_session_user(self, request):
         token = request.session.get('token', None)
         auth_token = request.session.get('auth_token', None)
+        print(token,auth_token)
         try:
             rehashed_cipher = crypt.crypt(auth_token, token)
             if token == rehashed_cipher and self.check_session(auth_token):
