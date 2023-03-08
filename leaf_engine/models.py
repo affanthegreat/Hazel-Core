@@ -31,6 +31,7 @@ class LeafLikes(models.Model):
         UserProfile, related_name="liked_user", on_delete=models.DO_NOTHING
     )
 
+
 class LeafDisLikes(models.Model):
     leaf = models.ForeignKey(
         Leaf, related_name="content_leaf", on_delete=models.CASCADE

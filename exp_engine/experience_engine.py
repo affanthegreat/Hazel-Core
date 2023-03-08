@@ -3,7 +3,7 @@
 class EdenExperienceEngine():
     def __init__(self):
         pass
-    
+
     def generate_exp_points(self):
         pass
 
@@ -18,14 +18,12 @@ class EdenExperienceEngine():
 
     def initiate_user_middleware(self):
         pass
-    
+
     def get_user_exp(self):
         pass
 
     def get_analytics(self):
         pass
-
-
 
 
 class EdenAnalyticsEngine():
@@ -37,7 +35,7 @@ class EdenAnalyticsEngine():
         pass
 
     def generate_time_spent(self):
-        #app_open_time to each 5 minute 
+        # app_open_time to each 5 minute
         pass
 
-    def 
+    def

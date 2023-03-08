@@ -12,7 +12,7 @@ class EdenLoginManagement(EdenUserManagement, ModelBackend):
     def authenticate(self, request, username=None, password=None):
         if UserProfile.objects.filter(user_name=username).exists():
             print("here")
-            user_object =  self.get_user(username)
+            user_object = self.get_user(username)
             if crypt.crypt(password, user_object.user_password) == user_object.user_password:
                 print("password correct")
                 return user_object
@@ -48,7 +48,7 @@ class EdenSessionManagement():
         token = request.session.get('token', None)
         auth_token = request.session.get('auth_token', None)
         if self.check_session(auth_token):
-            auth_object  = self.get_session_object(auth_token)
+            auth_object = self.get_session_object(auth_token)
             auth_object.delete()
 
     def encrypt_session_id(self, session_id, key):
@@ -57,7 +57,7 @@ class EdenSessionManagement():
     def get_session_user(self, request):
         token = request.session.get('token', None)
         auth_token = request.session.get('auth_token', None)
-        print(token,auth_token)
+        print(token, auth_token)
         try:
             rehashed_cipher = crypt.crypt(auth_token, token)
             if token == rehashed_cipher and self.check_session(auth_token):

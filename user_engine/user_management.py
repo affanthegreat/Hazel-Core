@@ -52,7 +52,7 @@ class EdenUserManagement:
             return response
 
     def check_user_exists(self, data) -> bool:
-        print(data,type(data))
+        print(data, type(data))
         user_name = data.get("user_name", None)
         user_id = data.get("user_id", None)
         user_email = data.get("user_email", None)
@@ -92,10 +92,10 @@ class EdenUserManagement:
             following_object = self.get_user_object(follows)
             follower_relationship.slave = follower_object
             follower_relationship.master = following_object
-            print(follower_object,follower_object)
+            print(follower_object, follower_object)
             try:
                 follower_relationship.save()
-                self.run_user_middleware(following_object,"update_followers",1)
+                self.run_user_middleware(following_object, "update_followers", 1)
                 response = {
                     "status": 200,
                     "message": f"{follower} added as follower added to {follows}",
@@ -108,27 +108,26 @@ class EdenUserManagement:
         else:
             response = {"status": 200, "message": "One of the user does not exists."}
             print(response)
-    
-    def user_unfollow(self,data):
+
+    def user_unfollow(self, data):
         follower = data["follower"]
         follows = data["follows"]
         if self.check_user_exists({"user_id": follower}) and self.check_user_exists(
             {"user_id": follows}
         ):
-           request_data = {
-               'user_id' : follower,
-               'sub_user': follows
-           }
-           followers_set  = self.get_user_followers(request_data)
-        
+            request_data = {
+                'user_id': follower,
+                'sub_user': follows
+            }
+            followers_set = self.get_user_followers(request_data)
 
     def get_user_followers(self, data):
         user_profile = data["user_id"]
-        sub_user = data.get('sub_user',None)
+        sub_user = data.get('sub_user', None)
         if self.check_user_exists(data):
             user_profile_object = UserProfile.objects.filter(user_id=user_profile)
             followers_query_set = UserFollowing.objects.filter(
-                master=user_profile, slave= sub_user
+                master=user_profile, slave=sub_user
             ).all()
             return list(followers_query_set.values())
 
@@ -170,10 +169,10 @@ class EdenUserManagement:
     def get_user_object(self, user_id):
         return UserProfile.objects.filter(user_id=user_id).first()
 
-
     def run_user_middleware(self, user_object, operation, value):
         user_middleware_object = EdenUserMiddleWare(user_object)
-        allowed_operations = ['update_public_leaf', "update_private_leaf", "update_followers", "update_following", "update_user_exp", "update_user_level"]
+        allowed_operations = ['update_public_leaf', "update_private_leaf",
+                              "update_followers", "update_following", "update_user_exp", "update_user_level"]
         if operation not in allowed_operations:
             return False
         else:

@@ -41,7 +41,7 @@ def get_user_public_leaves_view(request):
             response['message'] = 'Auth Error.'
             return response
         else:
-            return JsonResponse(list(response_status.values()), safe= False)
+            return JsonResponse(list(response_status.values()), safe=False)
 
 
 @csrf_exempt
@@ -54,7 +54,7 @@ def get_user_private_leaves_view(request):
             response['message'] = 'Auth Error.'
             return response
         else:
-            return JsonResponse(list(response_status.values()), safe= False)
+            return JsonResponse(list(response_status.values()), safe=False)
 
 
 @csrf_exempt
@@ -125,7 +125,7 @@ def add_comment_view(request):
                 condition = False
         if condition:
             response = ELM_object.add_comment(request, data['leaf_id'], data['comment_string'])
-            print("here",response)
+            print("here", response)
             return return_response(response)
         else:
             response = {}
@@ -164,8 +164,8 @@ def get_all_likes(request):
             if field not in data.keys():
                 condition = False
         if condition:
-            response = ELM_object.get_total_likes( data['leaf_id'])
-            return JsonResponse(list(response.values()), safe= False)
+            response = ELM_object.get_total_likes(data['leaf_id'])
+            return JsonResponse(list(response.values()), safe=False)
         else:
             response = {}
             response['messaage'] = "Valid fields not found in request body"
@@ -185,7 +185,7 @@ def get_all_comments(request):
                 condition = False
         if condition:
             response = ELM_object.get_total_comments(request, data['leaf_id'])
-            return JsonResponse(list(response.values()), safe= False)
+            return JsonResponse(list(response.values()), safe=False)
         else:
             response = {}
             response['messaage'] = "Valid fields not found in request body"
@@ -193,6 +193,7 @@ def get_all_comments(request):
             return return_response(response)
     else:
         pass
+
 
 @csrf_exempt
 def get_all_dislikes(request):
@@ -205,13 +206,14 @@ def get_all_dislikes(request):
             if field not in data.keys():
                 condition = False
         if condition:
-            response = ELM_object.get_total_dislikes( data['leaf_id'])
-            return JsonResponse(list(response.values()), safe= False)
+            response = ELM_object.get_total_dislikes(data['leaf_id'])
+            return JsonResponse(list(response.values()), safe=False)
         else:
             response = {}
             response['messaage'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
+
 
 @csrf_exempt
 def remove_dislike_view(request):
@@ -230,6 +232,7 @@ def remove_dislike_view(request):
             response['messaage'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
+
 
 @csrf_exempt
 def dislike_leaf_view(request):
