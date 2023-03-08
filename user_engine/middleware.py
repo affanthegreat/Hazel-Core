@@ -1,6 +1,5 @@
 from user_engine.models import UserProfile
 
-
 class EdenUserMiddleWare():
     def __init__(self, user_object):
         self.user_object = user_object
@@ -13,6 +12,7 @@ class EdenUserMiddleWare():
             return self.user_object.user_public_leaf_count
         except:
             return False
+      
 
     def update_private_leafs_count(self, value):
         try:
@@ -32,6 +32,7 @@ class EdenUserMiddleWare():
         except:
             return False
 
+
     def update_following(self, value):
         try:
             self.user_object.user_following += value
@@ -42,7 +43,7 @@ class EdenUserMiddleWare():
 
     def update_user_exp(self, value):
         try:
-            self.user_object.user_experience_points += value
+            self.user_object.user_experience_points = value
             self.user_object.save()
             return self.user_object.experience_points
         except:
@@ -50,8 +51,9 @@ class EdenUserMiddleWare():
 
     def update_user_level(self, value):
         try:
-            self.user_object.user_level += value
+            self.user_object.user_level = value
             self.user_object.save()
             return self.user_object.user_level
         except:
             return False
+    

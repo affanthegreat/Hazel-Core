@@ -41,7 +41,6 @@ class EdenLeafManagement:
     def get_user_public_leaves(self, request):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            print(user_object)
             return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public).all()
         else:
             return -101

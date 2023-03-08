@@ -1,4 +1,5 @@
 import crypt
+from user_engine.middleware import EdenUserMiddleWare
 
 from user_engine.models import *
 
