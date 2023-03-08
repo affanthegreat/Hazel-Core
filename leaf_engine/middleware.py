@@ -34,8 +34,8 @@ class EdenLeafMiddleware():
             return self.leaf_object.views_count
         except:
             return False
-        
-    def update_engagement_rate(self,value):
+
+    def update_engagement_rate(self, value):
         try:
             self.leaf_object.engagement_rating = value
             self.leaf_object.save()
@@ -43,7 +43,7 @@ class EdenLeafMiddleware():
         except:
             return False
 
-    def update_exp_rate(self,value):
+    def update_exp_rate(self, value):
         try:
             self.leaf_object.experience_rating = value
             self.leaf_object.save()
@@ -51,7 +51,7 @@ class EdenLeafMiddleware():
         except:
             return False
 
-    def update_previous_analytics_date(self,date):
+    def update_previous_analytics_date(self, date):
         try:
             self.leaf_object.previous_analytics_run = date
             self.leaf_object.save()
