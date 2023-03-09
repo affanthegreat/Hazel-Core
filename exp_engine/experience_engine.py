@@ -35,7 +35,7 @@ class EdenExperienceEngine():
         previous_level_points = self.get_experience_points_for_level(level - 1, base_points, multiplier)
         return previous_level_points * multiplier if previous_level_points > 0 else base_points
 
-    def generate_level(self, user_exp_points, base_level_points=750, multiplier=2):
+    def generate_level(self, user_exp_points, base_points=750, multiplier=2):
 
         if user_exp_points < self.get_experience_points_for_level(1, base_points, multiplier):
             return 0
@@ -64,12 +64,13 @@ class EdenExperienceEngine():
             return False
 
     def initiate(self, request):
+        print("================EDEN EXP-PBR ENGINE PROCESS BEGIN================")
         analytics_object = EdenAnalyticsEngine(request)
         response = analytics_object.initiate()
 
         eden_session_manager = EdenSessionManagement()
         user_object = eden_session_manager.get_session_user(request)
-
+        print("> Created Required objects.")
         if response['status'] == 100 and self.experience_status_verification(user_object):
             unfiltered_metric_data = response['data']
             leaf_engagement_map, leaf_experience_map = self.filter_metrics(unfiltered_metric_data)
@@ -85,6 +86,7 @@ class EdenAnalyticsEngine():
     def __init__(self, request):
         self.request = request
         self.time_of_running = datetime.now()
+        self.metric_weights()
 
     def metric_weights(self):
         self.public_like_weight = 1
@@ -105,13 +107,13 @@ class EdenAnalyticsEngine():
         return delta > timedelta(hours=6)
 
     def generate_engagement_rate(self, leaf_object):
-        if leaf_object.views_count == 0:
+        if leaf_object.view_count == 0:
             return 0
         else:
             likes = leaf_object.likes_count
             dislikes = leaf_object.dislikes_count
             comments = leaf_object.comments_count
-            views = leaf_object.views_count
+            views = leaf_object.view_count
             return (likes + comments + (0.75 * dislikes)) / views
 
     def generate_per_view_exp(self, leaf_object, user_object):
@@ -124,12 +126,12 @@ class EdenAnalyticsEngine():
             experience_points += (leaf_object.likes_count * self.private_like_weight)
             experience_points += (leaf_object.dislikes_count * self.private_dislike_weight)
             experience_points += (leaf_object.comments_count * self.private_comment_weight)
-            experience_points += (leaf_object.views_count * self.private_view_weight)
+            experience_points += (leaf_object.view_count * self.private_view_weight)
         else:
             experience_points += (leaf_object.likes_count * self.public_like_weight)
             experience_points += (leaf_object.dislikes_count * self.public_dislike_weight)
             experience_points += (leaf_object.comments_count * self.public_comment_weight)
-            experience_points += (leaf_object.views_count * self.public_view_weight)
+            experience_points += (leaf_object.view_count * self.public_view_weight)
 
         return experience_points * (1 + (user_followers / 100) + (user_following) / 100)
 
@@ -142,10 +144,12 @@ class EdenAnalyticsEngine():
 
     def initiate(self):
         eden_leaf_manager = EdenLeafManagement()
+        print("> Analytics are initiated...")
         try:
             eden_user = eden_leaf_manager.get_logged_in_user(self.request)
-            public_leaf_objects = eden_leaf_manager.get_user_public_leaves()
-            private_leaf_objects = eden_leaf_manager.get_user_private_leaves()
+            public_leaf_objects = eden_leaf_manager.get_user_public_leaves(self.request)
+            private_leaf_objects = eden_leaf_manager.get_user_private_leaves(self.request)
+            print("> Total Public and Private leaves accquired. Now calculating Engagement and Experience Points.")
             leaf_avg_points_map = {}
 
             for public_leaf in public_leaf_objects:
@@ -160,9 +164,9 @@ class EdenAnalyticsEngine():
                     data['leaf_engagement_rate'] = leaf_engagement_rate
                     data['leaf_experience_rate'] = leaf_experience_rate
 
-                    self.run_middleware(public_leaf, data)
+                    self.run_middleware(data)
                     leaf_avg_points_map[public_leaf.leaf_id] = (leaf_engagement_rate, leaf_experience_rate)
-
+            print("> Public Leaf metrics calculated. Now proceeding ahead for Private Leaf.")
             for private_leaf in private_leaf_objects:
                 analytics_required = self.analytics_verification(private_leaf)
                 if analytics_required:
@@ -174,10 +178,13 @@ class EdenAnalyticsEngine():
 
                     data['leaf_engagement_rate'] = leaf_engagement_rate
                     data['leaf_experience_rate'] = leaf_experience_rate
-                    self.run_middleware(private_leaf, data)
+                    self.run_middleware(data)
                     leaf_avg_points_map[private_leaf.leaf_id] = (leaf_engagement_rate, leaf_experience_rate)
 
             response = {'status': 100, 'data': leaf_avg_points_map}
+            print("> =========== <")
+            print(response)
             return response
         except Exception as E:
+            print(E)
             return {'status': 105}

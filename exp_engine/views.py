@@ -16,12 +16,13 @@ exp_engine_instance = EdenExperienceEngine()
 def initiate_exp_engine(request):
     if request.method == "POST":
         try:
-            pre_response = exp_engine_instance.intitate(request)
+            pre_response = exp_engine_instance.initiate(request)
             print(pre_response)
             return HttpResponse(
-                content=json.dumps({"status": 200, "message": pre_response["issue"]})
+                content=pre_response['message']
             )
         except Exception as E:
+             print("????")
              print(E)
              return HttpResponse(
                 content=json.dumps({"status": 200, "message": "Cannot unload data."})

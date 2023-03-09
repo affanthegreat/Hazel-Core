@@ -138,7 +138,7 @@ def remove_like_view(request):
             if field not in data.keys():
                 condition = False
         if condition:
-            response = ELM_object.dislike_leaf(request, data['leaf_id'])
+            response = ELM_object.remove_like(request, data['leaf_id'])
             return return_response(response)
         else:
             response = {}
@@ -149,6 +149,9 @@ def remove_like_view(request):
         return HttpResponse(
                 content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
         )
+    
+
+
 
 @csrf_exempt
 def add_comment_view(request):

@@ -19,7 +19,7 @@ class Leaf(models.Model):
     leaf_id = models.CharField(max_length=100, primary_key=True)
     image_content = models.ImageField()
     likes_count = models.BigIntegerField(default=0)
-    dilikes_count = models.BigIntegerField(default=0)
+    dislikes_count = models.BigIntegerField(default=0)
     comments_count = models.BigIntegerField(default=0)
     view_count = models.BigIntegerField(default=0)
     leaf_type = models.CharField(choices=LeafType.choices, max_length=30)

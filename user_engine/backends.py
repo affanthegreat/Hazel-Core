@@ -35,14 +35,17 @@ class EdenSessionManagement():
         return session_id
 
     def create_session(self, request, user):
-        session_id = self.generate_session_id()
-        encrypted = self.encrypt_session_id(session_id, user.user_password)
-        access_token_object = UserAccessToken()
-        access_token_object.user_session_id = session_id
-        access_token_object.user = user
-        access_token_object.save()
-        request.session["token"] = encrypted
-        request.session["auth_token"] = session_id
+        token = request.session.get('token', None)
+        auth_token = request.session.get('auth_token', None)
+        if not self.check_session(auth_token):
+            session_id = self.generate_session_id()
+            encrypted = self.encrypt_session_id(session_id, user.user_password)
+            access_token_object = UserAccessToken()
+            access_token_object.user_session_id = session_id
+            access_token_object.user = user
+            access_token_object.save()
+            request.session["token"] = encrypted
+            request.session["auth_token"] = session_id
 
     def delete_session(self, request):
         token = request.session.get('token', None)

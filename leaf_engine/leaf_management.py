@@ -102,6 +102,7 @@ class EdenLeafManagement:
     def dislike_leaf(self, request, leaf_id):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
+            print(self.check_dislike(leaf_id, user_object.user_id)["message"])
             if (
                 self.check_leaf(leaf_id)
                 and not self.check_dislike(leaf_id, user_object.user_id)["message"]
@@ -110,7 +111,7 @@ class EdenLeafManagement:
                 dislike_object.leaf = self.get_leaf_object(leaf_id)
                 dislike_object.disliked_by = user_object
                 dislike_object.save()
-                self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1)
+                print(self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1))
                 return -100
             else:
                 return -103
@@ -119,11 +120,13 @@ class EdenLeafManagement:
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_like(leaf_id, user_object.user_id)
+            print("===========")
             print(like_status)
             if self.check_leaf(leaf_id) and like_status["message"]:
                 like_object = self.get_like_object(leaf_id, user_object.user_id)
                 like_object.delete()
-                self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1)
+                print("=--")
+                print(self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1))
                 return -100
             else:
                 return -105
@@ -132,10 +135,11 @@ class EdenLeafManagement:
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_dislike(leaf_id, user_object.user_id)
+            print(like_status)
             if self.check_leaf(leaf_id) and like_status["message"]:
                 dislike_object = self.get_dislike_object(leaf_id, user_object.user_id)
                 dislike_object.delete()
-                self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1)
+                print(self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1))
                 return -100
             else:
                 return -105
@@ -258,14 +262,17 @@ class EdenLeafManagement:
         user_object = self.get_user_object(user_id)
         leaf_valid = self.check_leaf(leaf_id)
         response = {}
+        print(leaf_id,user_object)
         if user_object is not None and leaf_valid:
             leaf_object = self.get_leaf_object(leaf_id)
             leaf_like_object = LeafDisLikes.objects.filter(
                 leaf=leaf_object, disliked_by=user_object.user_id
             ).first()
+            print(leaf_like_object)
             response["status"] = -100
             response["message"] = leaf_like_object != None
             response["code"] = True
+
         else:
             response["status"] = -100
             response["code"] = False
@@ -292,7 +299,7 @@ class EdenLeafManagement:
         else:
             None
 
-    def get_like_object(self, leaf_id, user_id):
+    def get_dislike_object(self, leaf_id, user_id):
         leaf_info = self.check_dislike(leaf_id, user_id)["message"]
         if leaf_info:
             user_object = self.get_user_object(user_id)
