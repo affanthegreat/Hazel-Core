@@ -1,0 +1,7 @@
+from django.urls import path
+from exp_engine.views import *
+
+
+urlpatterns = [
+    path('run_exp_engine', initiate_exp_engine),
+]

@@ -57,3 +57,11 @@ class EdenUserMiddleWare():
         except:
             return False
     
+    def update_previous_experience_generation_date(self, date):
+        try:
+            self.user_object.previous_experience_generation_date = date
+            self.user_object.save()
+            return self.user_object.previous_experience_generation_date
+        except:
+            return False
+    

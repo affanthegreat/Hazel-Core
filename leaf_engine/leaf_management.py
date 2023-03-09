@@ -1,9 +1,11 @@
 import uuid
+from leaf_engine.middleware import EdenLeafMiddleware
 
 from leaf_engine.models import Leaf, LeafComments, LeafDisLikes, LeafLikes, LeafType
 from user_engine.backends import EdenSessionManagement
 from user_engine.models import UserProfile
 from user_engine.middleware import EdenUserMiddleWare
+from user_engine.user_management import EdenUserManagement
 
 session_management_object = EdenSessionManagement()
 
@@ -41,9 +43,25 @@ class EdenLeafManagement:
     def get_user_public_leaves(self, request):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
+            print(user_object)
             return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public).all()
         else:
             return -101
+    
+    def get_leaves(self, request, user_id):
+        follower_user = self.get_logged_in_user(request)
+        user_management_instance = EdenUserManagement()
+        if user_management_instance.check_user_exists({'user_id': user_id}):
+            following_object = user_management_instance.get_user_object(user_id)
+            if user_management_instance.check_following(following_object,follower_user):
+                return Leaf.objects.filter(owner=following_object).all()
+            else:
+                return Leaf.objects.filter(owner=following_object, leaf_type=LeafType.Public).all()
+        else:
+            return -101
+    
+
+
 
     def get_user_private_leaves(self, request):
         if self.is_authorised(request):
@@ -67,6 +85,7 @@ class EdenLeafManagement:
     def like_leaf(self, request, leaf_id):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
+            print(self.check_like(leaf_id, user_object.user_id)["message"])
             if (
                 self.check_leaf(leaf_id)
                 and not self.check_like(leaf_id, user_object.user_id)["message"]
@@ -221,6 +240,7 @@ class EdenLeafManagement:
             leaf_like_object = LeafLikes.objects.filter(
                 leaf=leaf_object, liked_by=user_object.user_id
             ).first()
+            print(leaf_like_object)
             response["status"] = -100
             response["message"] = leaf_like_object != None
             response["code"] = True
@@ -231,6 +251,7 @@ class EdenLeafManagement:
                 response["message"] = "Leaf doesn't exist."
             else:
                 response["message"] = "User doesn't exist"
+        print(response)
         return response
 
     def check_dislike(self, leaf_id, user_id):
@@ -315,7 +336,7 @@ class EdenLeafManagement:
                     return user_middleware_object.update_user_level(value)
 
     def run_leaf_middleware(self, leaf_object, operation, value):
-        leaf_middleware_object = EdenLeafManagement(leaf_object)
+        leaf_middleware_object = EdenLeafMiddleware(leaf_object)
         allowed_operations = ["update_likes", "update_dislikes", "update_comments", "update_views"]
         if operation not in allowed_operations:
             return False

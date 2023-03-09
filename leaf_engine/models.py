@@ -1,3 +1,4 @@
+import datetime
 from django.db import models
 from django.utils.translation import gettext as _
 
@@ -22,9 +23,9 @@ class Leaf(models.Model):
     comments_count = models.BigIntegerField(default=0)
     view_count = models.BigIntegerField(default=0)
     leaf_type = models.CharField(choices=LeafType.choices, max_length=30)
-    engagement_rating = models.DecimalField(default=0)
-    experience_rating = models.DecimalField(default=0)
-    previous_analytics_run = models.DateTimeField(default=None)
+    engagement_rating = models.DecimalField(default=0,decimal_places=2, max_digits=125)
+    experience_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
+    previous_analytics_run = models.DateTimeField(default=datetime.datetime.now())
 
 
 class LeafLikes(models.Model):

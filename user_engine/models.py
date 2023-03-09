@@ -17,7 +17,7 @@ class UserProfile(models.Model):
     user_universal_likes = models.BigIntegerField(default=0)
     user_universal_dislikes = models.BigIntegerField(default=0)
     user_universal_comments = models.BigIntegerField(default=0)
-    previous_experience_generation_date = models.DateTimeField(default=None)
+    previous_experience_generation_date = models.DateTimeField(default=datetime.datetime.now())
 
 
 class UserFollowing(models.Model):

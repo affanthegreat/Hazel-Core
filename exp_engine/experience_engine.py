@@ -15,7 +15,10 @@ class EdenExperienceEngine():
         self.engagement_points_weight = 0.6
 
     def experience_status_verification(self, user_object):
-        delta = self.time_of_running - user_object.previous_experience_generation_date
+        prev_date = user_object.previous_experience_generation_date
+        if prev_date == None:
+            return True
+        delta = self.time_of_running - prev_date
         return delta > timedelta(hours=6)
 
     def generate_exp_points(self, engagement_map, experience_map):
@@ -55,6 +58,7 @@ class EdenExperienceEngine():
             eden_user_middleware = EdenUserMiddleWare(user_object)
             eden_user_middleware.update_user_exp(total_user_exp)
             eden_user_middleware.update_user_level(level)
+            eden_user_middleware.update_previous_experience_generation_date(self.time_of_running)
             return True
         except Exception as e:
             return False
@@ -73,8 +77,8 @@ class EdenExperienceEngine():
             level = self.generate_level(total_user_exp)
             middleware_status = self.initiate_user_middleware(user_object, total_user_exp, level)
             if middleware_status:
-                return {'status': 100}
-        return {'status': 106}
+                return {'status': 100,'message': f"Experience Engine has completed it's task on user {user_object.user_id}. "}
+        return {'status': 106, "message": "User is either not logged-in or has gone through exp engine before delta period."}
 
 
 class EdenAnalyticsEngine():
@@ -94,7 +98,10 @@ class EdenAnalyticsEngine():
         self.private_view_weight = 0.7
 
     def analytics_verification(self, leaf_object):
-        delta = self.time_of_running - leaf_object.previous_analytics_run
+        prev_date =leaf_object.previous_analytics_run
+        if prev_date == None:
+            True
+        delta = self.time_of_running - prev_date
         return delta > timedelta(hours=6)
 
     def generate_engagement_rate(self, leaf_object):

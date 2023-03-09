@@ -2,13 +2,14 @@ from django.urls import path
 from user_engine.views import *
 
 urlpatterns = [
-    path('create_user', create_user_api),
-    path('validate_data', validate_user_api),
-    path('follow', follow_user_api),
-    path('get_followers', get_followers),
-    path('get_following', get_following),
-    path('login', login),
-    path('logout', logout),
-    path('current_user', current_user),
-    path('password_reset', password_reset)
+    path('create_user', create_user_api), #checked
+    path('validate_data', validate_user_api), #checked
+    path('follow', follow_user_api), #checked
+    path('unfollow',unfollow_user_api), #checked
+    path('get_followers', get_followers), #checked
+    path('get_following', get_following), #checked
+    path('login', login), #checked
+    path('logout', logout), #checked
+    path('current_user', current_user), #checked
+    path('password_reset', password_reset) #checked
 ]

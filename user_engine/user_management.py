@@ -91,24 +91,37 @@ class EdenUserManagement:
             follower_relationship = UserFollowing()
             follower_object = self.get_user_object(follower)
             following_object = self.get_user_object(follows)
-            follower_relationship.slave = follower_object
-            follower_relationship.master = following_object
-            print(follower_object, follower_object)
-            try:
-                follower_relationship.save()
-                self.run_user_middleware(following_object, "update_followers", 1)
+            if not self.check_follower(following_object,follower_object):
+                follower_relationship.slave = follower_object
+                follower_relationship.master = following_object
+                print(follower_object, follower_object)
+                try:
+                    follower_relationship.save()
+                    self.run_user_middleware(following_object, "update_followers", 1)
+                    response = {
+                        "status": 200,
+                        "message": f"{follower} added as follower added to {follows}",
+                    }
+                except Exception as E:
+                    print(E)
+                    response = {"status": 200, "message": "Error while adding the follower"}
+                print(response)
+                return response
+            else:
                 response = {
-                    "status": 200,
-                    "message": f"{follower} added as follower added to {follows}",
-                }
-            except Exception as E:
-                print(E)
-                response = {"status": 200, "message": "Error while adding the follower"}
-            print(response)
-            return response
+                        "status": 200,
+                        "message": f"{follower_object} already follows {following_object}",
+                    }
+                return response
         else:
             response = {"status": 200, "message": "One of the user does not exists."}
             print(response)
+
+    def check_follower(self, following_object, follower_object):
+        return UserFollowing.objects.filter(master=following_object, slave= follower_object).exists()
+
+    def check_following(self, following_object, follower_object):
+          return UserFollowing.objects.filter(slave=following_object, master= follower_object).exists()
 
     def user_unfollow(self, data):
         follower = data["follower"]
@@ -116,21 +129,32 @@ class EdenUserManagement:
         if self.check_user_exists({"user_id": follower}) and self.check_user_exists(
             {"user_id": follows}
         ):
-            request_data = {
-                'user_id': follower,
-                'sub_user': follows
-            }
-            followers_set = self.get_user_followers(request_data)
+            follower_object = self.get_user_object(follower)
+            following_object = self.get_user_object(follows)
+            if self.check_follower(following_object,follower_object):
+                UserFollowing.objects.filter(master=following_object, slave= follower_object).first().delete()
+                return {"status": 200, "message": f"{follower_object} successfully unfollowed {following_object}."}
+            else:
+                return {"status": 200, "message": f"{follower_object} doesn't follow {following_object}."}
 
     def get_user_followers(self, data):
         user_profile = data["user_id"]
         sub_user = data.get('sub_user', None)
+        print("======")
+        print(sub_user)
         if self.check_user_exists(data):
             user_profile_object = UserProfile.objects.filter(user_id=user_profile)
-            followers_query_set = UserFollowing.objects.filter(
-                master=user_profile, slave=sub_user
+            if sub_user == None:
+                 followers_query_set = UserFollowing.objects.filter(
+                master=user_profile
             ).all()
+            else:
+                followers_query_set = UserFollowing.objects.filter(
+                    master=user_profile, slave= sub_user
+                ).all()
             return list(followers_query_set.values())
+        else:
+            return {"User doesn't exist."}
 
     def get_user_following(self, data):
         user_profile = data["user_id"]

@@ -29,12 +29,15 @@ def create_leaf_view(request):
             response['messaage'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
 def get_user_public_leaves_view(request):
     if request.method == "GET":
-        data = json.loads(request.body)
         response = {}
         response_status = ELM_object.get_user_public_leaves(request)
         if response_status == -101:
@@ -42,12 +45,30 @@ def get_user_public_leaves_view(request):
             return response
         else:
             return JsonResponse(list(response_status.values()), safe=False)
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
+@csrf_exempt
+def get_leaves_view(request):
+    if request.method == "POST":
+        response = {}
+        data = json.loads(request.body)
+        response_status = ELM_object.get_leaves(request,data['user_id'])
+        if response_status == -101:
+            response['message'] = 'Auth Error.'
+            return response
+        else:
+            return JsonResponse(list(response_status.values()), safe=False)
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 @csrf_exempt
 def get_user_private_leaves_view(request):
     if request.method == "GET":
-        data = json.loads(request.body)
         response = {}
         response_status = ELM_object.get_user_private_leaves(request)
         if response_status == -101:
@@ -55,6 +76,10 @@ def get_user_private_leaves_view(request):
             return response
         else:
             return JsonResponse(list(response_status.values()), safe=False)
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -71,9 +96,13 @@ def delete_leaf_view(request):
             return return_response(response)
         else:
             response = {}
-            response['messaage'] = "Valid fields not found in request body"
+            response['message'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -90,9 +119,13 @@ def like_leaf_view(request):
             return return_response(response)
         else:
             response = {}
-            response['messaage'] = "Valid fields not found in request body"
+            response['message'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -109,10 +142,13 @@ def remove_like_view(request):
             return return_response(response)
         else:
             response = {}
-            response['messaage'] = "Valid fields not found in request body"
+            response['message'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
-
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 @csrf_exempt
 def add_comment_view(request):
@@ -129,9 +165,13 @@ def add_comment_view(request):
             return return_response(response)
         else:
             response = {}
-            response['messaage'] = "Valid fields not found in request body"
+            response['message'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -148,9 +188,13 @@ def remove_comment_view(request):
             return return_response(response)
         else:
             response = {}
-            response['messaage'] = "Valid fields not found in request body"
+            response['message'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -168,9 +212,13 @@ def get_all_likes(request):
             return JsonResponse(list(response.values()), safe=False)
         else:
             response = {}
-            response['messaage'] = "Valid fields not found in request body"
+            response['message'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -188,11 +236,13 @@ def get_all_comments(request):
             return JsonResponse(list(response.values()), safe=False)
         else:
             response = {}
-            response['messaage'] = "Valid fields not found in request body"
+            response['message'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
     else:
-        pass
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -210,10 +260,14 @@ def get_all_dislikes(request):
             return JsonResponse(list(response.values()), safe=False)
         else:
             response = {}
-            response['messaage'] = "Valid fields not found in request body"
+            response['message'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
-
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
+    
 
 @csrf_exempt
 def remove_dislike_view(request):
@@ -229,9 +283,13 @@ def remove_dislike_view(request):
             return return_response(response)
         else:
             response = {}
-            response['messaage'] = "Valid fields not found in request body"
+            response['message'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -251,3 +309,7 @@ def dislike_leaf_view(request):
             response['messaage'] = "Valid fields not found in request body"
             response['status'] = 200
             return return_response(response)
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )

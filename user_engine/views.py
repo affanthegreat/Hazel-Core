@@ -44,6 +44,9 @@ def validate_user_api(request):
              return HttpResponse(
                 content=json.dumps({"status": 200, "message": "Cannot unload data."})
             )
+    return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -59,6 +62,26 @@ def follow_user_api(request):
              return HttpResponse(
                 content=json.dumps({"status": 200, "message": "Cannot unload data."})
             )
+    return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
+
+@csrf_exempt
+def unfollow_user_api(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            pre_response = user_control_object.user_unfollow(data)
+            return HttpResponse(
+                content=json.dumps({"status": 200, "message": str(pre_response)})
+            )
+        except:
+             return HttpResponse(
+                content=json.dumps({"status": 200, "message": "Cannot unload data."})
+            )
+    return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -69,11 +92,16 @@ def get_followers(request):
             pre_response = user_control_object.get_user_followers(data)
             response = JsonResponse(pre_response, safe= False)
             return response
-        except:
+        except Exception as e:
+             print(e)
              return HttpResponse(
                 content=json.dumps({"status": 200, "message": "Cannot unload data."})
             )
-
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
+    
 @csrf_exempt
 def get_following(request):
     if request.method == "POST":
@@ -86,6 +114,10 @@ def get_following(request):
              return HttpResponse(
                 content=json.dumps({"status": 200, "message": "Cannot unload data."})
             )
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 @csrf_exempt
 def login(request):
@@ -97,18 +129,22 @@ def login(request):
             user = authenticate(request, username=username, password=password)
             if user != None:
                 session_management_object.create_session(request,user)
-                return HttpRespnse(
+                return HttpResponse(
                     content=json.dumps({"status": 200, "message": "Login successful."})
                 )
 
             return HttpResponse(
                 content=json.dumps({"status": 200, "message": "Login failed."})
             )
-        except:
+        except Exception as e:
+             print(e)
              return HttpResponse(
                 content=json.dumps({"status": 200, "message": "Cannot unload data."})
             )
-
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 @csrf_exempt
 def logout(request):
@@ -118,6 +154,10 @@ def logout(request):
         except KeyError:
             pass
         return HttpResponse("You're logged out.")
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -128,6 +168,10 @@ def current_user(request):
             'status': 200,
             'user_name': user.user_name if user != None else None
         }))
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -145,6 +189,10 @@ def password_reset(request):
              return HttpResponse(
                 content=json.dumps({"status": 200, "message": "Cannot unload data."})
             )
+    else:
+        return HttpResponse(
+                content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 def get_logged_in_user(request):
     return session_management_object.get_session_user(request)
