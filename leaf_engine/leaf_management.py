@@ -12,6 +12,11 @@ session_management_object = EdenSessionManagement()
 
 class EdenLeafManagement:
     def generate_leaf_id(self):
+        """AI is creating summary for generate_leaf_id
+
+        Returns:
+            [string]: a unique randomised leaf id
+        """       
         session_id = str(uuid.uuid4()).upper().replace("-", "")
         return session_id
 
@@ -19,6 +24,15 @@ class EdenLeafManagement:
         pass
 
     def create_leaf(self, request, data):
+        """AI is creating summary for create_leaf
+
+        Args:
+            request ([type]): Request Object from Django view point
+            data ([type]): [description]
+
+        Returns:
+            [type]: [description]
+        """        
         response = {}
         if self.get_logged_in_user(request):
             new_leaf_object = Leaf()
@@ -41,6 +55,14 @@ class EdenLeafManagement:
         return response
 
     def get_user_public_leaves(self, request):
+        """AI is creating summary for get_user_public_leaves
+
+        Args:
+            request ([type]): request object from django
+
+        Returns:
+            [type]: [description]
+        """        
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             print(user_object)
