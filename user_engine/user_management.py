@@ -91,7 +91,7 @@ class EdenUserManagement:
             follower_relationship = UserFollowing()
             follower_object = self.get_user_object(follower)
             following_object = self.get_user_object(follows)
-            if not self.check_follower(following_object,follower_object):
+            if not self.check_follower(following_object, follower_object):
                 follower_relationship.slave = follower_object
                 follower_relationship.master = following_object
                 print(follower_object, follower_object)
@@ -109,19 +109,19 @@ class EdenUserManagement:
                 return response
             else:
                 response = {
-                        "status": 200,
-                        "message": f"{follower_object} already follows {following_object}",
-                    }
+                    "status": 200,
+                    "message": f"{follower_object} already follows {following_object}",
+                }
                 return response
         else:
             response = {"status": 200, "message": "One of the user does not exists."}
             print(response)
 
     def check_follower(self, following_object, follower_object):
-        return UserFollowing.objects.filter(master=following_object, slave= follower_object).exists()
+        return UserFollowing.objects.filter(master=following_object, slave=follower_object).exists()
 
     def check_following(self, following_object, follower_object):
-          return UserFollowing.objects.filter(slave=following_object, master= follower_object).exists()
+        return UserFollowing.objects.filter(slave=following_object, master=follower_object).exists()
 
     def user_unfollow(self, data):
         follower = data["follower"]
@@ -131,8 +131,8 @@ class EdenUserManagement:
         ):
             follower_object = self.get_user_object(follower)
             following_object = self.get_user_object(follows)
-            if self.check_follower(following_object,follower_object):
-                UserFollowing.objects.filter(master=following_object, slave= follower_object).first().delete()
+            if self.check_follower(following_object, follower_object):
+                UserFollowing.objects.filter(master=following_object, slave=follower_object).first().delete()
                 return {"status": 200, "message": f"{follower_object} successfully unfollowed {following_object}."}
             else:
                 return {"status": 200, "message": f"{follower_object} doesn't follow {following_object}."}
@@ -145,12 +145,12 @@ class EdenUserManagement:
         if self.check_user_exists(data):
             user_profile_object = UserProfile.objects.filter(user_id=user_profile)
             if sub_user == None:
-                 followers_query_set = UserFollowing.objects.filter(
-                master=user_profile
-            ).all()
+                followers_query_set = UserFollowing.objects.filter(
+                    master=user_profile
+                ).all()
             else:
                 followers_query_set = UserFollowing.objects.filter(
-                    master=user_profile, slave= sub_user
+                    master=user_profile, slave=sub_user
                 ).all()
             return list(followers_query_set.values())
         else:

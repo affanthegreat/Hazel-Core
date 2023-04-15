@@ -78,7 +78,7 @@ class EdenExperienceEngine():
             level = self.generate_level(total_user_exp)
             middleware_status = self.initiate_user_middleware(user_object, total_user_exp, level)
             if middleware_status:
-                return {'status': 100,'message': f"Experience Engine has completed it's task on user {user_object.user_id}. "}
+                return {'status': 100, 'message': f"Experience Engine has completed it's task on user {user_object.user_id}. "}
         return {'status': 106, "message": "User is either not logged-in or has gone through exp engine before delta period."}
 
 
@@ -100,7 +100,7 @@ class EdenAnalyticsEngine():
         self.private_view_weight = 0.7
 
     def analytics_verification(self, leaf_object):
-        prev_date =leaf_object.previous_analytics_run
+        prev_date = leaf_object.previous_analytics_run
         if prev_date == None:
             True
         delta = self.time_of_running - prev_date

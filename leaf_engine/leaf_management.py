@@ -12,11 +12,14 @@ session_management_object = EdenSessionManagement()
 
 class EdenLeafManagement:
     def generate_leaf_id(self):
-        """AI is creating summary for generate_leaf_id
+        """
+        Generate a unique identifier for a leaf node.
 
+        The function generates a unique identifier for a leaf node by creating a session ID using the uuid module.
         Returns:
-            [string]: a unique randomised leaf id
-        """       
+        A string representing the generated session ID.
+
+        """
         session_id = str(uuid.uuid4()).upper().replace("-", "")
         return session_id
 
@@ -24,15 +27,27 @@ class EdenLeafManagement:
         pass
 
     def create_leaf(self, request, data):
-        """AI is creating summary for create_leaf
+        """
+        Create a new leaf object with provided data.
+
+        This function creates a new leaf object with the given data by first checking if the user is logged in or not.
+        If the user is logged in, it creates a new Leaf object with the provided data such as text content, image content,
+        leaf type, and generates a unique ID for the new leaf object using the generate_leaf_id() method.
+        After creating the new Leaf object, it is saved to the database and the user's middleware is updated accordingly.
+        If the leaf type is Private, the user's "update_private_leaf" middleware is updated. If the leaf type is Public, the
+        user's "update_public_leaf" middleware is updated.
 
         Args:
-            request ([type]): Request Object from Django view point
-            data ([type]): [description]
+        request: HttpRequest object representing the incoming request.
+        data: A dictionary containing the necessary data for creating a new Leaf object.
 
         Returns:
-            [type]: [description]
-        """        
+        A dictionary with the following keys:
+        - status: An integer representing the status code of the response.
+        - message: A string representing the message of the response.
+        - code: A boolean value indicating the success or failure of the operation.
+        """
+
         response = {}
         if self.get_logged_in_user(request):
             new_leaf_object = Leaf()
@@ -55,37 +70,70 @@ class EdenLeafManagement:
         return response
 
     def get_user_public_leaves(self, request):
-        """AI is creating summary for get_user_public_leaves
+        """
+        Retrieve all public leaf objects associated with the logged-in user.
+
+        This function retrieves all public leaf objects associated with the logged-in user. If the user is not logged in or
+        not authorized to access the resource, it returns a status code of -101.
 
         Args:
-            request ([type]): request object from django
+        request: HttpRequest object representing the incoming request.
 
         Returns:
-            [type]: [description]
-        """        
+        If the user is authorized, a QuerySet containing all the public leaf objects associated with the logged-in user
+        is returned. Otherwise, a status code of -101 is returned to indicate unauthorized access.
+        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             print(user_object)
             return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public).all()
         else:
             return -101
-    
+
     def get_leaves(self, request, user_id):
+        """
+        Retrieve all leaf objects associated with a given user ID.
+
+        This function retrieves all leaf objects associated with a given user ID by first checking if the logged-in user is
+        authorized to access the resource. If the user is authorized and the user ID exists, it returns all leaf objects
+        associated with the user ID. If the logged-in user is not following the user with the given ID, it returns only the
+        public leaf objects. If the user ID does not exist, it returns a status code of -101.
+
+        Args:
+        request: HttpRequest object representing the incoming request.
+        user_id: A string representing the user ID whose leaf objects need to be retrieved.
+
+        Returns:
+        If the user is authorized and the user ID exists, a QuerySet containing all the leaf objects associated with the
+        user ID is returned. If the logged-in user is not following the user with the given ID, it returns only the public
+        leaf objects. If the user ID does not exist, a status code of -101 is returned to indicate the non-existence of the
+        user.
+        """
         follower_user = self.get_logged_in_user(request)
         user_management_instance = EdenUserManagement()
         if user_management_instance.check_user_exists({'user_id': user_id}):
             following_object = user_management_instance.get_user_object(user_id)
-            if user_management_instance.check_following(following_object,follower_user):
+            if user_management_instance.check_following(following_object, follower_user):
                 return Leaf.objects.filter(owner=following_object).all()
             else:
                 return Leaf.objects.filter(owner=following_object, leaf_type=LeafType.Public).all()
         else:
             return -101
-    
-
-
 
     def get_user_private_leaves(self, request):
+        """
+        Retrieve all private leaf objects associated with the logged-in user.
+
+        This function retrieves all private leaf objects associated with the logged-in user. If the user is not logged in or
+        not authorized to access the resource, it returns a status code of -101.
+
+        Args:
+        request: HttpRequest object representing the incoming request.
+
+        Returns:
+        If the user is authorized, a QuerySet containing all the private leaf objects associated with the logged-in user
+        is returned. Otherwise, a status code of -101 is returned to indicate unauthorized access.
+        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Private).all()
@@ -93,6 +141,23 @@ class EdenLeafManagement:
             return -101
 
     def delete_leaf(self, request, leaf_id):
+        """
+        Delete the leaf object with the given ID if authorized.
+
+        This function deletes the leaf object with the given ID if the logged-in user is authorized to do so. If the user is
+        not authorized, it returns a status code of -102. If the leaf object does not exist, an appropriate error message is
+        returned.
+
+        Args:
+        request: HttpRequest object representing the incoming request.
+        leaf_id: A string representing the ID of the leaf object that needs to be deleted.
+
+        Returns:
+        A dictionary containing the response message indicating whether the leaf object was successfully deleted or not.
+        If the logged-in user is authorized and the leaf object exists, a message of -100 is returned indicating
+        successful deletion. If the user is not authorized, a message of -102 is returned. If the leaf object does not
+        exist, an appropriate error message is returned.
+        """
         if self.is_authorised(request):
             response = {}
             user_object = self.get_logged_in_user(request)
@@ -105,6 +170,23 @@ class EdenLeafManagement:
             return response
 
     def like_leaf(self, request, leaf_id):
+        """
+        Like a leaf if authorized and not already liked by the user.
+
+        This function allows a logged-in user to like a leaf object if the user is authorized and the leaf object has not been
+        liked by the user before. If the user is not authorized or the leaf object has already been liked by the user, it
+        returns an appropriate error message.
+
+        Args:
+        request: HttpRequest object representing the incoming request.
+        leaf_id: A string representing the ID of the leaf object that the user wants to like.
+
+        Returns:
+        If the logged-in user is authorized and the leaf object has not been liked by the user before, the function
+        creates a new LeafLikes object and returns a status code of -100 indicating successful liking of the leaf object.
+        If the user is not authorized, a status code of -101 is returned. If the leaf object does not exist, an appropriate
+        error message is returned. If the leaf object has already been liked by the user, a status code of -103 is returned.
+        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             print(self.check_like(leaf_id, user_object.user_id)["message"])
@@ -122,6 +204,17 @@ class EdenLeafManagement:
                 return -103
 
     def dislike_leaf(self, request, leaf_id):
+        """
+        Dislikes a leaf identified by the given leaf_id and associates the dislike with the currently logged-in user.
+
+        Args:
+            request: The HTTP request object containing metadata about the request.
+            leaf_id: The unique identifier of the leaf to be disliked.
+
+        Returns:
+            Returns -100 if the dislike operation was successful, indicating that the leaf was successfully disliked.
+            Returns -103 if the dislike operation was unsuccessful, indicating that the leaf could not be disliked, either because it does not exist or because the user has already disliked the leaf.
+        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             print(self.check_dislike(leaf_id, user_object.user_id)["message"])
@@ -139,6 +232,17 @@ class EdenLeafManagement:
                 return -103
 
     def remove_like(self, request, leaf_id):
+        """
+        The remove_like function takes a request and leaf_id as input parameters, and removes the like on a leaf if it exists. It first checks if the request is authorized, then gets the logged-in user object and checks the like status of the leaf for that user. If the leaf exists and the user has liked it, the like object is retrieved and deleted, and the update_likes middleware is run to update the like count. The function returns -100 if the like is successfully removed, and -105 if the user has not liked the leaf or the leaf does not exist.
+        Args:
+
+        request: A HttpRequest object that contains metadata about the request.
+        leaf_id: An integer value representing the ID of the leaf that the user is attempting to remove the like from.
+        Returns:
+
+        -100 if the like is successfully removed.
+        -105 if the user has not liked the leaf or the leaf does not exist.
+        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_like(leaf_id, user_object.user_id)
@@ -154,6 +258,18 @@ class EdenLeafManagement:
                 return -105
 
     def remove_dislike(self, request, leaf_id):
+        """
+        Removes a dislike for a leaf by the logged in user.
+
+        Parameters:
+
+        request: HttpRequest object containing metadata about the current request.
+        leaf_id: Integer representing the ID of the leaf to remove the dislike for.
+        Returns:
+
+        Integer -100 if the dislike was successfully removed, -105 if the dislike was not found.
+        This function checks if the request is authorized and obtains the user object for the logged in user. It then checks if the specified leaf exists and if the user has previously disliked it. If both conditions are met, the function retrieves the dislike object and deletes it. Finally, the function runs the 'update_dislikes' middleware for the specified leaf and returns -100 to indicate success or -105 if the dislike was not found.
+        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_dislike(leaf_id, user_object.user_id)
@@ -167,24 +283,74 @@ class EdenLeafManagement:
                 return -105
 
     def get_total_likes(self, leaf_id):
+        """
+        This function returns the total number of likes for a given leaf.
+
+        Args:
+        leaf_id (int): The ID of the leaf for which the total number of likes is requested.
+
+        Returns:
+        QuerySet or int: If the leaf exists, the function returns a QuerySet object containing all the likes for the given leaf. If the leaf does not exist, it returns -104.
+        """
         if self.check_leaf(leaf_id):
             return LeafLikes.objects.filter(leaf_id=leaf_id)
         else:
             return -104
 
     def get_total_dislikes(self, leaf_id):
+        """
+        Returns the total number of dislikes for the given leaf identified by `leaf_id`.
+
+        Args:
+            leaf_id (int): The ID of the leaf to get the total number of dislikes for.
+
+        Returns:
+            If the leaf exists, the function returns a queryset of all `LeafDisLikes` instances for the given `leaf_id`.
+            If the leaf doesn't exist, the function returns -104.
+        """
         if self.check_leaf(leaf_id):
             return LeafDisLikes.objects.filter(leaf_id=leaf_id)
         else:
             return -104
 
     def get_total_comments(self, request, leaf_id):
+        """
+        Return the total number of comments for the given leaf_id.
+
+        If the given leaf_id exists in the database, return the queryset containing all the LeafComments objects
+        associated with the leaf_id. Otherwise, return -104.
+
+        Parameters:
+        - request (HttpRequest): The HTTP request object.
+        - leaf_id (int): The ID of the leaf for which total comments need to be calculated.
+
+        Returns:
+        If leaf_id exists in the database, return the queryset containing all the LeafComments objects
+        associated with the leaf_id. Otherwise, return -104.
+
+        """
         if self.check_leaf(leaf_id):
             return LeafComments.objects.filter(leaf_id=leaf_id)
         else:
             return -104
 
     def add_comment(self, request, leaf_id, comment_string):
+        """
+        Add a new comment to the specified leaf.
+
+        Args:
+        - request: HttpRequest object representing the incoming request.
+        - leaf_id: integer representing the ID of the leaf to add the comment to.
+        - comment_string: string representing the comment text to be added.
+
+        Returns:
+        - integer: returns -100 if the comment was successfully added.
+                returns -101 if the user is not authorized.
+                returns -103 if an exception occurs.
+                returns -106 if the comment_string is None.
+                returns -108 if the comment already exists for the given leaf_id.
+
+        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             comment_status = self.check_comment(leaf_id, user_object.user_id)
@@ -207,6 +373,19 @@ class EdenLeafManagement:
             return -101
 
     def remove_comment(self, request, leaf_id):
+        """
+        Removes a comment from a leaf object if it exists and if the user making the request is authorized to do so.
+
+        Args:
+        - request: a HTTP request object
+        - leaf_id: an integer representing the ID of the leaf object
+
+        Returns:
+        - an integer code indicating the result of the operation:
+            - -100: comment removed successfully
+            - -101: user not authorized to perform the action
+            - -105: comment not found or unexpected error occurred
+        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             comment_status = self.check_comment(leaf_id, user_object.user_id)
@@ -223,6 +402,17 @@ class EdenLeafManagement:
         pass
 
     def add_view(self, request, leaf_id):
+        """
+        This function adds a view to a leaf object and returns a status code.
+
+        Args:
+        request: An HTTP request object.
+        leaf_id: An integer representing the ID of the leaf object.
+
+        Returns:
+        -100 if the view was successfully added.
+        -105 if the view could not be added due to an exception.
+        """
         if self.is_authorised(request):
             try:
                 if self.check_leaf(leaf_id):
@@ -233,10 +423,35 @@ class EdenLeafManagement:
                 return -105
 
     def check_leaf(self, leaf_id):
+        """
+        This function checks whether a given leaf_id exists in the database by querying the Leaf model. If a Leaf object with the specified leaf_id exists, it returns True, otherwise it returns False.
+
+        The function takes a single argument:
+
+        leaf_id: A string representing the leaf_id of the Leaf object to be checked.
+        Returns:
+
+        True if a Leaf object with the specified leaf_id exists in the database.
+        False otherwise.
+        """
         leaf_object = Leaf.objects.filter(leaf_id=leaf_id).first()
         return leaf_object is not None
 
     def check_comment(self, leaf_id, user_id):
+        """
+        The check_comment function checks if a comment exists on a given leaf_id for a given user_id. It returns a dictionary containing the status, message, and code keys.
+
+        Args:
+
+        leaf_id (int): The id of the leaf to check the comment on.
+        user_id (int): The id of the user who commented on the leaf.
+        Returns:
+
+        A dictionary containing the following keys:
+        status (int): The status code indicating the outcome of the check. Returns -100 if the comment exists, -104 if the leaf doesn't exist or the user doesn't exist.
+        message (str): A message indicating if the comment exists on the leaf for the given user_id.
+        code (bool): A boolean value indicating if the check was successful. If True, the comment exists. If False, it does not.
+        """
         user_object = self.get_user_object(user_id)
         leaf_valid = self.check_leaf(leaf_id)
         response = {}
@@ -258,6 +473,23 @@ class EdenLeafManagement:
         return response
 
     def check_like(self, leaf_id, user_id):
+        """Check whether a user has liked a leaf or not.
+
+        Args:
+            leaf_id (int): The id of the leaf to check for likes.
+            user_id (int): The id of the user to check if they have liked the leaf.
+
+        Returns:
+            dict: A dictionary containing the following keys:
+                  - "status": An integer status code indicating the result of the operation.
+                  - "message": A boolean value indicating whether the user has liked the leaf or not.
+                  - "code": A boolean value indicating whether the operation was successful or not.
+
+        Possible status codes:
+            - -100: The operation was successful.
+            - -104: The leaf doesn't exist.
+            - -100: The user doesn't exist.
+        """
         user_object = self.get_user_object(user_id)
         leaf_valid = self.check_leaf(leaf_id)
         response = {}
@@ -281,10 +513,26 @@ class EdenLeafManagement:
         return response
 
     def check_dislike(self, leaf_id, user_id):
+        """
+        Check if a given user has disliked a leaf with the given id.
+
+        Args:
+        - leaf_id (int): id of the leaf to be checked.
+        - user_id (int): id of the user whose dislike is to be checked.
+
+        Returns:
+        - response (dict): a dictionary with the following keys:
+            - 'status' (int): status code of the operation (-100 for success, and -1XX for error).
+            - 'message' (str): a message indicating whether the user has disliked the leaf or not.
+            - 'code' (bool): a flag indicating whether the operation was successful or not.
+
+        Raises:
+        - None.
+        """
         user_object = self.get_user_object(user_id)
         leaf_valid = self.check_leaf(leaf_id)
         response = {}
-        print(leaf_id,user_object)
+        print(leaf_id, user_object)
         if user_object is not None and leaf_valid:
             leaf_object = self.get_leaf_object(leaf_id)
             leaf_like_object = LeafDisLikes.objects.filter(
@@ -305,14 +553,41 @@ class EdenLeafManagement:
         return response
 
     def get_leaf_object(self, leaf_id):
+        """
+        Return the leaf object with the given leaf_id if it exists, otherwise return None.
+        Args:
+            leaf_id (int): The ID of the leaf object to retrieve.
+
+        Returns:
+            Leaf or None: The leaf object with the given leaf_id, or None if it does not exist.
+        """
         if self.check_leaf(leaf_id):
             return Leaf.objects.filter(leaf_id=leaf_id).first()
 
     def get_comment_object(self, leaf_id, user_id):
+        """
+        Return the comment object with the given leaf_id and user_id if the leaf exists, otherwise return None.
+
+        Args:
+            leaf_id (int): The ID of the leaf object to retrieve the comment for.
+            user_id (int): The ID of the user who made the comment.
+
+        Returns:
+            LeafComments or None: The comment object with the given leaf_id and user_id, or None if the leaf does not exist.
+        """
         if self.check_leaf(leaf_id):
             return Leaf.objects.filter(leaf_id=leaf_id)
 
     def get_like_object(self, leaf_id, user_id):
+        """Return the like object with the given leaf_id and user_id if the leaf exists and the user has liked it, otherwise return None.
+
+        Args:
+            leaf_id (int): The ID of the leaf object to retrieve the like for.
+            user_id (int): The ID of the user who made the like.
+
+        Returns:
+            LeafLikes or None: The like object with the given leaf_id and user_id, or None if the leaf does not exist or the user has not liked it.
+        """
         leaf_info = self.check_like(leaf_id, user_id)["message"]
         if leaf_info:
             user_object = self.get_user_object(user_id)
@@ -322,6 +597,15 @@ class EdenLeafManagement:
             None
 
     def get_dislike_object(self, leaf_id, user_id):
+        """Return the dislike object with the given leaf_id and user_id if the leaf exists and the user has disliked it, otherwise return None.
+
+        Args:
+            leaf_id (int): The ID of the leaf object to retrieve the dislike for.
+            user_id (int): The ID of the user who made the dislike.
+
+        Returns:
+            LeafDisLikes or None: The dislike object with the given leaf_id and user_id, or None if the leaf does not exist or the user has not disliked it.
+        """
         leaf_info = self.check_dislike(leaf_id, user_id)["message"]
         if leaf_info:
             user_object = self.get_user_object(user_id)
@@ -331,6 +615,14 @@ class EdenLeafManagement:
             None
 
     def is_authorised(self, request) -> bool:
+        """Check if the given request is authorized.
+
+        Args:
+            request (HttpRequest): The HTTP request to check.
+
+        Returns:
+            bool: True if the request is authorized, False otherwise.
+        """
         return session_management_object.current_session(
             request
         ) != None and session_management_object.check_session(
@@ -338,12 +630,43 @@ class EdenLeafManagement:
         )
 
     def get_logged_in_user(self, request):
+        """Return the logged in user for the given request.
+
+        Args:
+            request (HttpRequest): The HTTP request to get the logged in user for.
+
+        Returns:
+            User or None: The logged in user for the given request, or None if no user is logged in.
+        """
         return session_management_object.get_session_user(request)
 
     def get_user_object(self, user_id):
+        """Return the user object with the given user_id if it exists, otherwise return None.
+
+        Args:
+            user_id (int): The ID of the user object to retrieve.
+
+        Returns:
+            UserProfile or None: The user object with the given user_id, or None if it does not exist.
+        """
         return UserProfile.objects.filter(user_id=user_id).first()
 
     def run_user_middleware(self, user_object, operation, value):
+        """
+        Run middleware operation on user object.
+        Args:
+            user_object (UserProfile): The user object on which to run the middleware operation.
+            operation (str): The middleware operation to run. Must be one of 'update_public_leaf', 
+                            'update_private_leaf', 'update_followers', 'update_following', 
+                            'update_user_exp', or 'update_user_level'.
+            value (int): The value to use for the middleware operation.
+
+        Returns:
+            The result of the middleware operation.
+
+        Raises:
+            None
+        """
         user_middleware_object = EdenUserMiddleWare(user_object)
         allowed_operations = ['update_public_leaf', "update_private_leaf",
                               "update_followers", "update_following", "update_user_exp", "update_user_level"]
@@ -365,6 +688,18 @@ class EdenLeafManagement:
                     return user_middleware_object.update_user_level(value)
 
     def run_leaf_middleware(self, leaf_object, operation, value):
+        """
+        Call the appropriate method of EdenLeafMiddleware class based on the given operation.
+        Args:
+            leaf_object (Leaf): The leaf object to perform the operation on.
+            operation (str): The name of the operation to perform. Must be one of "update_likes",
+                "update_dislikes", "update_comments", or "update_views".
+            value (int): The value to pass to the operation method.
+
+        Returns:
+            The return value of the appropriate operation method, or False if the operation is not allowed.
+
+        """
         leaf_middleware_object = EdenLeafMiddleware(leaf_object)
         allowed_operations = ["update_likes", "update_dislikes", "update_comments", "update_views"]
         if operation not in allowed_operations:

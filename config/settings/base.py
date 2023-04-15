@@ -306,3 +306,28 @@ SPECTACULAR_SETTINGS = {
 }
 # Your stuff...
 # ------------------------------------------------------------------------------
+
+DATABASE_ROUTERS = ['eden_DBrouter.router.EdenDBRouter']
+DATABASE_APPS_MAPPING = {'user_data': 'user_db',
+                         'leaf_data': 'leaf_db'}
+
+DATABASES = {
+    "default": {
+        "NAME": "default_data",
+        "ENGINE": "django.db.backends.sqlite3",
+        "USER": "mysql_user",
+        "PASSWORD": "swordfish",
+    },
+    "user_db": {
+        "NAME": "user_data",
+        "ENGINE": "django.db.backends.sqlite3",
+        "USER": "mysql_user",
+        "PASSWORD": "swordfish",
+    },
+    "leaf_db": {
+        "NAME": "leaf_data",
+        "ENGINE": "django.db.backends.sqlite3",
+        "USER": "mysql_user",
+        "PASSWORD": "spam",
+    },
+}

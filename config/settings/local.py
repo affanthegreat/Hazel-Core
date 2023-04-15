@@ -62,22 +62,3 @@ INSTALLED_APPS += ["django_extensions"]  # noqa F405
 
 # Your stuff...
 # ------------------------------------------------------------------------------
-DATABASE_ROUTERS = ['eden_DBrouter.router.py']
-DATABASE_APPS_MAPPING = {'user_data': 'user_db',
-                        'leaf_data':'leaf_db'}
-
-DATABASES = {
-    'default': {},
-    'user_db':{
-        'NAME': 'user_data',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': 'root',
-        'PASSWORD': 'password'
-    },
-    'leaf_db': {
-        'NAME': 'leaf_data',
-        'ENGINE': 'django.db.backends.mysql',
-        'USER': 'mysql_cust',
-        'PASSWORD': 'root'
-    }
-}

@@ -12,6 +12,7 @@ from exp_engine.experience_engine import *
 
 exp_engine_instance = EdenExperienceEngine()
 
+
 @csrf_exempt
 def initiate_exp_engine(request):
     if request.method == "POST":
@@ -22,8 +23,8 @@ def initiate_exp_engine(request):
                 content=pre_response['message']
             )
         except Exception as E:
-             print("????")
-             print(E)
-             return HttpResponse(
+            print("????")
+            print(E)
+            return HttpResponse(
                 content=json.dumps({"status": 200, "message": "Cannot unload data."})
             )
