@@ -26,7 +26,7 @@ class Leaf(models.Model):
     engagement_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     experience_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     previous_analytics_run = models.DateTimeField(default=datetime.datetime.now())
-
+    leaf_category = models.CharField(max_length=50,null=False)
 
 class LeafLikes(models.Model):
     leaf = models.ForeignKey(
