@@ -1,4 +1,6 @@
 import datetime
+import uuid
+
 from django.db import models
 from django.utils.translation import gettext as _
 
@@ -16,7 +18,7 @@ class Leaf(models.Model):
         UserProfile, related_name="creator", on_delete=models.DO_NOTHING
     )
     text_content = models.CharField(max_length=400, null=False)
-    leaf_id = models.CharField(max_length=100, primary_key=True)
+    leaf_id = models.CharField(max_length=100, blank=True, unique=True, default=uuid.uuid4)
     image_content = models.ImageField()
     likes_count = models.BigIntegerField(default=0)
     dislikes_count = models.BigIntegerField(default=0)
@@ -26,9 +28,9 @@ class Leaf(models.Model):
     engagement_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     experience_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     previous_analytics_run = models.DateTimeField(default=datetime.datetime.now())
-    leaf_category = models.CharField(max_length=50,null=False)
 
 class LeafLikes(models.Model):
+    like_id = models.CharField(max_length=100, blank=True, unique=True, default=uuid.uuid4)
     leaf = models.ForeignKey(
         Leaf, related_name="creator_comment_leaf", on_delete=models.CASCADE
     )
@@ -38,6 +40,7 @@ class LeafLikes(models.Model):
 
 
 class LeafDisLikes(models.Model):
+    dislike_id = models.CharField(max_length=100, blank=True, unique=True, default=uuid.uuid4)
     leaf = models.ForeignKey(
         Leaf, related_name="content_leaf", on_delete=models.CASCADE
     )
@@ -47,6 +50,7 @@ class LeafDisLikes(models.Model):
 
 
 class LeafComments(models.Model):
+    comment_id = models.CharField(max_length=100, blank=True, unique=True, default=uuid.uuid4)
     leaf = models.ForeignKey(
         Leaf, related_name="creator_leaf", on_delete=models.CASCADE
     )

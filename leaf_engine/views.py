@@ -164,7 +164,6 @@ def add_comment_view(request):
                 condition = False
         if condition:
             response = ELM_object.add_comment(request, data['leaf_id'], data['comment_string'])
-            print("here", response)
             return return_response(response)
         else:
             response = {}
@@ -307,6 +306,37 @@ def dislike_leaf_view(request):
         if condition:
             response = ELM_object.dislike_leaf(request, data['leaf_id'])
             return return_response(response)
+        else:
+            response = {}
+            response['messaage'] = "Valid fields not found in request body"
+            response['status'] = 200
+            return return_response(response)
+    else:
+        return HttpResponse(
+            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
+
+
+#TODO Testing
+@csrf_exempt
+def add_sub_comment_view(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        valid_fields = ['leaf_id', 'comment_string','parent_comment_id']
+        condition = True
+        for field in valid_fields:
+            if field not in data.keys():
+                condition = False
+        if condition:
+            object_creation_status = json.loads((add_comment_view(request).content).decode('utf-8'))
+            if object_creation_status['status_code'] == -100:
+                leaf_comment_object = ELM_object.get_leaf_comment_object_with_id(object_creation_status['leaf_comment_id'])
+                parent_object = ELM_object.get_leaf_comment_object_with_id(data['parent_comment_id'])
+                if not ELM_object.check_subcomment(object_creation_status['leaf_comment_id'],data['parent_comment_id']):
+                    leaf_comment_object.parent_comment= parent_object
+                    return return_response(-100)
+                else:
+                    return return_response(-103)
         else:
             response = {}
             response['messaage'] = "Valid fields not found in request body"

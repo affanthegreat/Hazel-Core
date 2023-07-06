@@ -344,7 +344,7 @@ class EdenLeafManagement:
         - comment_string: string representing the comment text to be added.
 
         Returns:
-        - integer: returns -100 if the comment was successfully added.
+        - integer: returns -100 and leaf_comment_id if the comment was successfully added.
                 returns -101 if the user is not authorized.
                 returns -103 if an exception occurs.
                 returns -106 if the comment_string is None.
@@ -364,7 +364,11 @@ class EdenLeafManagement:
                         leaf_comment_object.comment = comment_string
                         leaf_comment_object.save()
                         self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", 1)
-                        return -100
+                        response = {
+                            'status_code':-100,
+                            'leaf_comment_id':leaf_comment_object.comment_id
+                        }
+                        return response
                 except Exception as E:
                     return -103
             else:
@@ -422,6 +426,49 @@ class EdenLeafManagement:
             except Exception:
                 return -105
 
+    #TODO Testing
+    def add_sub_comment_db(self, leaf_comment_id, leaf_comment_parent_id):
+        """
+        Adds a sub-comment to the database with the specified leaf_comment_id and leaf_comment_parent_id.
+
+        If the sub-comment relationship between the given IDs already exists, the function does nothing and returns -100.
+        If an exception occurs during the save operation, the function returns -105.
+
+        Args:
+            leaf_comment_id (int): The ID of the sub-comment to be added.
+            leaf_comment_parent_id (int): The ID of the parent comment to which the sub-comment should be added.
+
+        Returns:
+            int: -100 if the sub-comment relationship already exists, -105 if an exception occurs during the save operation.
+        """
+        if self.check_subcomment(leaf_comment_id,leaf_comment_parent_id):
+            comment_object = LeafComments.objects.filter(comment_id= leaf_comment_id)
+            parent_object = LeafComments.objects.filter(comment_id= leaf_comment_parent_id)
+            comment_object.parent_comment =  parent_object
+            try:
+                comment_object.save()
+                return -100
+            except Exception:
+                return -105
+
+    # TODO Testing
+    def check_subcomment(self,comment_id,parent_comment_id):
+        """
+        Checks if a comment with the given comment_id is a sub-comment of the comment with the specified parent_comment_id.
+
+        Args:
+            comment_id (int): The ID of the comment to be checked.
+            parent_comment_id (int): The ID of the parent comment to which the sub-comment should belong.
+
+        Returns:
+            bool: True if the comment with comment_id is a sub-comment of the comment with parent_comment_id, False otherwise.
+        """
+        relation_object = LeafComments.objects.filter(comment_id= comment_id)
+        parent_comment_object = LeafComments.objects.filter(comment_id= parent_comment_id)
+        if relation_object is None or relation_object.parent_comment != parent_comment_object:
+            return False
+        return True
+
     def check_leaf(self, leaf_id):
         """
         This function checks whether a given leaf_id exists in the database by querying the Leaf model. If a Leaf object with the specified leaf_id exists, it returns True, otherwise it returns False.
@@ -461,7 +508,7 @@ class EdenLeafManagement:
                 leaf=leaf_object, commented_by=user_object.user_id
             ).first()
             response["status"] = -100
-            response["message"] = leaf_comment_object != None
+            response["message"] = leaf_comment_object is not None
             response["code"] = True
         else:
             response["status"] = -104
@@ -650,6 +697,19 @@ class EdenLeafManagement:
             UserProfile or None: The user object with the given user_id, or None if it does not exist.
         """
         return UserProfile.objects.filter(user_id=user_id).first()
+
+
+    # TODO Testing
+    def get_leaf_comment_object_with_id(self,leaf_comment_id)
+        """Retrieves the LeafComments object with the specified leaf_comment_id from the database.
+
+        Args:
+            leaf_comment_id (int): The ID of the LeafComments object to retrieve.
+
+        Returns:
+            LeafComments or None: The LeafComments object corresponding to the leaf_comment_id if found, or None if not found.
+        """
+        return LeafComments.objects.filter(comment_id= leaf_comment_id).first()
 
     def run_user_middleware(self, user_object, operation, value):
         """
