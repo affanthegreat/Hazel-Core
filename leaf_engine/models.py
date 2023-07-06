@@ -54,3 +54,4 @@ class LeafComments(models.Model):
         UserProfile, related_name="commented_user", on_delete=models.DO_NOTHING
     )
     comment = models.CharField(max_length=100, null=False)
+    parent_comment = models.ForeignKey('self',null=True,blank=True,on_delete=models.CASCADE,related_name='replies')
