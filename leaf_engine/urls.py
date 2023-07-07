@@ -16,7 +16,8 @@ urlpatterns = [
     path('get_all_dislikes', get_all_dislikes),
     path('dislike_leaf', dislike_leaf_view),
     path('remove_dislike', remove_dislike_view),
-    path('get_leaves', get_leaves_view)
+    path('get_leaves', get_leaves_view),
+    path('add_sub_comment',add_sub_comment_view)
 ]
 
 # TODO implement dislike views

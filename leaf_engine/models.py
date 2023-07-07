@@ -18,7 +18,7 @@ class Leaf(models.Model):
         UserProfile, related_name="creator", on_delete=models.DO_NOTHING
     )
     text_content = models.CharField(max_length=400, null=False)
-    leaf_id = models.CharField(max_length=100, blank=True, unique=True, default=uuid.uuid4)
+    leaf_id = models.CharField(max_length=100,primary_key=True)
     image_content = models.ImageField()
     likes_count = models.BigIntegerField(default=0)
     dislikes_count = models.BigIntegerField(default=0)
@@ -30,7 +30,7 @@ class Leaf(models.Model):
     previous_analytics_run = models.DateTimeField(default=datetime.datetime.now())
 
 class LeafLikes(models.Model):
-    like_id = models.CharField(max_length=100, blank=True, unique=True, default=uuid.uuid4)
+    like_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True ,default=uuid.uuid4)
     leaf = models.ForeignKey(
         Leaf, related_name="creator_comment_leaf", on_delete=models.CASCADE
     )
@@ -40,7 +40,7 @@ class LeafLikes(models.Model):
 
 
 class LeafDisLikes(models.Model):
-    dislike_id = models.CharField(max_length=100, blank=True, unique=True, default=uuid.uuid4)
+    dislike_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True ,default=uuid.uuid4)
     leaf = models.ForeignKey(
         Leaf, related_name="content_leaf", on_delete=models.CASCADE
     )
@@ -50,7 +50,7 @@ class LeafDisLikes(models.Model):
 
 
 class LeafComments(models.Model):
-    comment_id = models.CharField(max_length=100, blank=True, unique=True, default=uuid.uuid4)
+    comment_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True, default=uuid.uuid4)
     leaf = models.ForeignKey(
         Leaf, related_name="creator_leaf", on_delete=models.CASCADE
     )
@@ -58,4 +58,5 @@ class LeafComments(models.Model):
         UserProfile, related_name="commented_user", on_delete=models.DO_NOTHING
     )
     comment = models.CharField(max_length=100, null=False)
+    comment_depth = models.IntegerField(default=1,null=False)
     parent_comment = models.ForeignKey('self',null=True,blank=True,on_delete=models.CASCADE,related_name='replies')

@@ -8,7 +8,7 @@ from .leaf_management import EdenLeafManagement
 ELM_object = EdenLeafManagement()
 
 
-def return_response(map):
+def make_response(map):
     return HttpResponse(content=json.dumps(map))
 
 
@@ -23,12 +23,12 @@ def create_leaf_view(request):
                 condition = False
         if condition:
             response = ELM_object.create_leaf(request, data)
-            return return_response(response)
+            return make_response(response)
         else:
             response = {}
             response['messaage'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -95,12 +95,12 @@ def delete_leaf_view(request):
                 condition = False
         if condition:
             response = ELM_object.delete_leaf(request, data['leaf_id'])
-            return return_response(response)
+            return make_response(response)
         else:
             response = {}
             response['message'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -118,12 +118,12 @@ def like_leaf_view(request):
                 condition = False
         if condition:
             response = ELM_object.like_leaf(request, data['leaf_id'])
-            return return_response(response)
+            return make_response(response)
         else:
             response = {}
             response['message'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -141,12 +141,12 @@ def remove_like_view(request):
                 condition = False
         if condition:
             response = ELM_object.remove_like(request, data['leaf_id'])
-            return return_response(response)
+            return make_response(response)
         else:
             response = {}
             response['message'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -164,12 +164,12 @@ def add_comment_view(request):
                 condition = False
         if condition:
             response = ELM_object.add_comment(request, data['leaf_id'], data['comment_string'])
-            return return_response(response)
+            return make_response(response)
         else:
             response = {}
             response['message'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -187,12 +187,12 @@ def remove_comment_view(request):
                 condition = False
         if condition:
             response = ELM_object.remove_comment(request, data['leaf_id'])
-            return return_response(response)
+            return make_response(response)
         else:
             response = {}
             response['message'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -216,7 +216,7 @@ def get_all_likes(request):
             response = {}
             response['message'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -240,7 +240,7 @@ def get_all_comments(request):
             response = {}
             response['message'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -264,7 +264,7 @@ def get_all_dislikes(request):
             response = {}
             response['message'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -282,12 +282,12 @@ def remove_dislike_view(request):
                 condition = False
         if condition:
             response = ELM_object.remove_dislike(request, data['leaf_id'])
-            return return_response(response)
+            return make_response(response)
         else:
             response = {}
             response['message'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -305,12 +305,12 @@ def dislike_leaf_view(request):
                 condition = False
         if condition:
             response = ELM_object.dislike_leaf(request, data['leaf_id'])
-            return return_response(response)
+            return make_response(response)
         else:
             response = {}
             response['messaage'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -329,19 +329,18 @@ def add_sub_comment_view(request):
                 condition = False
         if condition:
             object_creation_status = json.loads((add_comment_view(request).content).decode('utf-8'))
+            print("===============================")
+            print(object_creation_status)
             if object_creation_status['status_code'] == -100:
-                leaf_comment_object = ELM_object.get_leaf_comment_object_with_id(object_creation_status['leaf_comment_id'])
-                parent_object = ELM_object.get_leaf_comment_object_with_id(data['parent_comment_id'])
-                if not ELM_object.check_subcomment(object_creation_status['leaf_comment_id'],data['parent_comment_id']):
-                    leaf_comment_object.parent_comment= parent_object
-                    return return_response(-100)
-                else:
-                    return return_response(-103)
+                comment_id = object_creation_status['leaf_comment_id']
+                parent_comment_id = data['parent_comment_id']
+                response = ELM_object.add_sub_comment_db(comment_id,parent_comment_id)
+                return make_response(response)
         else:
             response = {}
             response['messaage'] = "Valid fields not found in request body"
             response['status'] = 200
-            return return_response(response)
+            return make_response(response)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})

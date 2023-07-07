@@ -15,6 +15,10 @@ user_control_object = EdenUserManagement()
 session_management_object = EdenSessionManagement()
 
 
+def make_response(data):
+    return HttpResponse(content=json.dumps(data))
+
+
 @csrf_exempt
 def create_user_api(request):
     if request.method == "POST":
@@ -22,14 +26,11 @@ def create_user_api(request):
             data = json.loads(request.body)
             pre_response = user_control_object.create_user(data)
             print(pre_response)
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": pre_response["issue"]})
-            )
+            return make_response({"status": 200, "message": pre_response["issue"]})
         except Exception as E:
-            print(E)
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": "Cannot unload data."})
-            )
+            return make_response({"status": 200,
+                                     "message": "Cannot unload data."})
+
 
 
 @csrf_exempt
@@ -38,16 +39,11 @@ def validate_user_api(request):
         try:
             data = json.loads(request.body)
             pre_response = user_control_object.validate_user(data)
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": str(pre_response)})
-            )
+            return make_response({"status": 200, "message": str(pre_response)})
         except:
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": "Cannot unload data."})
-            )
-    return HttpResponse(
-        content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-    )
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    return make_response({"status": 200, "message": "HTTP method is not supported."})
+
 
 
 @csrf_exempt
@@ -56,16 +52,10 @@ def follow_user_api(request):
         try:
             data = json.loads(request.body)
             pre_response = user_control_object.user_follow(data)
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": str(pre_response)})
-            )
+            return make_response({"status": 200, "message": str(pre_response)})
         except:
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": "Cannot unload data."})
-            )
-    return HttpResponse(
-        content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-    )
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 
 @csrf_exempt
@@ -74,16 +64,11 @@ def unfollow_user_api(request):
         try:
             data = json.loads(request.body)
             pre_response = user_control_object.user_unfollow(data)
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": str(pre_response)})
-            )
+            return make_response({"status": 200, "mess age": str(pre_response)})
         except:
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": "Cannot unload data."})
-            )
-    return HttpResponse(
-        content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-    )
+            return make_response({"status": 200, "message": "Cannot unload data."})
+
+    return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 
 @csrf_exempt
@@ -95,14 +80,9 @@ def get_followers(request):
             response = JsonResponse(pre_response, safe=False)
             return response
         except Exception as e:
-            print(e)
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": "Cannot unload data."})
-            )
+            return make_response({"status": 200, "message": "Cannot unload data."})
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 
 @csrf_exempt
@@ -114,13 +94,9 @@ def get_following(request):
             response = JsonResponse(pre_response, safe=False)
             return response
         except:
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": "Cannot unload data."})
-            )
+            return make_response({"status": 200, "message": "Cannot unload data."})
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 
 @csrf_exempt
@@ -131,24 +107,16 @@ def login(request):
             username = data["user_name"]
             password = data["password"]
             user = authenticate(request, username=username, password=password)
-            if user != None:
+            if user is not None:
                 session_management_object.create_session(request, user)
-                return HttpResponse(
-                    content=json.dumps({"status": 200, "message": "Login successful."})
-                )
+                return make_response({"status": 200, "message": "Login successful."})
 
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": "Login failed."})
-            )
+            return make_response({"status": 200, "message": "Login failed."})
+
         except Exception as e:
-            print(e)
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": "Cannot unload data."})
-            )
+            return make_response({"status": 200, "message": "Cannot unload data."})
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 
 @csrf_exempt
@@ -160,24 +128,19 @@ def logout(request):
             pass
         return HttpResponse("You're logged out.")
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 
 @csrf_exempt
 def current_user(request):
     if request.method == "POST":
         user = session_management_object.get_session_user(request)
-        return HttpResponse(content=json.dumps({
+        return make_response({
             'status': 200,
-            'user_name': user.user_name if user != None else None
-        }))
+            'user_name': user.user_name if user is not None else None
+        })
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
-
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 @csrf_exempt
 def password_reset(request):
@@ -191,14 +154,23 @@ def password_reset(request):
                     'message': pre_response['message']
                 }))
         except:
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": "Cannot unload data."})
-            )
+            return make_response({"status": 200, "message": "Cannot unload data."})
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
 
+@csrf_exempt
+def get_user_id(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['user_name']
+            user_id = user_control_object.get_user_id(data)
+            return make_response(user_id)
+        except:
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 def get_logged_in_user(request):
     return session_management_object.get_session_user(request)
+

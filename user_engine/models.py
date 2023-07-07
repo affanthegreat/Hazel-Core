@@ -1,12 +1,13 @@
 from django.db import models
 import datetime
+import uuid
 
 
 class UserProfile(models.Model):
     user_email = models.EmailField(unique=True)
     user_name = models.CharField(max_length=60, unique=True)
     user_password = models.CharField(max_length=250)
-    user_id = models.CharField(max_length=120, primary_key=True, unique=True,)
+    user_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True, default=uuid.uuid4)
     user_public_leaf_count = models.BigIntegerField()
     user_private_leaf_count = models.BigIntegerField()
     user_experience_points = models.BigIntegerField()
@@ -29,3 +30,11 @@ class UserAccessToken(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="holy")
     user_session_id = models.CharField(max_length=100, unique=True)
     creation_date = models.DateTimeField(default=datetime.datetime.now())
+
+class UserDetails(models.Model):
+    user_full_name = models.CharField(max_length=100,null=False)
+    user_id = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='detail')
+    user_phone_number = models.CharField(max_length=15,null=False)
+    user_address = models.CharField(max_length=50,null=False)
+    user_phone_id = models.CharField(max_length=120,null=False)
+

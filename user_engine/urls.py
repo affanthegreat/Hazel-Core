@@ -11,5 +11,6 @@ urlpatterns = [
     path('login', login),  # checked
     path('logout', logout),  # checked
     path('current_user', current_user),  # checked
-    path('password_reset', password_reset)  # checked
+    path('password_reset', password_reset),  # checked
+    path('get_user_id',get_user_id)
 ]

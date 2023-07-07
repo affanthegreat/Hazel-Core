@@ -9,11 +9,33 @@ class EdenUserManagement:
         pass
 
     def make_password(self, txt) -> str:
+        """
+            Generates a password hash from the given text.
+
+            Args:
+                txt (str): The text to be hashed.
+
+            Returns:
+                str: The password hash generated from the input text.
+            """
         return crypt.crypt(txt)
 
     def create_user(self, data):
+        """
+         Creates a new user profile with the provided data.
+
+         Args:
+             data (dict): A dictionary containing the user data.
+                 - user_name (str): The name of the user.
+                 - user_email (str): The email address of the user.
+                 - user_password (str): The password of the user.
+
+         Returns:
+             dict: A dictionary containing the status of the operation.
+                 - status (bool): True if the user was successfully created, False otherwise.
+                 - issue (str): A message describing the outcome of the operation.
+         """
         user_name = data["user_name"]
-        user_id = data["user_id"]
         user_email = data["user_email"]
         user_password = data["user_password"]
         user_public_leaf_count = 0
@@ -25,7 +47,6 @@ class EdenUserManagement:
         user_level = 0
 
         verification_data = {
-            "user_id": user_id,
             "user_email": user_email,
             "user_name": user_name,
         }
@@ -35,7 +56,6 @@ class EdenUserManagement:
         else:
             user_profile_object = UserProfile()
             user_profile_object.user_email = user_email
-            user_profile_object.user_id = user_id
             user_profile_object.user_private_leaf_count = user_private_leaf_count
             user_profile_object.user_public_leaf_count = user_public_leaf_count
             user_profile_object.user_experience_points = user_experience_points
@@ -53,19 +73,37 @@ class EdenUserManagement:
             return response
 
     def check_user_exists(self, data) -> bool:
-        print(data, type(data))
+        """
+        Checks if a user with the given name or email already exists.
+
+        Args:
+            data (dict): A dictionary containing the user data.
+                - user_name (str, optional): The name of the user.
+                - user_email (str, optional): The email address of the user.
+
+        Returns:
+            bool: True if a user with the provided name or email exists, False otherwise.
+        """
         user_name = data.get("user_name", None)
-        user_id = data.get("user_id", None)
         user_email = data.get("user_email", None)
-        if (
-            UserProfile.objects.filter(user_id=user_id).exists()
-            or UserProfile.objects.filter(user_name=user_name).exists()
+        if (UserProfile.objects.filter(user_name=user_name).exists()
             or UserProfile.objects.filter(user_email=user_email).exists()
         ):
             return True
         return False
 
     def validate_user(self, data) -> bool:
+        """
+           Validates a user's password against the stored password hash.
+
+           Args:
+               data (dict): A dictionary containing the user data.
+                   - user_password (str): The password to be validated.
+                   - user_id (int): The ID of the user.
+
+           Returns:
+               bool: True if the password is valid, False otherwise.
+           """
         user_password = data["user_password"]
         user_id = data['user_id']
         is_valid = False
@@ -75,6 +113,16 @@ class EdenUserManagement:
         return is_valid
 
     def retrieve_user_password(self, data):
+        """
+           Retrieves the password of a user based on the provided data.
+
+           Args:
+               data (dict): A dictionary containing the user data.
+                   - user_id (int): The ID of the user.
+
+           Returns:
+               str or None: The password of the user if the user exists, None otherwise.
+           """
         if self.check_user_exists(data):
             user_id = data["user_id"]
             user_object = UserProfile.objects.filter(user_id=user_id).all()
@@ -83,6 +131,19 @@ class EdenUserManagement:
             return None
 
     def user_follow(self, data):
+        """
+          Adds a follower for a user.
+
+          Args:
+              data (dict): A dictionary containing the follower and follows data.
+                  - follower (int): The ID of the follower user.
+                  - follows (int): The ID of the user being followed.
+
+          Returns:
+              dict: A dictionary containing the status and message of the operation.
+                  - status (int): The HTTP status code of the operation.
+                  - message (str): A message describing the outcome of the operation.
+          """
         follower = data["follower"]
         follows = data["follows"]
         if self.check_user_exists({"user_id": follower}) and self.check_user_exists(
@@ -115,15 +176,48 @@ class EdenUserManagement:
                 return response
         else:
             response = {"status": 200, "message": "One of the user does not exists."}
-            print(response)
+            return response
 
     def check_follower(self, following_object, follower_object):
+        """
+        Checks if a user is already following another user.
+
+        Args:
+            following_object: The user being followed.
+            follower_object: The user who wants to follow.
+
+        Returns:
+            bool: True if the follower is already following the user, False otherwise.
+        """
         return UserFollowing.objects.filter(master=following_object, slave=follower_object).exists()
 
     def check_following(self, following_object, follower_object):
+        """
+        Checks if a user is already followed by another user.
+
+        Args:
+            following_object: The user being followed.
+            follower_object: The user who wants to follow.
+
+        Returns:
+            bool: True if the follower is already following the user, False otherwise.
+        """
         return UserFollowing.objects.filter(slave=following_object, master=follower_object).exists()
 
     def user_unfollow(self, data):
+        """
+         Allows a user to unfollow another user.
+
+         Args:
+             data (dict): A dictionary containing the user data.
+                 - follower (int): The ID of the user who wants to unfollow.
+                 - follows (int): The ID of the user being unfollowed.
+
+         Returns:
+             dict: A dictionary containing the status of the operation.
+                 - status (int): The status code indicating the result of the operation.
+                 - message (str): A message describing the outcome.
+         """
         follower = data["follower"]
         follows = data["follows"]
         if self.check_user_exists({"user_id": follower}) and self.check_user_exists(
@@ -138,10 +232,21 @@ class EdenUserManagement:
                 return {"status": 200, "message": f"{follower_object} doesn't follow {following_object}."}
 
     def get_user_followers(self, data):
+        """
+           Retrieves the followers of a user.
+
+           Args:
+               data (dict): A dictionary containing the user data.
+                   - user_id (int): The ID of the user.
+                   - sub_user (int, optional): The ID of the sub-user. Defaults to None.
+
+           Returns:
+               list or dict: A list of dictionaries containing the follower information if the user exists,
+                   or a dictionary with an error message if the user doesn't exist.
+                   Each dictionary in the list represents a follower and contains relevant information.
+          """
         user_profile = data["user_id"]
         sub_user = data.get('sub_user', None)
-        print("======")
-        print(sub_user)
         if self.check_user_exists(data):
             user_profile_object = UserProfile.objects.filter(user_id=user_profile)
             if sub_user == None:
@@ -157,6 +262,16 @@ class EdenUserManagement:
             return {"User doesn't exist."}
 
     def get_user_following(self, data):
+        """
+           Retrieves the users that a given user is following.
+
+           Args:
+               data (dict): A dictionary containing the user data.
+                   - user_id (int): The ID of the user.
+
+           Returns:
+               list: A list of dictionaries containing the following user information.
+        """
         user_profile = data["user_id"]
         if self.check_user_exists(data):
             user_profile_object = UserProfile.objects.filter(user_id=user_profile)
@@ -164,8 +279,21 @@ class EdenUserManagement:
             return list(following_query_set.values())
 
     def password_reset(self, data) -> bool:
+        """
+            Resets the password of a user.
+
+            Args:
+                data (dict): A dictionary containing the user data.
+                    - user_id (int): The ID of the user.
+                    - user_password1 (str): The new password.
+                    - user_password2 (str): The confirmation of the new password.
+
+            Returns:
+                dict: A dictionary containing the status of the operation.
+                    - status (int): The status code indicating the result of the operation.
+                    - message (str): A message describing the outcome.
+            """
         user_id = data['user_id']
-        old_password = data['user_password']
         user_password1 = data['user_password1']
         user_password2 = data['user_password2']
         response = {}
@@ -191,10 +319,45 @@ class EdenUserManagement:
         user_name = data['user_name']
         pass
 
+    def get_user_id(self,data):
+        """
+           Retrieves the ID of a user based on the provided username.
+
+           Args:
+               data (dict): A dictionary containing the user data.
+                   - user_name (str): The username of the user.
+
+           Returns:
+               int: The ID of the user, or None if the user doesn't exist.
+           """
+        user_name = data['user_name']
+        user_obj = UserProfile.objects.filter(user_name=user_name).first()
+        return user_obj.user_id
+
     def get_user_object(self, user_id):
+        """
+           Retrieves the user object based on the provided user ID.
+
+           Args:
+               user_id (int): The ID of the user.
+
+           Returns:
+               UserProfile or None: The user object if the user exists, or None otherwise.
+           """
         return UserProfile.objects.filter(user_id=user_id).first()
 
     def run_user_middleware(self, user_object, operation, value):
+        """
+          Runs a middleware operation on a user object.
+
+          Args:
+              user_object (UserProfile): The user object on which the middleware operation is performed.
+              operation (str): The operation to be performed.
+              value: The value associated with the operation.
+
+          Returns:
+              bool or None: The result of the middleware operation if the operation is valid, or None otherwise.
+          """
         user_middleware_object = EdenUserMiddleWare(user_object)
         allowed_operations = ['update_public_leaf', "update_private_leaf",
                               "update_followers", "update_following", "update_user_exp", "update_user_level"]

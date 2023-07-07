@@ -353,11 +353,9 @@ class EdenLeafManagement:
         """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            comment_status = self.check_comment(leaf_id, user_object.user_id)
-            print(user_object, comment_status, comment_string)
             if comment_string != None:
                 try:
-                    if self.check_leaf(leaf_id) and not comment_status["message"]:
+                    if self.check_leaf(leaf_id):
                         leaf_comment_object = LeafComments()
                         leaf_comment_object.commented_by = user_object
                         leaf_comment_object.leaf = self.get_leaf_object(leaf_id)
@@ -366,9 +364,11 @@ class EdenLeafManagement:
                         self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", 1)
                         response = {
                             'status_code':-100,
-                            'leaf_comment_id':leaf_comment_object.comment_id
+                            'leaf_comment_id':str(leaf_comment_object.comment_id)
                         }
                         return response
+                    else:
+                        return {"status_code":-105}
                 except Exception as E:
                     return -103
             else:
@@ -426,7 +426,7 @@ class EdenLeafManagement:
             except Exception:
                 return -105
 
-    #TODO Testing
+
     def add_sub_comment_db(self, leaf_comment_id, leaf_comment_parent_id):
         """
         Adds a sub-comment to the database with the specified leaf_comment_id and leaf_comment_parent_id.
@@ -441,17 +441,47 @@ class EdenLeafManagement:
         Returns:
             int: -100 if the sub-comment relationship already exists, -105 if an exception occurs during the save operation.
         """
+        comment_object = LeafComments.objects.filter(comment_id=leaf_comment_id).first()
+        parent_object = LeafComments.objects.filter(comment_id=leaf_comment_parent_id).first()
         if self.check_subcomment(leaf_comment_id,leaf_comment_parent_id):
-            comment_object = LeafComments.objects.filter(comment_id= leaf_comment_id)
-            parent_object = LeafComments.objects.filter(comment_id= leaf_comment_parent_id)
             comment_object.parent_comment =  parent_object
             try:
+                comment_object.comment_depth = parent_object.comment_depth + 1
                 comment_object.save()
                 return -100
-            except Exception:
+            except Exception as E:
+                comment_object.delete()
                 return -105
+        else:
+            comment_object.delete()
+            return -109
 
-    # TODO Testing
+    def delete_comment_by_id(self,id):
+        """
+           Deletes a comment by its ID.
+
+           Args:
+               id (int): The ID of the comment to be deleted.
+
+           Returns:
+               int: Returns -100 indicating the comment was successfully deleted.
+           """
+        if self.check_comment_by_id(id):
+            LeafComments.objects.filter(comment_id=id).first().delete()
+            return -100
+
+    def check_comment_by_id(self,id):
+        """
+           Checks if a comment exists by its ID.
+
+           Args:
+               id (int): The ID of the comment to check.
+
+           Returns:
+               bool: True if a comment with the specified ID exists, False otherwise.
+           """
+        return LeafComments.objects.filter(comment_id= id).first is not None
+
     def check_subcomment(self,comment_id,parent_comment_id):
         """
         Checks if a comment with the given comment_id is a sub-comment of the comment with the specified parent_comment_id.
@@ -463,9 +493,9 @@ class EdenLeafManagement:
         Returns:
             bool: True if the comment with comment_id is a sub-comment of the comment with parent_comment_id, False otherwise.
         """
-        relation_object = LeafComments.objects.filter(comment_id= comment_id)
-        parent_comment_object = LeafComments.objects.filter(comment_id= parent_comment_id)
-        if relation_object is None or relation_object.parent_comment != parent_comment_object:
+        relation_object = LeafComments.objects.filter(comment_id= comment_id).first()
+        parent_comment_object = LeafComments.objects.filter(comment_id= parent_comment_id).first()
+        if (relation_object is None and parent_comment_object is None) or relation_object.parent_comment == parent_comment_object:
             return False
         return True
 
@@ -504,6 +534,9 @@ class EdenLeafManagement:
         response = {}
         if user_object is not None and leaf_valid:
             leaf_object = self.get_leaf_object(leaf_id)
+            print("============LEAF OBJECT HERE==============")
+            print(leaf_object.leaf_id)
+            print("==========================================")
             leaf_comment_object = LeafComments.objects.filter(
                 leaf=leaf_object, commented_by=user_object.user_id
             ).first()
@@ -700,7 +733,7 @@ class EdenLeafManagement:
 
 
     # TODO Testing
-    def get_leaf_comment_object_with_id(self,leaf_comment_id)
+    def get_leaf_comment_object_with_id(self,leaf_comment_id):
         """Retrieves the LeafComments object with the specified leaf_comment_id from the database.
 
         Args:
