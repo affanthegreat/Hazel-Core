@@ -2,7 +2,9 @@ import datetime
 import uuid
 
 from django.db import models
-from django.utils.translation import gettext as _
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 
 from user_engine.models import UserProfile
 
@@ -28,6 +30,13 @@ class Leaf(models.Model):
     engagement_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     experience_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     previous_analytics_run = models.DateTimeField(default=datetime.datetime.now())
+
+@receiver(post_save, sender=Leaf)
+def perform_ml(sender, instance, creation_status, **kwargs):
+    if creation_status:
+        pass
+
+
 
 class LeafLikes(models.Model):
     like_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True ,default=uuid.uuid4)
