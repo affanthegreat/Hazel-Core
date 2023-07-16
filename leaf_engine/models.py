@@ -30,13 +30,8 @@ class Leaf(models.Model):
     engagement_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     experience_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     previous_analytics_run = models.DateTimeField(default=datetime.datetime.now())
-
-@receiver(post_save, sender=Leaf)
-def perform_ml(sender, instance, creation_status, **kwargs):
-    if creation_status:
-        pass
-
-
+    leaf_topic_id = models.BigIntegerField(default= -1)
+    leaf_sentiment = models.IntegerField(default=-9)
 
 class LeafLikes(models.Model):
     like_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True ,default=uuid.uuid4)
@@ -68,4 +63,5 @@ class LeafComments(models.Model):
     )
     comment = models.CharField(max_length=100, null=False)
     comment_depth = models.IntegerField(default=1,null=False)
+    comment_sentiment = models.IntegerField(default=-9)
     parent_comment = models.ForeignKey('self',null=True,blank=True,on_delete=models.CASCADE,related_name='replies')

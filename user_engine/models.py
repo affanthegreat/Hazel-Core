@@ -19,12 +19,13 @@ class UserProfile(models.Model):
     user_universal_dislikes = models.BigIntegerField(default=0)
     user_universal_comments = models.BigIntegerField(default=0)
     previous_experience_generation_date = models.DateTimeField(default=datetime.datetime.now())
-
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class UserFollowing(models.Model):
     slave = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="slave")
     master = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="master")
-
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class UserAccessToken(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="holy")
@@ -34,7 +35,11 @@ class UserAccessToken(models.Model):
 class UserDetails(models.Model):
     user_full_name = models.CharField(max_length=100,null=False)
     user_id = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='detail')
-    user_phone_number = models.CharField(max_length=15,null=False)
+    user_phone_number = models.CharField(max_length=15,null=False,unique= True)
     user_address = models.CharField(max_length=50,null=False)
-    user_phone_id = models.CharField(max_length=120,null=False)
+    user_phone_id = models.CharField(max_length=120,unique= True,null=False)
 
+class UserPreferredTopics(models.Model):
+    topic_id = models.BigIntegerField(default= -1)
+    user_object = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING,related_name='detail')
+    created_at = models.DateTimeField(auto_now_add=True)
