@@ -81,7 +81,7 @@ def stream_negative_leaves_view(request):
 def stream_unmarked_comments_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['page_number']
+        valid_fields = ['page_number','leaf_id']
         if check_field_validity(data, valid_fields):
             response = communicator_object.stream_unmarked_comments(data)
             return make_json_response(response)
@@ -98,7 +98,7 @@ def stream_unmarked_comments_view(request):
 def stream_marked_comments_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['page_number']
+        valid_fields = ['page_number','leaf_id']
         if check_field_validity(data, valid_fields):
             response = communicator_object.stream_marked_comments(data)
             return make_json_response(response)

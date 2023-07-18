@@ -534,9 +534,6 @@ class EdenLeafManagement:
         response = {}
         if user_object is not None and leaf_valid:
             leaf_object = self.get_leaf_object(leaf_id)
-            print("============LEAF OBJECT HERE==============")
-            print(leaf_object.leaf_id)
-            print("==========================================")
             leaf_comment_object = LeafComments.objects.filter(
                 leaf=leaf_object, commented_by=user_object.user_id
             ).first()

@@ -21,12 +21,13 @@ class EdenLeafCommunicator():
                               page_number=args['page_number'] if 'page_number' in args else 1)
 
     def stream_negative_leaves(self,args):
-        return self.paginator(Leaf.objects.filter(leaf_sentiment__lt=0 ),
+        return self.paginator(Leaf.objects.filter(leaf_sentiment__lt=0,leaf_id=args['leaf_id'] ),
                               page_number=args['page_number'] if 'page_number' in args else 1)
 
     def stream_unmarked_comments(self, args):
-        return self.paginator(LeafComments.objects.filter(comment_sentiment=-9,
-                              page_number=args['page_number'] if 'page_number' in args else 1)
+        return self.paginator(LeafComments.objects.filter(comment_sentiment=-9,   leaf_id=args['leaf_id']),
+                              page_number=args['page_number'] if 'page_number' in args else 1,
+                              )
 
     def stream_marked_comments(self, args):
         return self.paginator(LeafComments.objects.filter(~Q(comment_sentiment=-9),
