@@ -1,7 +1,10 @@
 import uuid
-from leaf_engine.middleware import EdenLeafMiddleware
 
+from django.core.paginator import Paginator
+
+from leaf_engine.middleware import EdenLeafMiddleware
 from leaf_engine.models import Leaf, LeafComments, LeafDisLikes, LeafLikes, LeafType
+
 from user_engine.backends import EdenSessionManagement
 from user_engine.models import UserProfile
 from user_engine.middleware import EdenUserMiddleWare
@@ -727,6 +730,16 @@ class EdenLeafManagement:
             UserProfile or None: The user object with the given user_id, or None if it does not exist.
         """
         return UserProfile.objects.filter(user_id=user_id).first()
+
+    # TODO 
+    def paginator(self,query_set,page_number):
+        pagination_obj = Paginator(query_set,self.MAX_OBJECT_LIMIT)
+        response = {
+            'page_number': page_number,
+            'total_pages': pagination_obj.page_range[-1],
+            'data': list(pagination_obj.page(page_number).object_list.values()),
+        }
+        return response
 
 
     # TODO Testing

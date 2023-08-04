@@ -15,7 +15,6 @@ urlpatterns = [
     ),
     # Django Admin, use {% url 'admin:index' %}
     path(settings.ADMIN_URL, admin.site.urls),
-    # User management
     path("accounts/", include("allauth.urls")),
     path("user_engine/", include("user_engine.urls")),
     path("leaf_engine/", include("leaf_engine.urls")),

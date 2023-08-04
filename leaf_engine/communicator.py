@@ -55,10 +55,10 @@ class EdenLeafCommunicator():
 
 
     def paginator(self,query_set,page_number):
-        pagination_obj = Paginator(query_set, self.MAX_OBJECT_LIMIT)
+        pagination_obj = Paginator(query_set,self.MAX_OBJECT_LIMIT)
         response = {
             'page_number': page_number,
-            'total_pages': str(pagination_obj.page_range),
-            'data': JsonResponse(pagination_obj.page(page_number).object_list),
+            'total_pages': pagination_obj.page_range[-1],
+            'data': list(pagination_obj.page(page_number).object_list.values()),
         }
         return response
