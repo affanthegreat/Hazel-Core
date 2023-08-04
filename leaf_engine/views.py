@@ -41,13 +41,16 @@ def create_leaf_view(request):
 @csrf_exempt
 def get_user_public_leaves_view(request):
     if request.method == "GET":
-        response = {}
-        response_status = ELM_object.get_user_public_leaves(request)
-        if response_status == -101:
-            response['message'] = 'Auth Error.'
-            return response
-        else:
-            return JsonResponse(list(response_status.values()), safe=False)
+        data = json.loads(request.body)
+        valid_fields = ['page_number']
+        if check_field_validity(valid_fields,data):
+            response = {}
+            response_status = ELM_object.get_user_public_leaves(request, data['page_number'])
+            if response_status == -101:
+                response['message'] = 'Auth Error.'
+                return response
+            else:
+                return JsonResponse(response_status, safe=False)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -59,12 +62,14 @@ def get_leaves_view(request):
     if request.method == "POST":
         response = {}
         data = json.loads(request.body)
-        response_status = ELM_object.get_leaves(request, data['user_id'])
-        if response_status == -101:
-            response['message'] = 'Auth Error.'
-            return response
-        else:
-            return JsonResponse(list(response_status.values()), safe=False)
+        valid_fields = ['page_number', 'user_id']
+        if check_field_validity(valid_fields,data):
+            response_status = ELM_object.get_leaves(request, data['user_id'], data['page_number'])
+            if response_status == -101:
+                response['message'] = 'Auth Error.'
+                return response
+            else:
+                return JsonResponse(response_status, safe=False)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -74,13 +79,16 @@ def get_leaves_view(request):
 @csrf_exempt
 def get_user_private_leaves_view(request):
     if request.method == "GET":
-        response = {}
-        response_status = ELM_object.get_user_private_leaves(request)
-        if response_status == -101:
-            response['message'] = 'Auth Error.'
-            return response
-        else:
-            return JsonResponse(list(response_status.values()), safe=False)
+        data = json.loads(request.body)
+        valid_fields = ['page_number']
+        if check_field_validity(valid_fields,data):
+            response = {}
+            response_status = ELM_object.get_user_private_leaves(request, data['page_number'])
+            if response_status == -101:
+                response['message'] = 'Auth Error.'
+                return response
+            else:
+               return JsonResponse(response_status, safe=False)
     else:
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
@@ -169,7 +177,26 @@ def remove_comment_view(request):
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
         if check_field_validity(valid_fields,data):
-            response = ELM_object.remove_comment(request, data['leaf_id'])
+            response = ELM_object.remove_sub_comment(request, data['leaf_id'])
+            return make_response(response)
+        else:
+            response = {}
+            response['message'] = "Valid fields not found in request body"
+            response['status'] = 200
+            return make_response(response)
+    else:
+        return HttpResponse(
+            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
+
+
+@csrf_exempt
+def remove_sub_comment_view(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        valid_fields = ['leaf_id', 'comment_id']
+        if check_field_validity(valid_fields,data):
+            response = ELM_object.remove_sub_comment(request, data['leaf_id'], data['comment_id'])
             return make_response(response)
         else:
             response = {}
@@ -187,10 +214,10 @@ def get_all_likes(request):
     if request.method == "GET":
         data = json.loads(request.body)
         response = {}
-        valid_fields = ['leaf_id']
+        valid_fields = ['leaf_id', "page_number"]
         if check_field_validity(valid_fields,data):
-            response = ELM_object.get_total_likes(data['leaf_id'])
-            return JsonResponse(list(response.values()), safe=False)
+            response = ELM_object.get_total_likes(data['leaf_id'], data['page_number'])
+            return JsonResponse(response, safe=False)
         else:
             response = {}
             response['message'] = "Valid fields not found in request body"
@@ -207,10 +234,14 @@ def get_all_comments(request):
     if request.method == "GET":
         data = json.loads(request.body)
         response = {}
-        valid_fields = ['leaf_id']
+        valid_fields = ['leaf_id', 'page_number']
         if check_field_validity(valid_fields,data):
-            response = ELM_object.get_total_comments(request, data['leaf_id'])
-            return JsonResponse(list(response.values()), safe=False)
+            response = ELM_object.get_total_comments(request, data['leaf_id'],data['page_number'])
+            if response == -104:
+               return HttpResponse(
+                    content=json.dumps({"status": 200, "message": "No comments found."})
+                )
+            return JsonResponse(response, safe=False)
         else:
             response = {}
             response['message'] = "Valid fields not found in request body"
@@ -227,10 +258,10 @@ def get_all_dislikes(request):
     if request.method == "GET":
         data = json.loads(request.body)
         response = {}
-        valid_fields = ['leaf_id']
+        valid_fields = ['leaf_id','page_number']
         if check_field_validity(valid_fields,data):
-            response = ELM_object.get_total_dislikes(data['leaf_id'])
-            return JsonResponse(list(response.values()), safe=False)
+            response = ELM_object.get_total_dislikes(data['leaf_id'],data['page_number'])
+            return JsonResponse(response, safe=False)
         else:
             response = {}
             response['message'] = "Valid fields not found in request body"
@@ -280,7 +311,6 @@ def dislike_leaf_view(request):
         )
 
 
-#TODO Testing
 @csrf_exempt
 def add_sub_comment_view(request):
     if request.method == "POST":
@@ -302,3 +332,5 @@ def add_sub_comment_view(request):
         return HttpResponse(
             content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
         )
+
+

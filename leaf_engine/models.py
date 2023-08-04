@@ -56,7 +56,7 @@ class LeafDisLikes(models.Model):
 class LeafComments(models.Model):
     comment_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True, default=uuid.uuid4)
     leaf = models.ForeignKey(
-        Leaf, related_name="creator_leaf", on_delete=models.CASCADE
+        Leaf, related_name="creator_leaf", on_delete=models.DO_NOTHING
     )
     commented_by = models.ForeignKey(
         UserProfile, related_name="commented_user", on_delete=models.DO_NOTHING
@@ -64,4 +64,7 @@ class LeafComments(models.Model):
     comment = models.CharField(max_length=100, null=False)
     comment_depth = models.IntegerField(default=1,null=False)
     comment_sentiment = models.IntegerField(default=-9)
+    root_comment = models.ForeignKey('self',null=True, blank= True, on_delete=models.DO_NOTHING, related_name='main_comment' )
     parent_comment = models.ForeignKey('self',null=True,blank=True,on_delete=models.CASCADE,related_name='replies')
+    
+    

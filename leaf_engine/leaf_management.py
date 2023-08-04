@@ -1,4 +1,5 @@
 import uuid
+import logging 
 
 from django.core.paginator import Paginator
 
@@ -27,6 +28,7 @@ class EdenLeafManagement:
         return session_id
 
     def __init__(self) -> None:
+        self.MAX_OBJECT_LIMIT = 50
         pass
 
     def create_leaf(self, request, data):
@@ -72,7 +74,7 @@ class EdenLeafManagement:
             response["code"] = False
         return response
 
-    def get_user_public_leaves(self, request):
+    def get_user_public_leaves(self, request, page_number):
         """
         Retrieve all public leaf objects associated with the logged-in user.
 
@@ -86,14 +88,14 @@ class EdenLeafManagement:
         If the user is authorized, a QuerySet containing all the public leaf objects associated with the logged-in user
         is returned. Otherwise, a status code of -101 is returned to indicate unauthorized access.
         """
+        
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            print(user_object)
-            return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public).all()
+            return self.paginator(Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public).all(),page_number)
         else:
             return -101
 
-    def get_leaves(self, request, user_id):
+    def get_leaves(self, request, user_id, page_number):
         """
         Retrieve all leaf objects associated with a given user ID.
 
@@ -117,13 +119,13 @@ class EdenLeafManagement:
         if user_management_instance.check_user_exists({'user_id': user_id}):
             following_object = user_management_instance.get_user_object(user_id)
             if user_management_instance.check_following(following_object, follower_user):
-                return Leaf.objects.filter(owner=following_object).all()
+                return self.paginator(Leaf.objects.filter(owner=following_object).all(),page_number)
             else:
-                return Leaf.objects.filter(owner=following_object, leaf_type=LeafType.Public).all()
+                return self.paginator(Leaf.objects.filter(owner=following_object, leaf_type=LeafType.Public).all(),page_number)
         else:
             return -101
 
-    def get_user_private_leaves(self, request):
+    def get_user_private_leaves(self, request, page_number):
         """
         Retrieve all private leaf objects associated with the logged-in user.
 
@@ -139,7 +141,7 @@ class EdenLeafManagement:
         """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            return Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Private).all()
+            return self.paginator(Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Private).all(),page_number)
         else:
             return -101
 
@@ -229,7 +231,7 @@ class EdenLeafManagement:
                 dislike_object.leaf = self.get_leaf_object(leaf_id)
                 dislike_object.disliked_by = user_object
                 dislike_object.save()
-                print(self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1))
+                logging.info(self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1))
                 return -100
             else:
                 return -103
@@ -249,13 +251,9 @@ class EdenLeafManagement:
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_like(leaf_id, user_object.user_id)
-            print("===========")
-            print(like_status)
             if self.check_leaf(leaf_id) and like_status["message"]:
                 like_object = self.get_like_object(leaf_id, user_object.user_id)
                 like_object.delete()
-                print("=--")
-                print(self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1))
                 return -100
             else:
                 return -105
@@ -285,7 +283,7 @@ class EdenLeafManagement:
             else:
                 return -105
 
-    def get_total_likes(self, leaf_id):
+    def get_total_likes(self, leaf_id, page_number):
         """
         This function returns the total number of likes for a given leaf.
 
@@ -296,11 +294,11 @@ class EdenLeafManagement:
         QuerySet or int: If the leaf exists, the function returns a QuerySet object containing all the likes for the given leaf. If the leaf does not exist, it returns -104.
         """
         if self.check_leaf(leaf_id):
-            return LeafLikes.objects.filter(leaf_id=leaf_id)
+            return self.paginator(LeafLikes.objects.filter(leaf_id=leaf_id).all(), page_number)
         else:
             return -104
 
-    def get_total_dislikes(self, leaf_id):
+    def get_total_dislikes(self, leaf_id, page_number):
         """
         Returns the total number of dislikes for the given leaf identified by `leaf_id`.
 
@@ -312,11 +310,11 @@ class EdenLeafManagement:
             If the leaf doesn't exist, the function returns -104.
         """
         if self.check_leaf(leaf_id):
-            return LeafDisLikes.objects.filter(leaf_id=leaf_id)
+            return self.paginator(LeafDisLikes.objects.filter(leaf_id=leaf_id).all(),page_number)
         else:
             return -104
 
-    def get_total_comments(self, request, leaf_id):
+    def get_total_comments(self, request, leaf_id, page_number):
         """
         Return the total number of comments for the given leaf_id.
 
@@ -333,7 +331,7 @@ class EdenLeafManagement:
 
         """
         if self.check_leaf(leaf_id):
-            return LeafComments.objects.filter(leaf_id=leaf_id)
+            return self.paginator(LeafComments.objects.filter(leaf_id=leaf_id), page_number)
         else:
             return -104
 
@@ -363,7 +361,11 @@ class EdenLeafManagement:
                         leaf_comment_object.commented_by = user_object
                         leaf_comment_object.leaf = self.get_leaf_object(leaf_id)
                         leaf_comment_object.comment = comment_string
+                        logging.info("partial saving leaf comment object.")
                         leaf_comment_object.save()
+                        leaf_comment_object.root_comment = leaf_comment_object
+                        leaf_comment_object.save()
+                        logging.info("root comment saved to leaf_comment object.")
                         self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", 1)
                         response = {
                             'status_code':-100,
@@ -407,6 +409,13 @@ class EdenLeafManagement:
             except Exception:
                 return -105
         pass
+    
+    def remove_sub_comment(self, request,leaf_id, comment_id):
+        if self.check_comment(leaf_id,comment_id):
+            LeafComments.objects.filter(comment_id= comment_id).first().delete()
+            return -100
+        else:
+            return -104
 
     def add_view(self, request, leaf_id):
         """
@@ -446,10 +455,18 @@ class EdenLeafManagement:
         """
         comment_object = LeafComments.objects.filter(comment_id=leaf_comment_id).first()
         parent_object = LeafComments.objects.filter(comment_id=leaf_comment_parent_id).first()
+        base_comment = False
+        if parent_object.comment_depth == 1:
+            base_comment = True
+        
         if self.check_subcomment(leaf_comment_id,leaf_comment_parent_id):
-            comment_object.parent_comment =  parent_object
             try:
                 comment_object.comment_depth = parent_object.comment_depth + 1
+                comment_object.parent_comment =  parent_object
+                if base_comment:
+                    comment_object.root_comment = parent_object
+                else:
+                    comment_object.root_comment = parent_object.root_comment
                 comment_object.save()
                 return -100
             except Exception as E:
