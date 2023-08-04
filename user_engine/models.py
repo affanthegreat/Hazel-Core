@@ -41,5 +41,5 @@ class UserDetails(models.Model):
 
 class UserPreferredTopics(models.Model):
     topic_id = models.BigIntegerField(default= -1)
-    user_object = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING,related_name='detail')
+    user_object = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING,related_name='user_obj')
     created_at = models.DateTimeField(auto_now_add=True)

@@ -1,6 +1,8 @@
 import crypt
+import json
 
 from django.core.paginator import Paginator
+from django.http import JsonResponse
 
 from user_engine.middleware import EdenUserMiddleWare
 from user_engine.models import *
@@ -88,8 +90,10 @@ class EdenUserManagement:
         """
         user_name = data.get("user_name", None)
         user_email = data.get("user_email", None)
+        user_id = data.get("user_id", None)
         if (UserProfile.objects.filter(user_name=user_name).exists()
             or UserProfile.objects.filter(user_email=user_email).exists()
+            or UserProfile.objects.filter(user_id=user_id).exists()
         ):
             return True
         return False
@@ -177,6 +181,8 @@ class EdenUserManagement:
                 }
                 return response
         else:
+            print(self.check_user_exists({"user_id": follower}))
+            print(self.check_user_exists({"user_id": follows}))
             response = {"status": 200, "message": "One of the user does not exists."}
             return response
 
@@ -251,15 +257,14 @@ class EdenUserManagement:
         page_number = data['page_number'] if 'page_number' in data else 1
         sub_user = data.get('sub_user', None)
         if self.check_user_exists(data):
-            user_profile_object = UserProfile.objects.filter(user_id=user_profile)
             if sub_user == None:
                 followers_query_set = UserFollowing.objects.filter(
                     master=user_profile
-                ).all()
+                ).order_by("created_at").all()
             else:
                 followers_query_set = UserFollowing.objects.filter(
                     master=user_profile, slave=sub_user
-                ).all()
+                ).order_by("created_at").all()
             response = self.paginator(followers_query_set,page_number)
             return response
         else:
@@ -277,10 +282,11 @@ class EdenUserManagement:
                list: A list of dictionaries containing the following user information.
         """
         user_profile = data["user_id"]
+        page_number = data['page_number'] if 'page_number' in data else 1
         if self.check_user_exists(data):
-            user_profile_object = UserProfile.objects.filter(user_id=user_profile)
-            following_query_set = UserFollowing.objects.filter(slave=user_profile).all()
-            return list(following_query_set.values())
+            following_query_set = UserFollowing.objects.filter(slave=user_profile).order_by("created_at").all()
+            response = self.paginator(following_query_set,page_number)
+            return response
 
     def password_reset(self, data) -> bool:
         """
@@ -318,17 +324,31 @@ class EdenUserManagement:
             response['message'] = "User doesn't exist"
         return response
 
-    # TODO
+
     def add_user_details(self, data):
         user_id = data['user_id']
         if self.get_user_object(user_id):
-            user_detail_object = self.get_user_detail_object()
-            user_detail_object.user_full_name = data['user_full_name'] if 'user_full_name' in data else user_detail_object.user_full_name
-            user_detail_object.user_phone_number = data['user_phone_number'] if 'user_phone_number' in data else user_detail_object.user_phone_number
-            user_detail_object.user_address = data['user_address'] if 'user_address' in data else user_detail_object.user_address
-            user_detail_object.user_full_name = data['user_phone_id '] if 'user_phone_id ' in data else user_detail_object.user_phone_id
+            user_detail_object = self.get_user_detail_object(user_id)
+            if user_detail_object:
+                user_detail_object.user_full_name = data['user_full_name'] if 'user_full_name' in data else user_detail_object.user_full_name
+                user_detail_object.user_phone_number = data['user_phone_number'] if 'user_phone_number' in data else user_detail_object.user_phone_number
+                user_detail_object.user_address = data['user_address'] if 'user_address' in data else user_detail_object.user_address
+                user_detail_object.user_phone_id = data['user_phone_id'] if 'user_phone_id' in data else user_detail_object.user_phone_id
+            else:
+                user_detail_object = UserDetails()
+                user_detail_object.user_id = self.get_user_object(user_id)
+                user_detail_object.user_full_name = data['user_full_name']
+                user_detail_object.user_phone_number = data['user_phone_number']
+                user_detail_object.user_address = data['user_address']
+                user_detail_object.user_phone_id = data['user_phone_id']
+            try:
+                user_detail_object.save()
+                return 100
+            except:
+                return -105
         else:
             return -103
+    
     def get_user_detail_object(self, user_id):
         return  UserDetails.objects.filter(user_id= user_id).first()
 
@@ -391,12 +411,12 @@ class EdenUserManagement:
                 case "update_user_level":
                     return user_middleware_object.update_user_level(value)
 
-    #TODO
+
     def paginator(self,query_set,page_number):
         pagination_obj = Paginator(query_set,self.MAX_OBJECT_LIMIT)
         response = {
             'page_number': page_number,
-            'total_pages': str(pagination_obj.page_range),
-            'data': pagination_obj.page(page_number).object_list,
+            'total_pages': pagination_obj.page_range[-1],
+            'data': list(pagination_obj.page(page_number).object_list.values()),
         }
         return response

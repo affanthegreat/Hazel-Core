@@ -11,17 +11,20 @@ ELM_object = EdenLeafManagement()
 def make_response(map):
     return HttpResponse(content=json.dumps(map))
 
+def check_field_validity(valid_fields, data):
+    condition = True
+    for field in valid_fields:
+            if field not in data.keys():
+                condition = False
+    return condition
+
 
 @csrf_exempt
 def create_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
         valid_fields = ['text_content', 'leaf_type']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             response = ELM_object.create_leaf(request, data)
             return make_response(response)
         else:
@@ -89,11 +92,7 @@ def delete_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             response = ELM_object.delete_leaf(request, data['leaf_id'])
             return make_response(response)
         else:
@@ -112,11 +111,7 @@ def like_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             response = ELM_object.like_leaf(request, data['leaf_id'])
             return make_response(response)
         else:
@@ -135,11 +130,7 @@ def remove_like_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             response = ELM_object.remove_like(request, data['leaf_id'])
             return make_response(response)
         else:
@@ -158,11 +149,7 @@ def add_comment_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
         valid_fields = ['leaf_id', 'comment_string']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             response = ELM_object.add_comment(request, data['leaf_id'], data['comment_string'])
             return make_response(response)
         else:
@@ -181,11 +168,7 @@ def remove_comment_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             response = ELM_object.remove_comment(request, data['leaf_id'])
             return make_response(response)
         else:
@@ -205,11 +188,7 @@ def get_all_likes(request):
         data = json.loads(request.body)
         response = {}
         valid_fields = ['leaf_id']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             response = ELM_object.get_total_likes(data['leaf_id'])
             return JsonResponse(list(response.values()), safe=False)
         else:
@@ -229,11 +208,7 @@ def get_all_comments(request):
         data = json.loads(request.body)
         response = {}
         valid_fields = ['leaf_id']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             response = ELM_object.get_total_comments(request, data['leaf_id'])
             return JsonResponse(list(response.values()), safe=False)
         else:
@@ -253,11 +228,7 @@ def get_all_dislikes(request):
         data = json.loads(request.body)
         response = {}
         valid_fields = ['leaf_id']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             response = ELM_object.get_total_dislikes(data['leaf_id'])
             return JsonResponse(list(response.values()), safe=False)
         else:
@@ -276,11 +247,7 @@ def remove_dislike_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             response = ELM_object.remove_dislike(request, data['leaf_id'])
             return make_response(response)
         else:
@@ -299,11 +266,7 @@ def dislike_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             response = ELM_object.dislike_leaf(request, data['leaf_id'])
             return make_response(response)
         else:
@@ -323,14 +286,8 @@ def add_sub_comment_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
         valid_fields = ['leaf_id', 'comment_string','parent_comment_id']
-        condition = True
-        for field in valid_fields:
-            if field not in data.keys():
-                condition = False
-        if condition:
+        if check_field_validity(valid_fields,data):
             object_creation_status = json.loads((add_comment_view(request).content).decode('utf-8'))
-            print("===============================")
-            print(object_creation_status)
             if object_creation_status['status_code'] == -100:
                 comment_id = object_creation_status['leaf_comment_id']
                 parent_comment_id = data['parent_comment_id']

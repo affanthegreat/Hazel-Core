@@ -12,5 +12,7 @@ urlpatterns = [
     path('logout', logout),  # checked
     path('current_user', current_user),  # checked
     path('password_reset', password_reset),  # checked
-    path('get_user_id',get_user_id)
+    path('get_user_id',get_user_id), #checked
+    path('get_user_details',get_user_details), 
+    path('modify_user_details',modify_user_details)
 ]

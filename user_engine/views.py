@@ -4,6 +4,7 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate
+from django.core import serializers
 
 from user_engine.backends import EdenSessionManagement
 
@@ -15,6 +16,13 @@ session_management_object = EdenSessionManagement()
 
 def make_response(data):
     return HttpResponse(content=json.dumps(data))
+
+def check_field_validity(valid_fields, data):
+    condition = True
+    for field in valid_fields:
+            if field not in data.keys():
+                condition = False
+    return condition
 
 
 @csrf_exempt
@@ -28,6 +36,8 @@ def create_user_api(request):
         except Exception as E:
             return make_response({"status": 200,
                                      "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 
 
@@ -71,7 +81,7 @@ def unfollow_user_api(request):
 
 @csrf_exempt
 def get_followers(request):
-    if request.method == "POST":
+    if request.method == "GET":
         try:
             data = json.loads(request.body)
             pre_response = user_control_object.get_user_followers(data)
@@ -85,13 +95,13 @@ def get_followers(request):
 
 @csrf_exempt
 def get_following(request):
-    if request.method == "POST":
+    if request.method == "GET":
         try:
             data = json.loads(request.body)
             pre_response = user_control_object.get_user_following(data)
             response = JsonResponse(pre_response, safe=False)
             return response
-        except:
+        except Exception as e:
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -131,7 +141,7 @@ def logout(request):
 
 @csrf_exempt
 def current_user(request):
-    if request.method == "POST":
+    if request.method == "GET":
         user = session_management_object.get_session_user(request)
         return make_response({
             'status': 200,
@@ -157,13 +167,54 @@ def password_reset(request):
         return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 @csrf_exempt
-def get_user_id(request):
+def get_user_details(request):
+    if request.method == "GET":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['user_id']
+            if check_field_validity(valid_fields,data):
+                user_data = user_control_object.get_user_detail_object(data['user_id'])
+                return make_response({
+                    'user_id':user_data.user_id.user_id,
+                    "user_full_name": user_data.user_full_name, 
+                    "user_phone_number": user_data.user_phone_number,
+                    "user_address":user_data.user_address, 
+                    "user_phone_id":user_data.user_phone_id
+                })
+        except Exception as e:
+            print(e)
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+@csrf_exempt
+def modify_user_details(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
+            valid_fields = ['user_id',
+                            "user_full_name", 
+                            "user_phone_number",
+                            "user_address", 
+                            "user_phone_id"]
+            if check_field_validity(valid_fields,data):
+                user_id = user_control_object.add_user_details(data)
+                return make_response(user_id)
+        except Exception as e:
+            print(e)
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+@csrf_exempt
+def get_user_id(request):
+    if request.method == "GET":
+        try:
+            data = json.loads(request.body)
             valid_fields = ['user_name']
-            user_id = user_control_object.get_user_id(data)
-            return make_response(user_id)
+            if check_field_validity(valid_fields,data):
+                user_id = user_control_object.get_user_id(data)
+                return make_response(user_id)
         except:
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
