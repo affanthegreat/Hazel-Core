@@ -754,7 +754,6 @@ class EdenLeafManagement:
         """
         return UserProfile.objects.filter(user_id=user_id).first()
 
-    # TODO 
     def paginator(self,query_set,page_number):
         pagination_obj = Paginator(query_set,self.MAX_OBJECT_LIMIT)
         total_pages = pagination_obj.page_range[-1]
