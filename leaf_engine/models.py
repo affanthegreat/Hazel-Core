@@ -11,9 +11,9 @@ from django.dispatch import receiver
 from user_engine.models import UserProfile
 from eden_pipelines.AILib_leaf_pipeline import HazelAI_Leaf_Pipeline
 
-def throw_model_not_saved_error():
-    logging.error("Model couldn't be saved.")
-    raise Exception("Model not saved.")
+
+leaf_text_pipeline_object = HazelAI_Leaf_Pipeline()
+
 
 class LeafType(models.TextChoices):
     Public = "public", "public"
@@ -39,33 +39,6 @@ class Leaf(models.Model):
     leaf_topic_id = models.BigIntegerField(default= -1)
     leaf_sentiment = models.IntegerField(default=-69)
     leaf_emotion_state = models.CharField(max_length=30)
-
-
-@receiver(pre_save, sender=Leaf)
-def start_text_ml_pipeline(sender, instance, **kwargs):
-    if not instance:
-        return
-    if hasattr(instance, '_dirty'):
-        return
-    
-    pipeline_object = HazelAI_Leaf_Pipeline()
-    try:
-        response = json.loads(pipeline_object.start_text_ml_workflow(instance).content)
-        instance.leaf_topic_id = response['topic_id']
-        instance.leaf_sentiment= response['sentiment_value']
-        instance.leaf_emotion_state = response['emotion_state']
-        try:
-            instance._dirty = True
-            instance.save()
-        except Exception as e:
-            instance.delete()
-            throw_model_not_saved_error()
-        finally:
-            del instance._dirty
-    except Exception as E:
-        print(E)
-        instance.delete()
-        throw_model_not_saved_error()
 
 
 class LeafLikes(models.Model):
@@ -98,8 +71,62 @@ class LeafComments(models.Model):
     )
     comment = models.CharField(max_length=100, null=False)
     comment_depth = models.IntegerField(default=1,null=False)
-    comment_sentiment = models.IntegerField(default=-9)
+    comment_sentiment = models.IntegerField(default=-69)
+    comment_emotion = models.CharField(max_length=40)
     root_comment = models.ForeignKey('self',null=True, blank= True, on_delete=models.DO_NOTHING, related_name='main_comment' )
     parent_comment = models.ForeignKey('self',null=True,blank=True,on_delete=models.CASCADE,related_name='replies')
     
     
+def throw_model_not_saved_error():
+    logging.error("Model couldn't be saved.")
+    raise Exception("Model not saved.")
+    
+@receiver(pre_save, sender=Leaf)
+def start_leaf_text_ml_pipeline(sender, instance, **kwargs):
+    if not instance:
+        return
+    if hasattr(instance, '_dirty'):
+        return
+    try:
+        response = json.loads(leaf_text_pipeline_object.start_leaf_text_ml_workflow(instance).content)
+        if 'status' in response and response('status') == -101:
+            raise Exception(response['message'])
+        instance.leaf_topic_id = response['topic_id']
+        instance.leaf_sentiment= response['sentiment_value']
+        instance.leaf_emotion_state = response['emotion_state']
+        try:
+            instance._dirty = True
+            instance.save()
+        except Exception as e:
+            instance.delete()
+            throw_model_not_saved_error()
+        finally:
+            del instance._dirty
+    except Exception as E:
+        instance.delete()
+        throw_model_not_saved_error()
+
+
+@receiver(pre_save, sender=LeafComments)
+def start_comment_text_ml_pipeline(sender, instance, **kwargs):
+    if not instance:
+        return
+    if hasattr(instance, '_dirty'):
+        return
+    try:
+        response = json.loads(leaf_text_pipeline_object.start_comment_text_ml_workflow(instance).content)
+        if 'status' in response and response('status') == -101:
+            raise Exception(response['message'])
+        instance.comment_sentiment = response['sentiment_value'] 
+        instance.comment_emotion = response['emotion_state']
+        try:
+            instance._dirty = True
+            instance.save()
+        except Exception as e:
+            instance.delete()
+            throw_model_not_saved_error()
+        finally:
+            del instance._dirty
+    except Exception as E:
+        instance.delete()
+        throw_model_not_saved_error()

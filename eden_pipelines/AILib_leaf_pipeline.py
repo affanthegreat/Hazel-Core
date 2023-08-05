@@ -14,7 +14,11 @@ class HazelAI_Leaf_Pipeline():
         self.meta()
     
     def make_POST_request(self,api_endpoint,body):
-        return requests.post(api_endpoint,json=body)
+        try:
+            return requests.post(api_endpoint,json=body)
+        except requests.exceptions.ConnectionError:
+            return {"status":-101,"message":"Cannot connect to Host."}
+        
 
     def leaf_to_json(self, leaf_object):
         return {
@@ -46,7 +50,13 @@ class HazelAI_Leaf_Pipeline():
             'parent_comment': comment_object.parent_comment
         }
     
-    def start_text_ml_workflow(self, leaf_object):
+    def start_leaf_text_ml_workflow(self, leaf_object):
+        leaf_data = self.leaf_to_json(leaf_object)
+        text_api_endpoint = self.HAZEL_AI_ADDRESS + 'leaf_text_pipeline'
+        response = self.make_POST_request(text_api_endpoint,leaf_data)
+        return response
+    
+    def start_comment_text_ml_workflow(self, leaf_object):
         leaf_data = self.leaf_to_json(leaf_object)
         text_api_endpoint = self.HAZEL_AI_ADDRESS + 'leaf_text_pipeline'
         response = self.make_POST_request(text_api_endpoint,leaf_data)

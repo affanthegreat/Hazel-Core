@@ -90,7 +90,6 @@ LOCAL_APPS = [
     "leaf_engine",
     "user_engine",
     "eden_backend",
-    "eden_utils",
     "eden_pipelines"
     # Your stuff: custom apps go here
 ]
