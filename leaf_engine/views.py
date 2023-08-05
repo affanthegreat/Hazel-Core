@@ -18,6 +18,17 @@ def check_field_validity(valid_fields, data):
                 condition = False
     return condition
 
+def throw_invalid_fields():
+    response = {}
+    response['messaage'] = "Valid fields not found in request body"
+    response['status'] = 200
+    return make_response(response)
+
+def throw_http_method_not_supported():
+     return HttpResponse(
+            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
+
 
 @csrf_exempt
 def create_leaf_view(request):
@@ -28,15 +39,9 @@ def create_leaf_view(request):
             response = ELM_object.create_leaf(request, data)
             return make_response(response)
         else:
-            response = {}
-            response['messaage'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+           return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
-
+        return throw_http_method_not_supported()
 
 @csrf_exempt
 def get_user_public_leaves_view(request):
@@ -51,10 +56,10 @@ def get_user_public_leaves_view(request):
                 return response
             else:
                 return JsonResponse(response_status, safe=False)
+        else:
+            return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -70,10 +75,10 @@ def get_leaves_view(request):
                 return response
             else:
                 return JsonResponse(response_status, safe=False)
+        else:
+            return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+       return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -89,10 +94,10 @@ def get_user_private_leaves_view(request):
                 return response
             else:
                return JsonResponse(response_status, safe=False)
+        else:
+            return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -104,14 +109,9 @@ def delete_leaf_view(request):
             response = ELM_object.delete_leaf(request, data['leaf_id'])
             return make_response(response)
         else:
-            response = {}
-            response['message'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+            return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -123,14 +123,9 @@ def like_leaf_view(request):
             response = ELM_object.like_leaf(request, data['leaf_id'])
             return make_response(response)
         else:
-            response = {}
-            response['message'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+            return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -142,14 +137,9 @@ def remove_like_view(request):
             response = ELM_object.remove_like(request, data['leaf_id'])
             return make_response(response)
         else:
-            response = {}
-            response['message'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+            return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -161,14 +151,9 @@ def add_comment_view(request):
             response = ELM_object.add_comment(request, data['leaf_id'], data['comment_string'])
             return make_response(response)
         else:
-            response = {}
-            response['message'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+           return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+       return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -180,14 +165,9 @@ def remove_comment_view(request):
             response = ELM_object.remove_sub_comment(request, data['leaf_id'])
             return make_response(response)
         else:
-            response = {}
-            response['message'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+           return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -199,15 +179,9 @@ def remove_sub_comment_view(request):
             response = ELM_object.remove_sub_comment(request, data['leaf_id'], data['comment_id'])
             return make_response(response)
         else:
-            response = {}
-            response['message'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+           return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
-
+        return throw_http_method_not_supported()
 
 @csrf_exempt
 def get_all_likes(request):
@@ -219,21 +193,15 @@ def get_all_likes(request):
             response = ELM_object.get_total_likes(data['leaf_id'], data['page_number'])
             return JsonResponse(response, safe=False)
         else:
-            response = {}
-            response['message'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+           return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+       return throw_http_method_not_supported()
 
 
 @csrf_exempt
 def get_all_comments(request):
     if request.method == "GET":
         data = json.loads(request.body)
-        response = {}
         valid_fields = ['leaf_id', 'page_number']
         if check_field_validity(valid_fields,data):
             response = ELM_object.get_total_comments(request, data['leaf_id'],data['page_number'])
@@ -243,14 +211,9 @@ def get_all_comments(request):
                 )
             return JsonResponse(response, safe=False)
         else:
-            response = {}
-            response['message'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+           return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+       return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -263,14 +226,9 @@ def get_all_dislikes(request):
             response = ELM_object.get_total_dislikes(data['leaf_id'],data['page_number'])
             return JsonResponse(response, safe=False)
         else:
-            response = {}
-            response['message'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+            return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -282,14 +240,9 @@ def remove_dislike_view(request):
             response = ELM_object.remove_dislike(request, data['leaf_id'])
             return make_response(response)
         else:
-            response = {}
-            response['message'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+           return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -301,14 +254,9 @@ def dislike_leaf_view(request):
             response = ELM_object.dislike_leaf(request, data['leaf_id'])
             return make_response(response)
         else:
-            response = {}
-            response['messaage'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+            return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported()
 
 
 @csrf_exempt
@@ -324,13 +272,8 @@ def add_sub_comment_view(request):
                 response = ELM_object.add_sub_comment_db(comment_id,parent_comment_id)
                 return make_response(response)
         else:
-            response = {}
-            response['messaage'] = "Valid fields not found in request body"
-            response['status'] = 200
-            return make_response(response)
+            return throw_invalid_fields()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+       return throw_http_method_not_supported()
 
 

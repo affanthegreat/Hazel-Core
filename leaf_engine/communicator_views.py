@@ -8,6 +8,7 @@ from leaf_engine.communicator import EdenLeafCommunicator
 
 ELM_object = EdenLeafManagement()
 communicator_object = EdenLeafCommunicator()
+
 def make_http_response(map):
     return HttpResponse(content= json.dumps(map))
 
@@ -21,11 +22,16 @@ def check_field_validity(data,valid_fields):
             condition = False
     return condition
 
-def throw_fields_invalid_error():
+def throw_invalid_fields_error():
     response = {}
     response['messaage'] = "Valid fields not found in request body"
     response['status'] = 200
     return make_http_response(response)
+
+def throw_http_method_not_supported_error():
+     return HttpResponse(
+            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 @csrf_exempt
 def stream_uncategorized_leaves_view(request):
@@ -36,11 +42,9 @@ def stream_uncategorized_leaves_view(request):
             response = communicator_object.stream_uncategorized_leaves(data)
             return make_json_response(response)
         else:
-            throw_fields_invalid_error()
+            return throw_invalid_fields_error()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported_error()
 
 
 @csrf_exempt
@@ -52,12 +56,9 @@ def stream_leaves_topic_wise_view(request):
             response = communicator_object.stream_leaves_topic_wise(data)
             return make_json_response(response)
         else:
-            throw_fields_invalid_error()
-
+            return throw_invalid_fields_error()
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+       return throw_http_method_not_supported_error()
 
 
 @csrf_exempt
@@ -69,12 +70,10 @@ def stream_negative_leaves_view(request):
             response = communicator_object.stream_negative_leaves(data)
             return make_json_response(response)
         else:
-            throw_fields_invalid_error()
+           return throw_invalid_fields_error()
 
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported_error()
 
 
 @csrf_exempt
@@ -86,12 +85,10 @@ def stream_unmarked_comments_view(request):
             response = communicator_object.stream_unmarked_comments(data)
             return make_json_response(response)
         else:
-            throw_fields_invalid_error()
+            return throw_invalid_fields_error()
 
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported_error()
 
 
 @csrf_exempt
@@ -103,13 +100,10 @@ def stream_marked_comments_view(request):
             response = communicator_object.stream_marked_comments(data)
             return make_json_response(response)
         else:
-            throw_fields_invalid_error()
+            return throw_invalid_fields_error()
 
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
-
+        return throw_http_method_not_supported_error()
 
 @csrf_exempt
 def send_leaf_metrics_view(request):
@@ -120,12 +114,10 @@ def send_leaf_metrics_view(request):
             response = communicator_object.send_leaf_metrics(data)
             return make_json_response(response)
         else:
-            throw_fields_invalid_error()
+            return throw_invalid_fields_error()
 
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported_error()
 
 @csrf_exempt
 def update_batch_leaf_metrics_view(request):
@@ -136,9 +128,7 @@ def update_batch_leaf_metrics_view(request):
             response = communicator_object.send_leaf_metrics(data['leaves_collection'])
             return make_http_response(response)
         else:
-            throw_fields_invalid_error()
+            return throw_invalid_fields_error()
 
     else:
-        return HttpResponse(
-            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
-        )
+        return throw_http_method_not_supported_error()
