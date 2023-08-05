@@ -19,6 +19,17 @@ def make_http_response(data):
 def make_json_response(list_of_data):
     return JsonResponse(list_of_data)
 
+def throw_invalid_fields_error():
+    response = {}
+    response['messaage'] = "Valid fields not found in request body"
+    response['status'] = 200
+    return make_http_response(response)
+
+def throw_http_method_not_supported_error():
+     return HttpResponse(
+            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
+
 @csrf_exempt
 def stream_users_by_topics_view(request):
     if request.method == "POST":
@@ -28,10 +39,9 @@ def stream_users_by_topics_view(request):
                 stream_data = communicator_object.stream_user_objects_by_topics(data['topic_id'], data['page_number'])
                 return make_json_response(stream_data)
         except Exception as E:
-            return make_http_response({"status": 200,
-                                     "message": "Cannot unload data."})
+           return throw_invalid_fields_error()
     else:
-        return make_http_response({"status": 200, "message": "HTTP method is not supported."})
+        return throw_http_method_not_supported_error()
 
 @csrf_exempt
 def update_user_topics(request):
@@ -43,13 +53,11 @@ def update_user_topics(request):
                     communicator_object.update_user_topics(data)
                     return make_http_response({"status":200, "message":"Successfully updated user topic object."})
                 except Exception as e:
-                      print(e)
                       return make_http_response({"status": 200,
                                      "message": "Something went wrong while creating user topic object."})
         except Exception as E:
-            return make_http_response({"status": 200,
-                                     "message": "Cannot unload data."})
+            return throw_invalid_fields_error()
     else:
-        return make_http_response({"status": 200, "message": "HTTP method is not supported."})
+        return throw_http_method_not_supported_error()
 
 

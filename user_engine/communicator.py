@@ -34,9 +34,20 @@ class EdenUserCommunicator():
 
     def paginator(self,query_set,page_number):
         pagination_obj = Paginator(query_set,self.MAX_OBJECT_LIMIT)
-        response = {
-            'page_number': page_number,
-            'total_pages': pagination_obj.page_range[-1],
-            'data': list(pagination_obj.page(page_number).object_list.values()),
-        }
+        total_pages = pagination_obj.page_range[-1]
+        if page_number > total_pages:
+            return {
+                "message": f"Page number does not exists. (total pages available : {total_pages})"
+            }
+        try:
+            response = {
+                'page_number': page_number,
+                'total_pages': total_pages,
+                'data': list(pagination_obj.page(page_number).object_list.values()),
+            }
+        except Exception as E:
+            response = {
+                    "message": "Cannot load page."
+                }
+
         return response

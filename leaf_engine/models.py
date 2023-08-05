@@ -1,13 +1,19 @@
 import datetime
 import uuid
+import logging
+import json
 
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
 
 from user_engine.models import UserProfile
+from eden_pipelines.AILib_leaf_pipeline import HazelAI_Leaf_Pipeline
 
+def throw_model_not_saved_error():
+    logging.error("Model couldn't be saved.")
+    raise Exception("Model not saved.")
 
 class LeafType(models.TextChoices):
     Public = "public", "public"
@@ -31,7 +37,36 @@ class Leaf(models.Model):
     experience_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     previous_analytics_run = models.DateTimeField(default=datetime.datetime.now())
     leaf_topic_id = models.BigIntegerField(default= -1)
-    leaf_sentiment = models.IntegerField(default=-9)
+    leaf_sentiment = models.IntegerField(default=-69)
+    leaf_emotion_state = models.CharField(max_length=30)
+
+
+@receiver(pre_save, sender=Leaf)
+def start_text_ml_pipeline(sender, instance, **kwargs):
+    if not instance:
+        return
+    if hasattr(instance, '_dirty'):
+        return
+    
+    pipeline_object = HazelAI_Leaf_Pipeline()
+    try:
+        response = json.loads(pipeline_object.start_text_ml_workflow(instance).content)
+        instance.leaf_topic_id = response['topic_id']
+        instance.leaf_sentiment= response['sentiment_value']
+        instance.leaf_emotion_state = response['emotion_state']
+        try:
+            instance._dirty = True
+            instance.save()
+        except Exception as e:
+            instance.delete()
+            throw_model_not_saved_error()
+        finally:
+            del instance._dirty
+    except Exception as E:
+        print(E)
+        instance.delete()
+        throw_model_not_saved_error()
+
 
 class LeafLikes(models.Model):
     like_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True ,default=uuid.uuid4)

@@ -28,7 +28,7 @@ class EdenLeafManagement:
         return session_id
 
     def __init__(self) -> None:
-        self.MAX_OBJECT_LIMIT = 50
+        self.MAX_OBJECT_LIMIT = 30
         pass
 
     def create_leaf(self, request, data):
@@ -61,7 +61,13 @@ class EdenLeafManagement:
             new_leaf_object.text_content = data["text_content"]
             new_leaf_object.image_content = None
             new_leaf_object.leaf_type = LeafType(data["leaf_type"])
-            new_leaf_object.save()
+            try:
+                new_leaf_object.save()
+            except:
+                return {
+                    "status": -101,
+                    "message": "Model not saved."
+                }
             if LeafType(data['leaf_type']) == LeafType.Private:
                 self.run_user_middleware(self.get_logged_in_user(request), "update_private_leaf", 1)
             else:
@@ -751,11 +757,22 @@ class EdenLeafManagement:
     # TODO 
     def paginator(self,query_set,page_number):
         pagination_obj = Paginator(query_set,self.MAX_OBJECT_LIMIT)
-        response = {
-            'page_number': page_number,
-            'total_pages': pagination_obj.page_range[-1],
-            'data': list(pagination_obj.page(page_number).object_list.values()),
-        }
+        total_pages = pagination_obj.page_range[-1]
+        if page_number > total_pages:
+            return {
+                "message": f"Page number does not exists. (total pages available : {total_pages})"
+            }
+        try:
+            response = {
+                'page_number': page_number,
+                'total_pages': total_pages,
+                'data': list(pagination_obj.page(page_number).object_list.values()),
+            }
+        except Exception as E:
+            response = {
+                    "message": "Cannot load page."
+                }
+
         return response
 
 
