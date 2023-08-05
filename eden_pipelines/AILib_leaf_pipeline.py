@@ -41,13 +41,13 @@ class HazelAI_Leaf_Pipeline():
     
     def comment_to_json(self, comment_object):
         return {
-            'comment_id': comment_object.comment_id,
-            'commented_by': comment_object.commented_by.user_id,
+            'comment_id': str(comment_object.comment_id),
+            'commented_by': str(comment_object.commented_by.user_id),
             'comment': comment_object.comment,
             'comment_depth' : comment_object.comment_depth,
             'comment_sentiment': comment_object.comment_sentiment,
-            'root_comment': comment_object.root_comment,
-            'parent_comment': comment_object.parent_comment
+            'root_comment': str(comment_object.root_comment),
+            'parent_comment':str(comment_object.parent_comment)
         }
     
     def start_leaf_text_ml_workflow(self, leaf_object):
@@ -57,8 +57,8 @@ class HazelAI_Leaf_Pipeline():
         return response
     
     def start_comment_text_ml_workflow(self, leaf_object):
-        leaf_data = self.leaf_to_json(leaf_object)
-        text_api_endpoint = self.HAZEL_AI_ADDRESS + 'leaf_text_pipeline'
+        leaf_data = self.comment_to_json(leaf_object)
+        text_api_endpoint = self.HAZEL_AI_ADDRESS + 'comment_text_pipeline'
         response = self.make_POST_request(text_api_endpoint,leaf_data)
         return response
     

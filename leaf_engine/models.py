@@ -37,8 +37,8 @@ class Leaf(models.Model):
     experience_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     previous_analytics_run = models.DateTimeField(default=datetime.datetime.now())
     leaf_topic_id = models.BigIntegerField(default= -1)
-    leaf_sentiment = models.IntegerField(default=-69)
-    leaf_emotion_state = models.CharField(max_length=30)
+    leaf_sentiment = models.DecimalField(default=-69,max_digits=6,decimal_places=6)
+    leaf_emotion_state = models.CharField(max_length=30,default="NULL")
 
 
 class LeafLikes(models.Model):
@@ -64,16 +64,16 @@ class LeafDisLikes(models.Model):
 class LeafComments(models.Model):
     comment_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True, default=uuid.uuid4)
     leaf = models.ForeignKey(
-        Leaf, related_name="creator_leaf", on_delete=models.DO_NOTHING
+        Leaf, related_name="creator_leaf", on_delete=models.CASCADE
     )
     commented_by = models.ForeignKey(
         UserProfile, related_name="commented_user", on_delete=models.DO_NOTHING
     )
     comment = models.CharField(max_length=100, null=False)
     comment_depth = models.IntegerField(default=1,null=False)
-    comment_sentiment = models.IntegerField(default=-69)
-    comment_emotion = models.CharField(max_length=40)
-    root_comment = models.ForeignKey('self',null=True, blank= True, on_delete=models.DO_NOTHING, related_name='main_comment' )
+    comment_sentiment = models.DecimalField(default=-69,max_digits=6,decimal_places=6)
+    comment_emotion = models.CharField(max_length=40,default="NULL")
+    root_comment = models.ForeignKey('self',null=True, blank= True, on_delete=models.CASCADE, related_name='main_comment' )
     parent_comment = models.ForeignKey('self',null=True,blank=True,on_delete=models.CASCADE,related_name='replies')
     
     
@@ -87,24 +87,28 @@ def start_leaf_text_ml_pipeline(sender, instance, **kwargs):
         return
     if hasattr(instance, '_dirty'):
         return
-    try:
-        response = json.loads(leaf_text_pipeline_object.start_leaf_text_ml_workflow(instance).content)
-        if 'status' in response and response('status') == -101:
-            raise Exception(response['message'])
-        instance.leaf_topic_id = response['topic_id']
-        instance.leaf_sentiment= response['sentiment_value']
-        instance.leaf_emotion_state = response['emotion_state']
+    if instance.leaf_topic_id == -1 or instance.leaf_sentiment == -69 or instance.leaf_emotion_state == "NULL":
+        logging.info("> Initiating pre save function.")
         try:
-            instance._dirty = True
-            instance.save()
-        except Exception as e:
+            response = json.loads(leaf_text_pipeline_object.start_leaf_text_ml_workflow(instance).content)
+            print(response)
+            if 'status' in response and response('status') == -101:
+                raise Exception(response['message'])
+            instance.leaf_topic_id = response['topic_id']
+            instance.leaf_sentiment= response['sentiment_value']
+            instance.leaf_emotion_state = response['emotion_state']
+        except Exception as E:
+            print(E)
             instance.delete()
             throw_model_not_saved_error()
-        finally:
-            del instance._dirty
-    except Exception as E:
-        instance.delete()
+    try:
+        instance._dirty = True
+        instance.save()
+    except:
         throw_model_not_saved_error()
+    finally:
+        del instance._dirty
+
 
 
 @receiver(pre_save, sender=LeafComments)
@@ -113,20 +117,25 @@ def start_comment_text_ml_pipeline(sender, instance, **kwargs):
         return
     if hasattr(instance, '_dirty'):
         return
-    try:
-        response = json.loads(leaf_text_pipeline_object.start_comment_text_ml_workflow(instance).content)
-        if 'status' in response and response('status') == -101:
-            raise Exception(response['message'])
-        instance.comment_sentiment = response['sentiment_value'] 
-        instance.comment_emotion = response['emotion_state']
+    if (instance.comment_sentiment == -69 and 
+        instance.comment_emotion == "NULL"):
         try:
-            instance._dirty = True
-            instance.save()
-        except Exception as e:
+            response = json.loads(leaf_text_pipeline_object.start_comment_text_ml_workflow(instance).content)
+            if 'status' in response and response('status') == -101:
+                raise Exception(response['message'])
+            instance.comment_sentiment = response['sentiment_value'] 
+            instance.comment_emotion = response['emotion_state']
+        except Exception as E:
+            print(E)
             instance.delete()
             throw_model_not_saved_error()
-        finally:
-            del instance._dirty
-    except Exception as E:
+    try:
+        instance._dirty = True
+        instance.save()
+    except Exception as e:
+        print(e)
         instance.delete()
         throw_model_not_saved_error()
+    finally:
+        del instance._dirty
+  

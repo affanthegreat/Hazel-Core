@@ -162,7 +162,7 @@ def remove_comment_view(request):
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
         if check_field_validity(valid_fields,data):
-            response = ELM_object.remove_sub_comment(request, data['leaf_id'])
+            response = ELM_object.remove_comment(request, data['leaf_id'])
             return make_response(response)
         else:
            return throw_invalid_fields_error()

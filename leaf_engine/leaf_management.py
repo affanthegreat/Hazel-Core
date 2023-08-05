@@ -381,6 +381,7 @@ class EdenLeafManagement:
                     else:
                         return {"status_code":-105}
                 except Exception as E:
+                    print(E)
                     return -103
             else:
                 return -106
@@ -412,7 +413,8 @@ class EdenLeafManagement:
                     comment_object.delete()
                     self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
                     return -100
-            except Exception:
+            except Exception as E:
+                print(E)
                 return -105
         pass
     
@@ -474,6 +476,7 @@ class EdenLeafManagement:
                 else:
                     comment_object.root_comment = parent_object.root_comment
                 comment_object.save()
+                self.run_leaf_middleware(self.get_leaf_object(comment_object.leaf_id), "update_comments", 1)
                 return -100
             except Exception as E:
                 comment_object.delete()

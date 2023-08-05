@@ -7,6 +7,7 @@ class EdenLeafMiddleware():
         try:
             self.leaf_object.likes_count += value
             self.leaf_object.save()
+            print("======MIDDLEWARE INTACT======")
             return self.leaf_object.likes_count
         except Exception as e:
             print(e)
