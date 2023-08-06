@@ -25,7 +25,7 @@ class UserFollowing(models.Model):
     slave = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="slave")
     master = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="master")
     created_at = models.DateTimeField(auto_now_add=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+
 
 class UserAccessToken(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="holy")
@@ -41,5 +41,11 @@ class UserDetails(models.Model):
 
 class UserPreferredTopics(models.Model):
     topic_id = models.BigIntegerField(default= -1)
+    topic_category = models.BigIntegerField(default=-1)
+    topic_view_frequency = models.BigIntegerField(default=0)
     user_object = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING,related_name='user_obj')
     created_at = models.DateTimeField(auto_now_add=True)
+
+class UserBlockedAccounts(models.Model):
+    blocker_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='sigma')
+    blocked_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='beta')

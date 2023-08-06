@@ -50,17 +50,26 @@ class HazelAI_Leaf_Pipeline():
             'parent_comment':str(comment_object.parent_comment)
         }
     
+    def make_url(self, api_endpoint):
+        return self.HAZEL_AI_ADDRESS + api_endpoint
+
     def start_leaf_text_ml_workflow(self, leaf_object):
         leaf_data = self.leaf_to_json(leaf_object)
-        text_api_endpoint = self.HAZEL_AI_ADDRESS + 'leaf_text_pipeline'
+        text_api_endpoint = self.make_url('leaf_text_pipeline')
         response = self.make_POST_request(text_api_endpoint,leaf_data)
         return response
     
-    def start_comment_text_ml_workflow(self, leaf_object):
-        leaf_data = self.comment_to_json(leaf_object)
-        text_api_endpoint = self.HAZEL_AI_ADDRESS + 'comment_text_pipeline'
+    def start_comment_text_ml_workflow(self, comment_object):
+        leaf_data = self.comment_to_json(comment_object)
+        text_api_endpoint = self.make_url('comment_text_pipeline')
         response = self.make_POST_request(text_api_endpoint,leaf_data)
         return response
-    
+
+    #TODO
+    def start_leaf_image_workflow(self,leaf_object):
+        leaf_data = self.leaf_to_json(leaf_object)
+        image_api_endpoint = self.make_url('leaf_image_pipeline')
+        response = self.make_POST_request(image_api_endpoint,leaf_data)
+        return response
 
 
