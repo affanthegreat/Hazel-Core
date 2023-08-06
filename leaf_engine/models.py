@@ -35,6 +35,7 @@ class Leaf(models.Model):
     leaf_type = models.CharField(choices=LeafType.choices, max_length=30)
     engagement_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     experience_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
+    exp_points = models.BigIntegerField(default=0, max_length=25)
     previous_analytics_run = models.DateTimeField(default=datetime.datetime.now())
     leaf_topic_id = models.BigIntegerField(default= -1)
     leaf_sentiment = models.DecimalField(default=-69,max_digits=6,decimal_places=6)

@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 
 from leaf_engine.leaf_management import EdenLeafManagement
@@ -11,17 +12,24 @@ from user_engine.user_management import EdenUserManagement
 class EdenExperienceEngine():
     def __init__(self):
         self.exp_points_weight = 0.4
-        self.time_of_running = datetime.now()
         self.engagement_points_weight = 0.6
+        logging.info("================EDEN EXP-PBR ENGINE================")
+        self.time_of_running = datetime.now()
 
     def experience_status_verification(self, user_object):
         prev_date = user_object.previous_experience_generation_date
         if prev_date == None:
             return True
         delta = self.time_of_running - prev_date
-        return delta > timedelta(hours=6)
+        return delta > timedelta(minutes=2)
+    
+    def generate_exp_points(self, engagement_rating, experience_rating):
+        leaf_exp_points = 0
+        leaf_exp_points += self.exp_points_weight * experience_rating
+        leaf_exp_points += self.engagement_points_weight * engagement_rating
+        return leaf_exp_points
 
-    def generate_exp_points(self, engagement_map, experience_map):
+    def generate_batch_exp_points(self, engagement_map, experience_map):
         total_user_exp = 0
         leaf_ids = engagement_map.keys()
         for leaf_id in leaf_ids:
@@ -63,28 +71,87 @@ class EdenExperienceEngine():
         except Exception as e:
             return False
 
-    def initiate(self, request):
-        print("================EDEN EXP-PBR ENGINE PROCESS BEGIN================")
+    def pre_process(self,leaf_object):
+        analytics_object = EdenAnalyticsEngine()
+        response = analytics_object.run_analytics_per_leaf(leaf_object)
+        logging.info("> Created Required objects.")
+        return response
+
+    def batch_pre_process(self,request):
         analytics_object = EdenAnalyticsEngine(request)
-        response = analytics_object.initiate()
-
         eden_session_manager = EdenSessionManagement()
-        user_object = eden_session_manager.get_session_user(request)
-        print("> Created Required objects.")
-        if response['status'] == 100 and self.experience_status_verification(user_object):
-            unfiltered_metric_data = response['data']
-            leaf_engagement_map, leaf_experience_map = self.filter_metrics(unfiltered_metric_data)
-            total_user_exp = self.generate_exp_points(leaf_engagement_map, leaf_experience_map)
-            level = self.generate_level(total_user_exp)
-            middleware_status = self.initiate_user_middleware(user_object, total_user_exp, level)
-            if middleware_status:
-                return {'status': 100, 'message': f"Experience Engine has completed it's task on user {user_object.user_id}. "}
-        return {'status': 106, "message": "User is either not logged-in or has gone through exp engine before delta period."}
+        self.response = analytics_object.per_user_batch_initiate()
+        self.user_object = eden_session_manager.get_session_user(request)
+        logging.info("> Created Required objects.")
+    
+    def start_main_process(self):
+        unfiltered_metric_data = self.response['data']
+        leaf_engagement_map, leaf_experience_map = self.filter_metrics(unfiltered_metric_data)
+        total_user_exp = self.generate_batch_exp_points(leaf_engagement_map, leaf_experience_map)
+        level = self.generate_level(total_user_exp)
+        return (total_user_exp, level)
 
+    def batch_initiate(self, request):
+        self.batch_pre_process(request)
+        if self.response['status'] == 100 and self.experience_status_verification(self.user_object):
+            total_user_exp, level = self.start_main_process()
+            middleware_status = self.initiate_user_middleware(self.user_object, total_user_exp, level)
+            if middleware_status:
+                return self.throw_process_complete_msg()
+        return self.throw_process_failed_error()
+    
+    def calculate_user_exp_points(self,user_object):
+        elm_object = EdenLeafManagement()
+        leaves_query_set = elm_object.get_leaves_by_user_id(user_object)
+        exp_points = 0
+        for leaf in leaves_query_set:
+            exp_points += leaf.exp_points
+        return exp_points
+
+    def run_per_leaf_middleware(self, leaf_object, ratings):
+        eden_leaf_middleware  = EdenLeafMiddleware(leaf_object)
+
+        eden_leaf_middleware.update_engagement_rate(ratings['engagement_rate'])
+        eden_leaf_middleware.update_experience_rate(ratings['experience_rate'])
+        eden_leaf_middleware.update_exp_points(ratings['leaf_total_exp_points'])
+        eden_leaf_middleware.update_previous_analytics_date(self.time_of_running)
+
+    def update_leaf_owner_metrics(self,leaf_object):
+        eden_leaf_management = EdenLeafManagement()
+        eden_user_middleware = EdenUserMiddleWare()
+        leaf_owner = eden_leaf_management.get_user_object(leaf_object.owner.user_id)
+        operation_status = self.experience_status_verification(leaf_object)
+        if operation_status:
+            user_exp_points = self.calculate_user_exp_points(leaf_owner)
+            level = self.generate_level(user_exp_points)
+            eden_user_middleware.update_user_exp(user_exp_points)
+            eden_user_middleware.update_user_level(level)
+            eden_user_middleware.update_previous_experience_generation_date(self.time_of_running)
+
+    def initate_per_leaf(self,leaf_object):
+        try:
+            ratings = self.pre_process(leaf_object)
+            engagement_rating, experience_rating = ratings['engagement_rate'], ratings['experience_rate']
+            ratings['leaf_total_exp_points'] = self.generate_exp_points(engagement_rating, experience_rating)
+            self.run_per_leaf_middleware(leaf_object, ratings)
+            self.update_leaf_owner_metrics(leaf_object)
+            return 100
+        except Exception as e:
+            logging.error(e)
+            return -111
+
+    def throw_process_complete_msg(self):
+         return {'status': 100, 
+                'message': f"Experience Engine has completed it's task on user {self.user_object.user_id}."}
+
+    def throw_process_failed_error(self):
+        return {'status': 106,
+                 "message": "User is either not logged-in or has gone through exp engine before delta period."}
 
 class EdenAnalyticsEngine():
-    def __init__(self, request):
+    def __init__(self, request=None):
         self.request = request
+        self.leaf_avg_points_map = {}
         self.time_of_running = datetime.now()
         self.metric_weights()
 
@@ -92,12 +159,12 @@ class EdenAnalyticsEngine():
         self.public_like_weight = 1
         self.public_dislike_weight = -1
         self.public_comment_weight = 2
-        self.public_view_weight = 0.2
+        self.public_view_weight = 0.1
 
-        self.private_like_weight = 0.6
-        self.private_dislike_weight = -0.6
-        self.private_comment_weight = 1.2
-        self.private_view_weight = 0.7
+        self.private_like_weight = 0.3
+        self.private_dislike_weight = -0.3
+        self.private_comment_weight = 0.8
+        self.private_view_weight = 0.05
 
     def analytics_verification(self, leaf_object):
         prev_date = leaf_object.previous_analytics_run
@@ -141,50 +208,53 @@ class EdenAnalyticsEngine():
         eden_leaf_middleware.update_engagement_rate(data['leaf_engagement_rate'])
         eden_leaf_middleware.update_exp_rate(data['leaf_experience_rate'])
         eden_leaf_middleware.update_previous_analytics_date(self.time_of_running)
-
-    def initiate(self):
+    
+    def run_analytics_per_leaf(self,leaf_object):
         eden_leaf_manager = EdenLeafManagement()
-        print("> Analytics are initiated...")
-        try:
-            eden_user = eden_leaf_manager.get_logged_in_user(self.request)
-            public_leaf_objects = eden_leaf_manager.get_user_public_leaves(self.request)
-            private_leaf_objects = eden_leaf_manager.get_user_private_leaves(self.request)
-            print("> Total Public and Private leaves accquired. Now calculating Engagement and Experience Points.")
-            leaf_avg_points_map = {}
+        data = {"leaf_object": leaf_object}
+        leaf_engagement_rate = self.generate_engagement_rate(leaf_object)
+        leaf_experience_rate = self.generate_per_view_exp(leaf_object, eden_leaf_manager.get_user_object(leaf_object.owner.user_id))
 
-            for public_leaf in public_leaf_objects:
-                analytics_required = self.analytics_verification(public_leaf)
-                if analytics_required:
-                    data = {
-                        "leaf_object": public_leaf
-                    }
-                    leaf_engagement_rate = self.generate_engagement_rate(public_leaf)
-                    leaf_experience_rate = self.generate_per_view_exp(public_leaf, eden_user)
+        data['leaf_engagement_rate'] = leaf_engagement_rate
+        data['leaf_experience_rate'] = leaf_experience_rate
 
-                    data['leaf_engagement_rate'] = leaf_engagement_rate
-                    data['leaf_experience_rate'] = leaf_experience_rate
+        self.run_middleware(data)
+        return {"engagement_rate": leaf_engagement_rate, 
+                "experience_rate": leaf_experience_rate}
+        
+    def process_user_public_leaves(self):
+        if self.request == None:
+            return self.throw_request_not_found_error()
+        eden_leaf_manager = EdenLeafManagement()
+        public_leaf_objects = eden_leaf_manager.get_user_public_leaves(self.request,require_pagination=False)
+        for public_leaf in public_leaf_objects:
+            analytics_required = self.analytics_verification(public_leaf)
+            if analytics_required:
+                ratings = self.run_analytics_per_leaf(public_leaf)
+                self.leaf_avg_points_map[public_leaf.leaf_id] = (ratings['engagement_rate'], ratings['experience_rate'])
 
-                    self.run_middleware(data)
-                    leaf_avg_points_map[public_leaf.leaf_id] = (leaf_engagement_rate, leaf_experience_rate)
-            print("> Public Leaf metrics calculated. Now proceeding ahead for Private Leaf.")
-            for private_leaf in private_leaf_objects:
-                analytics_required = self.analytics_verification(private_leaf)
-                if analytics_required:
-                    data = {
-                        "leaf_object": public_leaf
-                    }
-                    leaf_engagement_rate = self.generate_engagement_rate(private_leaf)
-                    leaf_experience_rate = self.generate_per_view_exp(private_leaf, eden_user)
+    
+    def process_user_private_leaves(self):
+        if self.request == None:
+            return self.throw_request_not_found_error()
+        eden_leaf_manager = EdenLeafManagement()
+        private_leaf_objects = eden_leaf_manager.get_user_private_leaves(self.request, require_pagination= False)
+        for private_leaf in private_leaf_objects:
+            analytics_required = self.analytics_verification(private_leaf)
+            if analytics_required:
+                ratings = self.run_analytics_per_leaf(private_leaf)
+                self.leaf_avg_points_map[private_leaf.leaf_id] =  (ratings['engagement_rate'], ratings['experience_rate'])
+ 
 
-                    data['leaf_engagement_rate'] = leaf_engagement_rate
-                    data['leaf_experience_rate'] = leaf_experience_rate
-                    self.run_middleware(data)
-                    leaf_avg_points_map[private_leaf.leaf_id] = (leaf_engagement_rate, leaf_experience_rate)
-
-            response = {'status': 100, 'data': leaf_avg_points_map}
-            print("> =========== <")
-            print(response)
-            return response
-        except Exception as E:
-            print(E)
-            return {'status': 105}
+    def per_user_batch_initiate(self):
+        if self.request == None:
+            return self.throw_request_not_found_error()
+        self.process_user_public_leaves()
+        self.process_user_private_leaves()
+        return {'status': 100, 'data': self.leaf_avg_points_map}
+    
+    def throw_request_not_found_error(self):
+        return {
+            'status':'-111',
+            'message': 'request object not initiated with analytics object.'
+        }

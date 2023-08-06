@@ -39,6 +39,8 @@ class UserDetails(models.Model):
     user_address = models.CharField(max_length=50,null=False)
     user_phone_id = models.CharField(max_length=120,unique= True,null=False)
 
+
+#TODO ADD eden user management classes and communicators.
 class UserPreferredTopics(models.Model):
     topic_id = models.BigIntegerField(default= -1)
     topic_category = models.BigIntegerField(default=-1)

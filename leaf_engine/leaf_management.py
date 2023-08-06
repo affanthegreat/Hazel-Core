@@ -11,6 +11,7 @@ from user_engine.models import UserProfile
 from user_engine.middleware import EdenUserMiddleWare
 from user_engine.user_management import EdenUserManagement
 
+from exp_engine.experience_engine import EdenExperienceEngine
 session_management_object = EdenSessionManagement()
 
 
@@ -80,7 +81,7 @@ class EdenLeafManagement:
             response["code"] = False
         return response
 
-    def get_user_public_leaves(self, request, page_number):
+    def get_user_public_leaves(self, request, page_number, require_pagination= True):
         """
         Retrieve all public leaf objects associated with the logged-in user.
 
@@ -97,11 +98,21 @@ class EdenLeafManagement:
         
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            return self.paginator(Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public).all(),page_number)
+            query_set = Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public).all()
+            if require_pagination:
+                return self.paginator(query_set,page_number)
+            else:
+                return query_set
         else:
             return -101
 
-    def get_leaves(self, request, user_id, page_number):
+    def get_leaves_by_user_id(self,user_id):
+        user_management_instance = EdenUserManagement()
+        if user_management_instance.check_user_exists({'user_id': user_id}):
+            query_set = Leaf.objects.filter(owner= self.get_user_object(user_id)).all()
+            return query_set
+
+    def get_leaves(self, request, user_id, page_number, require_pagination = True):
         """
         Retrieve all leaf objects associated with a given user ID.
 
@@ -125,13 +136,17 @@ class EdenLeafManagement:
         if user_management_instance.check_user_exists({'user_id': user_id}):
             following_object = user_management_instance.get_user_object(user_id)
             if user_management_instance.check_following(following_object, follower_user):
-                return self.paginator(Leaf.objects.filter(owner=following_object).all(),page_number)
+                query_set = Leaf.objects.filter(owner=following_object).all()
             else:
-                return self.paginator(Leaf.objects.filter(owner=following_object, leaf_type=LeafType.Public).all(),page_number)
+                query_set = Leaf.objects.filter(owner=following_object, leaf_type=LeafType.Public).all()
+            if require_pagination: 
+                return self.paginator(query_set,page_number)
+            else:
+                return query_set
         else:
             return -101
 
-    def get_user_private_leaves(self, request, page_number):
+    def get_user_private_leaves(self, request, page_number,require_pagination= True):
         """
         Retrieve all private leaf objects associated with the logged-in user.
 
@@ -147,7 +162,11 @@ class EdenLeafManagement:
         """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            return self.paginator(Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Private).all(),page_number)
+            query_set = Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Private).all()
+            if require_pagination:
+                return self.paginator(query_set,page_number)
+            else:
+                return query_set
         else:
             return -101
 
@@ -210,6 +229,7 @@ class EdenLeafManagement:
                 like_object.liked_by = user_object
                 like_object.save()
                 self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", 1)
+                self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
                 return -100
             else:
                 return -103
@@ -237,7 +257,8 @@ class EdenLeafManagement:
                 dislike_object.leaf = self.get_leaf_object(leaf_id)
                 dislike_object.disliked_by = user_object
                 dislike_object.save()
-                logging.info(self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1))
+                self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1)
+                self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
                 return -100
             else:
                 return -103
@@ -260,6 +281,8 @@ class EdenLeafManagement:
             if self.check_leaf(leaf_id) and like_status["message"]:
                 like_object = self.get_like_object(leaf_id, user_object.user_id)
                 like_object.delete()
+                self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1)
+                self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
                 return -100
             else:
                 return -105
@@ -284,7 +307,8 @@ class EdenLeafManagement:
             if self.check_leaf(leaf_id) and like_status["message"]:
                 dislike_object = self.get_dislike_object(leaf_id, user_object.user_id)
                 dislike_object.delete()
-                print(self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1))
+                self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1)
+                self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
                 return -100
             else:
                 return -105
@@ -373,6 +397,7 @@ class EdenLeafManagement:
                         leaf_comment_object.save()
                         logging.info("root comment saved to leaf_comment object.")
                         self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", 1)
+                        self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
                         response = {
                             'status_code':-100,
                             'leaf_comment_id':str(leaf_comment_object.comment_id)
@@ -412,6 +437,7 @@ class EdenLeafManagement:
                     )
                     comment_object.delete()
                     self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
+                    self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
                     return -100
             except Exception as E:
                 print(E)
@@ -421,6 +447,8 @@ class EdenLeafManagement:
     def remove_sub_comment(self, request,leaf_id, comment_id):
         if self.check_comment(leaf_id,comment_id):
             LeafComments.objects.filter(comment_id= comment_id).first().delete()
+            self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
+            self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
             return -100
         else:
             return -104
@@ -442,6 +470,7 @@ class EdenLeafManagement:
                 if self.check_leaf(leaf_id):
                     leaf_object = self.get_leaf_object(leaf_id)
                     self.run_leaf_middleware(leaf_object, "update_view", 1)
+                    self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
                     return -100
             except Exception:
                 return -105
@@ -477,6 +506,7 @@ class EdenLeafManagement:
                     comment_object.root_comment = parent_object.root_comment
                 comment_object.save()
                 self.run_leaf_middleware(self.get_leaf_object(comment_object.leaf_id), "update_comments", 1)
+                self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(comment_object.leaf_id))
                 return -100
             except Exception as E:
                 comment_object.delete()
@@ -485,7 +515,7 @@ class EdenLeafManagement:
             comment_object.delete()
             return -109
 
-    def delete_comment_by_id(self,id):
+    def delete_comment_by_id(self,comment_id):
         """
            Deletes a comment by its ID.
 
@@ -495,8 +525,12 @@ class EdenLeafManagement:
            Returns:
                int: Returns -100 indicating the comment was successfully deleted.
            """
-        if self.check_comment_by_id(id):
-            LeafComments.objects.filter(comment_id=id).first().delete()
+        if self.check_comment_by_id(comment_id):
+            comment_object = LeafComments.objects.filter(comment_id=comment_id).first()
+            leaf_id = comment_object.leaf_id
+            comment_object.delete()
+            self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
+            self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
             return -100
 
     def check_comment_by_id(self,id):
@@ -777,8 +811,6 @@ class EdenLeafManagement:
 
         return response
 
-
-    # TODO Testing
     def get_leaf_comment_object_with_id(self,leaf_comment_id):
         """Retrieves the LeafComments object with the specified leaf_comment_id from the database.
 
@@ -853,3 +885,7 @@ class EdenLeafManagement:
                     return leaf_middleware_object.update_comments(value)
                 case "update_views":
                     return leaf_middleware_object.update_views(value)
+    #TODO TESTING
+    def run_exp_pbr_engine_per_leaf(self,leaf_object):
+        exp_engine_object = EdenExperienceEngine()
+        return exp_engine_object.initate_per_leaf(leaf_object)

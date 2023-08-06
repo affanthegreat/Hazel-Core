@@ -17,7 +17,7 @@ exp_engine_instance = EdenExperienceEngine()
 def initiate_exp_engine(request):
     if request.method == "POST":
         try:
-            pre_response = exp_engine_instance.initiate(request)
+            pre_response = exp_engine_instance.batch_initiate(request)
             print(pre_response)
             return HttpResponse(
                 content=pre_response['message']
