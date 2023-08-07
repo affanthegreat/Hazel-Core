@@ -15,26 +15,26 @@ class EdenLeafCommunicator():
         logging.info("Eden Leaf Communicator object created.")
 
     def stream_uncategorized_leaves(self,args):
-        return self.paginator(Leaf.objects.filter(leaf_topic_id=-1),page_number=args['page_number'] if 'page_number' in args else 1)
+        return self.paginator(Leaf.objects.filter(leaf_topic_id=-1).order_by('-creation_date').all(),page_number=args['page_number'] if 'page_number' in args else 1)
 
     def stream_leaves_topic_wise(self,args):
-        return self.paginator(Leaf.objects.filter(leaf_topic_id=args['topic_id']),
+        return self.paginator(Leaf.objects.filter(leaf_topic_id=args['topic_id']).order_by('-creation_date').all(),
                               page_number=args['page_number'] if 'page_number' in args else 1)
 
     def stream_negative_leaves(self,args):
-        return self.paginator(Leaf.objects.filter(leaf_sentiment__lt=0,leaf_id=args['leaf_id'] ),
+        return self.paginator(Leaf.objects.filter(leaf_sentiment__lt=0, ).order_by('-creation_date').all(),
                               page_number=args['page_number'] if 'page_number' in args else 1)
 
     def stream_unmarked_comments(self, args):
-        return self.paginator(LeafComments.objects.filter(comment_sentiment=-9,   leaf_id=args['leaf_id']),
+        return self.paginator(LeafComments.objects.filter(comment_sentiment=-9,).order_by('-creation_date').all(),
                               page_number=args['page_number'] if 'page_number' in args else 1,
                               )
 
     def stream_marked_comments(self, args):
-        return self.paginator(LeafComments.objects.filter(~Q(comment_sentiment=-9),
-                                                          page_number=args['page_number'] if 'page_number' in args else 1 ))
+        return self.paginator(LeafComments.objects.filter(~Q(comment_sentiment=-9)).order_by('-creation_date').all(),
+                                                        page_number=args['page_number'] if 'page_number' in args else 1 )
 
-    def send_leaf_metrics(self,leaf_id):
+    def get_leaf_metrics(self,leaf_id):
         return Leaf.objects.filter(leaf_id=leaf_id).first()
 
     def update_batch_leaf_metrics(self, leaf_batch):

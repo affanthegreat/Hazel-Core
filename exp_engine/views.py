@@ -7,10 +7,33 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate
 
-from exp_engine.experience_engine import *
+from exp_engine.exp_manager import *
 
 
 exp_engine_instance = EdenExperienceEngine()
+
+def check_field_validity(valid_fields, data):
+    condition = True
+    for field in valid_fields:
+            if field not in data.keys():
+                condition = False
+    return condition
+
+def make_http_response(data_map):
+    return HttpResponse(
+                content=json.dumps(data_map)
+            )
+
+def throw_invalid_fields_error():
+    response = {}
+    response['messaage'] = "Valid fields not found in request body"
+    response['status'] = 200
+    return make_http_response(response) 
+
+def throw_http_method_not_supported_error():
+     return HttpResponse(
+            content=json.dumps({"status": 200, "message": "HTTP method is not supported."})
+        )
 
 
 @csrf_exempt
@@ -18,13 +41,28 @@ def initiate_exp_engine(request):
     if request.method == "POST":
         try:
             pre_response = exp_engine_instance.batch_initiate(request)
-            print(pre_response)
-            return HttpResponse(
-                content=pre_response['message']
-            )
+
+            return make_http_response(pre_response)
         except Exception as E:
-            print("????")
-            print(E)
-            return HttpResponse(
-                content=json.dumps({"status": 200, "message": "Cannot unload data."})
-            )
+            return throw_invalid_fields_error()
+    else:
+        return throw_http_method_not_supported_error()
+
+
+
+@csrf_exempt
+def initiate_exp_engine_per_leaf(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['leaf_id']
+            print(data, check_field_validity(valid_fields,data))
+            if check_field_validity(valid_fields, data):
+                response = exp_engine_instance.initiate_per_leaf_view(data['leaf_id'])
+                return make_http_response(response)
+            else:
+                return throw_invalid_fields_error()
+        except Exception as E:
+            raise E
+    else:
+        return throw_http_method_not_supported_error()

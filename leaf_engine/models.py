@@ -23,7 +23,7 @@ class LeafType(models.TextChoices):
 class Leaf(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(
-        UserProfile, related_name="creator", on_delete=models.DO_NOTHING
+        UserProfile, related_name="creator", on_delete=models.CASCADE
     )
     text_content = models.CharField(max_length=400, null=False)
     leaf_id = models.CharField(max_length=100,primary_key=True)
@@ -50,7 +50,7 @@ class LeafLikes(models.Model):
     liked_by = models.ForeignKey(
         UserProfile, related_name="liked_user", on_delete=models.DO_NOTHING
     )
-
+    created_date = models.DateTimeField(auto_now_add=True)
 
 class LeafDisLikes(models.Model):
     dislike_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True ,default=uuid.uuid4)
@@ -60,6 +60,7 @@ class LeafDisLikes(models.Model):
     disliked_by = models.ForeignKey(
         UserProfile, related_name="disliked_user", on_delete=models.DO_NOTHING
     )
+    created_date = models.DateTimeField(auto_now_add=True)
 
 
 class LeafComments(models.Model):
@@ -76,7 +77,7 @@ class LeafComments(models.Model):
     comment_emotion = models.CharField(max_length=40,default="NULL")
     root_comment = models.ForeignKey('self',null=True, blank= True, on_delete=models.CASCADE, related_name='main_comment' )
     parent_comment = models.ForeignKey('self',null=True,blank=True,on_delete=models.CASCADE,related_name='replies')
-    
+    created_date = models.DateTimeField(auto_now_add=True)
     
 def throw_model_not_saved_error():
     logging.error("Model couldn't be saved.")

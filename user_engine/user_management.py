@@ -1,5 +1,6 @@
 import crypt
 import json
+import logging
 
 from django.core.paginator import Paginator
 from django.http import JsonResponse
@@ -91,6 +92,7 @@ class EdenUserManagement:
         user_name = data.get("user_name", None)
         user_email = data.get("user_email", None)
         user_id = data.get("user_id", None)
+        logging.info(str((user_name,user_email,user_id)))
         if (UserProfile.objects.filter(user_name=user_name).exists()
             or UserProfile.objects.filter(user_email=user_email).exists()
             or UserProfile.objects.filter(user_id=user_id).exists()

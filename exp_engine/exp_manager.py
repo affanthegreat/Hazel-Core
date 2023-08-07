@@ -14,7 +14,7 @@ class EdenExperienceEngine():
         self.exp_points_weight = 0.4
         self.engagement_points_weight = 0.6
         logging.info("================EDEN EXP-PBR ENGINE================")
-        self.time_of_running = datetime.now()
+        self.time_of_running = datetime.now().astimezone()
 
     def experience_status_verification(self, user_object):
         prev_date = user_object.previous_experience_generation_date
@@ -102,10 +102,11 @@ class EdenExperienceEngine():
     
     def calculate_user_exp_points(self,user_object):
         elm_object = EdenLeafManagement()
-        leaves_query_set = elm_object.get_leaves_by_user_id(user_object)
+        leaves_query_set = elm_object.get_leaves_by_user_id(user_object.user_id)
         exp_points = 0
         for leaf in leaves_query_set:
             exp_points += leaf.exp_points
+        logging.info(f"> User Object {user_object.user_id} total exp points: {exp_points}")
         return exp_points
 
     def run_per_leaf_middleware(self, leaf_object, ratings):
@@ -118,28 +119,34 @@ class EdenExperienceEngine():
 
     def update_leaf_owner_metrics(self,leaf_object):
         eden_leaf_management = EdenLeafManagement()
-        eden_user_middleware = EdenUserMiddleWare()
         leaf_owner = eden_leaf_management.get_user_object(leaf_object.owner.user_id)
-        operation_status = self.experience_status_verification(leaf_object)
+        eden_user_middleware = EdenUserMiddleWare(leaf_owner)
+        operation_status = self.experience_status_verification(leaf_owner)
         if operation_status:
+            logging.info("> Updating user metrics.")
             user_exp_points = self.calculate_user_exp_points(leaf_owner)
             level = self.generate_level(user_exp_points)
             eden_user_middleware.update_user_exp(user_exp_points)
             eden_user_middleware.update_user_level(level)
             eden_user_middleware.update_previous_experience_generation_date(self.time_of_running)
-
-    def initate_per_leaf(self,leaf_object):
+        logging.info(f"> Leaf owner metrics last performed on {leaf_owner.previous_experience_generation_date.strftime('%m/%d/%Y, %H:%M:%S')}.")
+    def initiate_per_leaf(self,leaf_object):
         try:
             ratings = self.pre_process(leaf_object)
             engagement_rating, experience_rating = ratings['engagement_rate'], ratings['experience_rate']
             ratings['leaf_total_exp_points'] = self.generate_exp_points(engagement_rating, experience_rating)
+            logging.info(f"> Leaf Object {leaf_object.leaf_id} total exp points: {ratings}")
             self.run_per_leaf_middleware(leaf_object, ratings)
             self.update_leaf_owner_metrics(leaf_object)
             return 100
         except Exception as e:
-            logging.error(e)
-            return -111
-
+            raise e
+        
+    def initiate_per_leaf_view(self, leaf_id):
+        elm_object = EdenLeafManagement()
+        leaF_object = elm_object.get_leaf_object(leaf_id)
+        response = self.initiate_per_leaf(leaF_object)
+        
     def throw_process_complete_msg(self):
          return {'status': 100, 
                 'message': f"Experience Engine has completed it's task on user {self.user_object.user_id}."}
@@ -206,7 +213,7 @@ class EdenAnalyticsEngine():
         eden_leaf_middleware = EdenLeafMiddleware(data['leaf_object'])
 
         eden_leaf_middleware.update_engagement_rate(data['leaf_engagement_rate'])
-        eden_leaf_middleware.update_exp_rate(data['leaf_experience_rate'])
+        eden_leaf_middleware.update_experience_rate(data['leaf_experience_rate'])
         eden_leaf_middleware.update_previous_analytics_date(self.time_of_running)
     
     def run_analytics_per_leaf(self,leaf_object):

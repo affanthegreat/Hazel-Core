@@ -35,7 +35,7 @@ def throw_http_method_not_supported_error():
 
 @csrf_exempt
 def stream_uncategorized_leaves_view(request):
-    if request.method == "POST":
+    if request.method == "GET":
         data = json.loads(request.body)
         valid_fields = ['page_number']
         if check_field_validity(data,valid_fields):
@@ -49,7 +49,7 @@ def stream_uncategorized_leaves_view(request):
 
 @csrf_exempt
 def stream_leaves_topic_wise_view(request):
-    if request.method == "POST":
+    if request.method == "GET":
         data = json.loads(request.body)
         valid_fields = ['page_number','topic_id']
         if check_field_validity(data,valid_fields):
@@ -63,7 +63,7 @@ def stream_leaves_topic_wise_view(request):
 
 @csrf_exempt
 def stream_negative_leaves_view(request):
-    if request.method == "POST":
+    if request.method == "GET":
         data = json.loads(request.body)
         valid_fields = ['page_number']
         if check_field_validity(data, valid_fields):
@@ -78,9 +78,9 @@ def stream_negative_leaves_view(request):
 
 @csrf_exempt
 def stream_unmarked_comments_view(request):
-    if request.method == "POST":
+    if request.method == "GET":
         data = json.loads(request.body)
-        valid_fields = ['page_number','leaf_id']
+        valid_fields = ['page_number']
         if check_field_validity(data, valid_fields):
             response = communicator_object.stream_unmarked_comments(data)
             return make_json_response(response)
@@ -93,9 +93,9 @@ def stream_unmarked_comments_view(request):
 
 @csrf_exempt
 def stream_marked_comments_view(request):
-    if request.method == "POST":
+    if request.method == "GET":
         data = json.loads(request.body)
-        valid_fields = ['page_number','leaf_id']
+        valid_fields = ['page_number']
         if check_field_validity(data, valid_fields):
             response = communicator_object.stream_marked_comments(data)
             return make_json_response(response)
@@ -106,7 +106,7 @@ def stream_marked_comments_view(request):
         return throw_http_method_not_supported_error()
 
 @csrf_exempt
-def send_leaf_metrics_view(request):
+def get_leaf_metrics_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
