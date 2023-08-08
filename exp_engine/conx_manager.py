@@ -4,17 +4,6 @@ from exp_engine.models import *
 from leaf_engine.leaf_management import EdenLeafManagement
 from user_engine.user_management import EdenUserManagement
 
-class HazelRecommendationEngine():
-
-    def meta(self):
-        self.VERSION = 0.1
-        self.BUILD_TYPE = "ALPHA"
-
-    def __init__(self) -> None:
-        self.meta()
-        logging.info("Hazel Recommendation Engine")
-        
-
 
 class Eden_CONX_Engine():
 
