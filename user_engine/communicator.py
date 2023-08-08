@@ -27,7 +27,7 @@ class EdenUserCommunicator():
         else:
             return -103
     def stream_user_objects_by_topics(self,topic_id,page_number):
-        return self.paginator(UserPreferredTopics.objects.filter(topic_id= topic_id).all(), page_number)
+        return self.paginator(UserPreferredTopics.objects.filter(topic_id= topic_id).order_by('-created_date', '-exp_points').all(), page_number)
 
     def check_user_exists(self,user_id):
         return EUM_Object.get_user_object(user_id) is not None

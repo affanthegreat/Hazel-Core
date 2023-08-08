@@ -31,7 +31,7 @@ class EdenLeafMiddleware():
         try:
             self.leaf_object.view_count += value
             self.leaf_object.save()
-            return self.leaf_object.views_count
+            return self.leaf_object.view_count
         except Exception as e:
             raise self.throw_middleware_failed_error(e)
 
@@ -55,7 +55,7 @@ class EdenLeafMiddleware():
         try:
             self.leaf_object.exp_points = value
             self.leaf_object.save()
-            return self.leaf_object.experience_rating
+            return self.leaf_object.exp_points
         except Exception as e:
             raise self.throw_middleware_failed_error(e)
     

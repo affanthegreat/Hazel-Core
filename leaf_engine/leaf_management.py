@@ -3,6 +3,7 @@ import logging
 
 from django.core.paginator import Paginator
 from exp_engine.conx_manager import Eden_CONX_Engine
+from exp_engine.middleware import EdenUserTopicRelationMiddleWare
 from exp_engine.models import InteractionType
 
 from leaf_engine.middleware import EdenLeafMiddleware
@@ -235,6 +236,10 @@ class EdenLeafManagement:
                 self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", 1)
                 self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                 self.run_conX_engine(leaf_id,'like')
+                self.run_user_topic_middleware(leaf_id,
+                                               "like",
+                                               self.get_user_object(user_object.user_id),
+                                                1)
                 return -100
             else:
                 return -103
@@ -265,6 +270,10 @@ class EdenLeafManagement:
                 self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1)
                 self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                 self.run_conX_engine(leaf_id,'dislike')
+                self.run_user_topic_middleware(leaf_id,
+                                               "dislike",
+                                               self.get_user_object(user_object.user_id),
+                                                1)
                 return -100
             else:
                 return -103
@@ -289,6 +298,10 @@ class EdenLeafManagement:
                 like_object.delete()
                 self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1)
                 self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
+                self.run_user_topic_middleware(leaf_id,
+                                               "like",
+                                               self.get_user_object(user_object.user_id),
+                                                -1)
                 return -100
             else:
                 return -105
@@ -315,6 +328,10 @@ class EdenLeafManagement:
                 dislike_object.delete()
                 self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1)
                 self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
+                self.run_user_topic_middleware(leaf_id,
+                                               "dislike",
+                                               self.get_user_object(user_object.user_id),
+                                                -1)
                 return -100
             else:
                 return -105
@@ -405,6 +422,10 @@ class EdenLeafManagement:
                         self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", 1)
                         self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                         self.run_conX_engine(leaf_id,'comment')
+                        self.run_user_topic_middleware(leaf_id,
+                                               "comment",
+                                               user_object.user_id,
+                                                1, comment_id=leaf_comment_object.comment_id)
                         response = {
                             'status_code':-100,
                             'leaf_comment_id':str(leaf_comment_object.comment_id)
@@ -439,12 +460,18 @@ class EdenLeafManagement:
             comment_status = self.check_comment(leaf_id, user_object.user_id)
             try:
                 if self.check_leaf(leaf_id) and comment_status["message"]:
+                    leaf_object = self.get_leaf_object(leaf_id)
                     comment_object = self.get_comment_object(
                         leaf_id, user_object.user_id
                     )
+                    
+                    self.run_leaf_middleware(leaf_object, "update_comments", -1)
+                    self.run_exp_engine_per_leaf(leaf_object)
+                    self.run_user_topic_middleware(leaf_id,
+                                               "comment",
+                                               self.get_user_object(leaf_object.owner.user_id),
+                                                -1, comment_id=comment_object.comment_id)
                     comment_object.delete()
-                    self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
-                    self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                     return -100
             except Exception as E:
                 print(E)
@@ -453,9 +480,15 @@ class EdenLeafManagement:
     
     def remove_sub_comment(self, request,leaf_id, comment_id):
         if self.check_comment(leaf_id,comment_id):
+            leaf_object = self.get_leaf_object(leaf_id)
+            
+            self.run_leaf_middleware(leaf_object, "update_comments", -1)
+            self.run_exp_engine_per_leaf(leaf_object)
+            self.run_user_topic_middleware(leaf_id,
+                                            "sub_comment",
+                                            self.get_user_object(leaf_object.owner.user_id),
+                                            -1, comment_id=comment_id)
             LeafComments.objects.filter(comment_id= comment_id).first().delete()
-            self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
-            self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
             return -100
         else:
             return -104
@@ -480,6 +513,10 @@ class EdenLeafManagement:
             self.run_leaf_middleware(leaf_object, "update_view", 1)
             self.run_exp_engine_per_leaf(leaf_object)
             self.run_conX_engine(leaf_object.leaf_id,'view',)
+            self.run_user_topic_middleware(leaf_object.leaf_id,
+                                               "leaves_served",
+                                               self.get_user_object(leaf_object.owner.user_id),
+                                                1)
             return -100
         except Exception:
             return -105
@@ -523,6 +560,7 @@ class EdenLeafManagement:
         
         if self.check_subcomment(leaf_comment_id,leaf_comment_parent_id):
             try:
+                root_leaf_object = self.get_leaf_object(comment_object.leaf_id)
                 comment_object.comment_depth = parent_object.comment_depth + 1
                 comment_object.parent_comment =  parent_object
                 if base_comment:
@@ -533,6 +571,12 @@ class EdenLeafManagement:
                 self.run_leaf_middleware(self.get_leaf_object(comment_object.leaf_id), "update_comments", 1)
                 self.run_exp_engine_per_leaf(self.get_leaf_object(comment_object.leaf_id))
                 self.run_conX_engine(comment_object.leaf_id,"sub_comment",comment_object.commented_by.user_id)
+
+                root_leaf_object = self.get_leaf_object(comment_object.leaf_id)
+                self.run_user_topic_middleware(comment_object.leaf_id,
+                                               "sub_comment",
+                                               self.get_user_object(root_leaf_object.owner.user_id),
+                                                1, comment_id= comment_object.comment_id)
                 return -100
             except Exception as E:
                 comment_object.delete()
@@ -553,10 +597,20 @@ class EdenLeafManagement:
            """
         if self.check_comment_by_id(comment_id):
             comment_object = LeafComments.objects.filter(comment_id=comment_id).first()
-            leaf_id = comment_object.leaf_id
+            if comment_object.comment_depth > 1:
+                comment_type = "sub_comment"
+            else:
+                comment_type = "comment"
+            leaf_object = self.get_leaf_object(comment_object.leaf_id)
+            
+            self.run_leaf_middleware(leaf_object, "update_comments", -1)
+            self.run_exp_engine_per_leaf(leaf_object)
+            self.run_user_topic_middleware(comment_object.leaf_id,
+                                               comment_type,
+                                               self.get_user_object(leaf_object.owner.user_id),
+                                                -1, 
+                                                comment_id= comment_object.comment_id)
             comment_object.delete()
-            self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
-            self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
             return -100
 
     def check_comment_by_id(self,id):
@@ -866,7 +920,7 @@ class EdenLeafManagement:
         allowed_operations = ['update_public_leaf', "update_private_leaf",
                               "update_followers", "update_following", "update_user_exp", "update_user_level"]
         if operation not in allowed_operations:
-            return False
+            return -111
         else:
             match operation:
                 case "update_public_leaf":
@@ -881,6 +935,8 @@ class EdenLeafManagement:
                     return user_middleware_object.update_user_exp(value)
                 case "update_user_level":
                     return user_middleware_object.update_user_level(value)
+            return 100
+      
 
     def run_leaf_middleware(self, leaf_object, operation, value):
         """
@@ -898,7 +954,7 @@ class EdenLeafManagement:
         leaf_middleware_object = EdenLeafMiddleware(leaf_object)
         allowed_operations = ["update_likes", "update_dislikes", "update_comments", "update_views"]
         if operation not in allowed_operations:
-            return False
+            return -111
         else:
             match operation:
                 case "update_likes":
@@ -909,6 +965,7 @@ class EdenLeafManagement:
                     return leaf_middleware_object.update_comments(value)
                 case "update_views":
                     return leaf_middleware_object.update_views(value)
+            return 100
                 
 
     def run_exp_engine_per_leaf(self,leaf_object):
@@ -938,5 +995,42 @@ class EdenLeafManagement:
                 'leaf_interaction': leaf_interaction,
                 'interacted_by': interacted_by
             }
-            conX_status = conX_engine.start_pipeline(data)
+            conX_engine.start_pipeline(data)
             return 100
+
+    def handle_comment_sentiment_middleware(self,comment_id, topic_id, user_object, value):
+        try:
+            comment_object = self.get_leaf_comment_object_with_id(comment_id)
+            sentiment = comment_object.comment_sentiment
+            user_topic_relation_object = self.get_user_topic_relation_object(topic_id,user_object)
+            middleware_object = EdenUserTopicRelationMiddleWare(user_topic_relation_object)
+            if sentiment > 0:
+                middleware_object.update_positive_comments_made(value)
+                
+            else:
+                middleware_object.update_negative_comments_made(value)
+            middleware_object.update_times_interacted(value)
+            return 100
+        except:
+            return -111
+
+    def run_user_topic_middleware(self,leaf_id,interaction, user_object, value, comment_id=None):
+        conX_engine = Eden_CONX_Engine()
+        leaf_object = self.get_leaf_object(leaf_id)
+        topic_id = leaf_object.leaf_topic_id
+        topic_category_id = leaf_object.leaf_topic_category_id
+        if comment_id is not None:
+            self.handle_comment_sentiment_middleware(comment_id,topic_id,user_object,value)
+        
+        if conX_engine.check_user_topic_relation(topic_id,user_object):
+            return conX_engine.update_user_topic_relation_middleware(leaf_id, topic_id, interaction,user_object,value)
+        else:
+            data = {
+                'topic_id':topic_id,
+                'topic_category_id': topic_category_id,
+                'user_id': user_object.user_id
+            }
+            status = conX_engine.create_user_topic_relation(data)
+            if status == 100:
+                return conX_engine.update_user_topic_relation_middleware(leaf_id, topic_id, interaction,user_object,value)
+        return -111

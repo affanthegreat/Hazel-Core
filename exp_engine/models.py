@@ -18,6 +18,7 @@ class LeafInteraction(models.Model):
     interaction_type = models.CharField(choices=InteractionType.choices, max_length=15)
     class Meta:
         unique_together = ["leaf", "interacted_by", "interaction_type"]
+
 class UserLeafPreferences(models.Model):
     topic_id = models.BigIntegerField(default= -1)
     topic_category_id = models.BigIntegerField(default=-1)
@@ -27,3 +28,17 @@ class UserLeafPreferences(models.Model):
     class Meta:
         unique_together = ["topic_id", "topic_category_id", "user_object"]
 
+
+class UserTopicRelations(models.Model):
+    topic_id = models.BigIntegerField(default= -1)
+    topic_category_id = models.BigIntegerField(default=-1)
+    likes = models.BigIntegerField(default=0)
+    dislikes = models.BigIntegerField(default=0)
+    comments = models.BigIntegerField(default=0)
+    sub_comments = models.BigIntegerField(default=0)
+    leaves_served_by_engine = models.BigIntegerField(default=0)
+    times_interacted= models.BigIntegerField(default=0)
+    positive_comments_made = models.BigIntegerField(default=0)
+    negative_comments_made = models.BigIntegerField(default=0)
+    favoritism_weight = models.BigIntegerField(default=0)
+    user = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name='topic_relation_user')
