@@ -38,6 +38,7 @@ class Leaf(models.Model):
     exp_points = models.BigIntegerField(default=0, max_length=25)
     previous_analytics_run = models.DateTimeField(default=datetime.datetime.now())
     leaf_topic_id = models.BigIntegerField(default= -1)
+    leaf_topic_category_id = models.IntegerField(max_length=3)
     leaf_sentiment = models.DecimalField(default=-69,max_digits=6,decimal_places=6)
     leaf_emotion_state = models.CharField(max_length=30,default="NULL")
 
@@ -78,7 +79,14 @@ class LeafComments(models.Model):
     root_comment = models.ForeignKey('self',null=True, blank= True, on_delete=models.CASCADE, related_name='main_comment' )
     parent_comment = models.ForeignKey('self',null=True,blank=True,on_delete=models.CASCADE,related_name='replies')
     created_date = models.DateTimeField(auto_now_add=True)
-    
+
+class LeafViewedBy(models.Models):
+    leaf = models.ForeignKey(Leaf, related_name="viewed_leaf", on_delete=models.CASCADE)
+    viewed_by = models.ForeignKey(
+        UserProfile, related_name="viewer", on_delete=models.DO_NOTHING
+    )
+    view_date = models.DateTimeField(auto_now_add=True)
+
 def throw_model_not_saved_error():
     logging.error("Model couldn't be saved.")
     raise Exception("Model not saved.")
@@ -99,6 +107,7 @@ def start_leaf_text_ml_pipeline(sender, instance, **kwargs):
             instance.leaf_topic_id = response['topic_id']
             instance.leaf_sentiment= response['sentiment_value']
             instance.leaf_emotion_state = response['emotion_state']
+            instance.leaf_topic_category_id = response['topic_category_id']
         except Exception as E:
             print(E)
             instance.delete()

@@ -277,3 +277,15 @@ def add_sub_comment_view(request):
        return throw_http_method_not_supported_error()
 
 
+
+@csrf_exempt
+def add_leaf_view(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        valid_fields = ['leaf_id']
+        if check_field_validity(valid_fields,data):
+           ELM_object.create_view_object(request,data['leaf_id'])
+        else:
+            return throw_invalid_fields_error()
+    else:
+       return throw_http_method_not_supported_error()

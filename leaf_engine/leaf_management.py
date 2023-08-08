@@ -2,9 +2,11 @@ import uuid
 import logging 
 
 from django.core.paginator import Paginator
+from exp_engine.conx_manager import Eden_CONX_Engine
+from exp_engine.models import InteractionType
 
 from leaf_engine.middleware import EdenLeafMiddleware
-from leaf_engine.models import Leaf, LeafComments, LeafDisLikes, LeafLikes, LeafType
+from leaf_engine.models import Leaf, LeafComments, LeafDisLikes, LeafLikes, LeafType, LeafViewedBy
 
 from user_engine.backends import EdenSessionManagement
 from user_engine.models import UserProfile
@@ -231,7 +233,8 @@ class EdenLeafManagement:
                 like_object.liked_by = user_object
                 like_object.save()
                 self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", 1)
-                self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
+                self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
+                self.run_conX_engine(leaf_id,'like')
                 return -100
             else:
                 return -103
@@ -260,7 +263,8 @@ class EdenLeafManagement:
                 dislike_object.disliked_by = user_object
                 dislike_object.save()
                 self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1)
-                self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
+                self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
+                self.run_conX_engine(leaf_id,'dislike')
                 return -100
             else:
                 return -103
@@ -284,7 +288,7 @@ class EdenLeafManagement:
                 like_object = self.get_like_object(leaf_id, user_object.user_id)
                 like_object.delete()
                 self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1)
-                self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
+                self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                 return -100
             else:
                 return -105
@@ -310,7 +314,7 @@ class EdenLeafManagement:
                 dislike_object = self.get_dislike_object(leaf_id, user_object.user_id)
                 dislike_object.delete()
                 self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1)
-                self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
+                self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                 return -100
             else:
                 return -105
@@ -399,7 +403,8 @@ class EdenLeafManagement:
                         leaf_comment_object.save()
                         logging.info("root comment saved to leaf_comment object.")
                         self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", 1)
-                        self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
+                        self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
+                        self.run_conX_engine(leaf_id,'comment')
                         response = {
                             'status_code':-100,
                             'leaf_comment_id':str(leaf_comment_object.comment_id)
@@ -439,7 +444,7 @@ class EdenLeafManagement:
                     )
                     comment_object.delete()
                     self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
-                    self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
+                    self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                     return -100
             except Exception as E:
                 print(E)
@@ -450,12 +455,12 @@ class EdenLeafManagement:
         if self.check_comment(leaf_id,comment_id):
             LeafComments.objects.filter(comment_id= comment_id).first().delete()
             self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
-            self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
+            self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
             return -100
         else:
             return -104
 
-    def add_view(self, request, leaf_id):
+    def add_view(self,leaf_object, user_object):
         """
         This function adds a view to a leaf object and returns a status code.
 
@@ -467,17 +472,35 @@ class EdenLeafManagement:
         -100 if the view was successfully added.
         -105 if the view could not be added due to an exception.
         """
+        try:
+
+            obj = LeafViewedBy()
+            obj.leaf = leaf_object
+            obj.viewed_by = user_object
+            self.run_leaf_middleware(leaf_object, "update_view", 1)
+            self.run_exp_engine_per_leaf(leaf_object)
+            self.run_conX_engine(leaf_object.leaf_id,'view',)
+            return -100
+        except Exception:
+            return -105
+
+    def create_view_object(self,request,leaf_id):
         if self.is_authorised(request):
             try:
-                if self.check_leaf(leaf_id):
-                    leaf_object = self.get_leaf_object(leaf_id)
-                    self.run_leaf_middleware(leaf_object, "update_view", 1)
-                    self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
+                user_object = self.get_logged_in_user(request)
+                leaf_object = self.get_leaf_object(leaf_id)
+                if self.check_leaf(leaf_id) and self.check_viewed_by(user_object,leaf_object):
+                    self.add_view(leaf_object,user_object)
                     return -100
             except Exception:
                 return -105
-
-
+    
+    def check_viewed_by(self, user_object, leaf_object):
+        try:
+            return LeafViewedBy.objects.filer(leaf=leaf_object, viewed_by = user_object).exists()
+        except:
+            False
+        
     def add_sub_comment_db(self, leaf_comment_id, leaf_comment_parent_id):
         """
         Adds a sub-comment to the database with the specified leaf_comment_id and leaf_comment_parent_id.
@@ -508,7 +531,8 @@ class EdenLeafManagement:
                     comment_object.root_comment = parent_object.root_comment
                 comment_object.save()
                 self.run_leaf_middleware(self.get_leaf_object(comment_object.leaf_id), "update_comments", 1)
-                self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(comment_object.leaf_id))
+                self.run_exp_engine_per_leaf(self.get_leaf_object(comment_object.leaf_id))
+                self.run_conX_engine(comment_object.leaf_id,"sub_comment",comment_object.commented_by.user_id)
                 return -100
             except Exception as E:
                 comment_object.delete()
@@ -532,7 +556,7 @@ class EdenLeafManagement:
             leaf_id = comment_object.leaf_id
             comment_object.delete()
             self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
-            self.run_exp_pbr_engine_per_leaf(self.get_leaf_object(leaf_id))
+            self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
             return -100
 
     def check_comment_by_id(self,id):
@@ -640,7 +664,6 @@ class EdenLeafManagement:
             leaf_like_object = LeafLikes.objects.filter(
                 leaf=leaf_object, liked_by=user_object.user_id
             ).first()
-            print(leaf_like_object)
             response["status"] = -100
             response["message"] = leaf_like_object != None
             response["code"] = True
@@ -674,7 +697,6 @@ class EdenLeafManagement:
         user_object = self.get_user_object(user_id)
         leaf_valid = self.check_leaf(leaf_id)
         response = {}
-        print(leaf_id, user_object)
         if user_object is not None and leaf_valid:
             leaf_object = self.get_leaf_object(leaf_id)
             leaf_like_object = LeafDisLikes.objects.filter(
@@ -889,7 +911,32 @@ class EdenLeafManagement:
                     return leaf_middleware_object.update_views(value)
                 
 
-    def run_exp_pbr_engine_per_leaf(self,leaf_object):
+    def run_exp_engine_per_leaf(self,leaf_object):
         from exp_engine.exp_manager import EdenExperienceEngine
         exp_engine_object = EdenExperienceEngine()
         return exp_engine_object.initiate_per_leaf(leaf_object)
+    
+    def run_conX_engine(self,leaf_id, interaction, interacted_by):
+        conX_engine = Eden_CONX_Engine()
+        allowed_interactions = ['like', 'dislike', 'comment', 'view', 'sub_comment']
+        if interaction not in allowed_interactions:
+            return -111
+        else:
+            match interaction:
+                case "like":
+                    leaf_interaction = InteractionType.Like 
+                case "dislike":
+                    leaf_interaction = InteractionType.Dislike
+                case "comments":
+                    leaf_interaction = InteractionType.Comment
+                case "view":
+                    leaf_interaction = InteractionType.View
+                case "sub_comment":
+                    leaf_interaction = InteractionType.SubComment
+            data= {
+                'leaf_id': leaf_id,
+                'leaf_interaction': leaf_interaction,
+                'interacted_by': interacted_by
+            }
+            conX_status = conX_engine.start_pipeline(data)
+            return 100
