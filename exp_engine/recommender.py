@@ -1,11 +1,13 @@
 import logging
 
 from django.db.models import Count, Sum
+from leaf_engine.leaf_management import EdenLeafManagement
 
 from user_engine.models import *
 from leaf_engine.models import *
 from exp_engine.models import *
 from exp_engine.conx_manager import Eden_CONX_Engine
+from user_engine.user_management import EdenUserManagement
 
 conX_object = Eden_CONX_Engine()
 
@@ -40,8 +42,9 @@ class HazelRecommendationEngine():
         self.use_creation_date = True
     
     def calculate_favoritism_weight(self,topic_id,user_object):
-        relation = conX_object.get_user_topic_relation_object(topic_id,user_object)
         bias = 0
+        relation = conX_object.get_user_topic_relation_object(topic_id,user_object)
+       
         bias += self.topic_likes_weight * (relation.likes - relation.dislikes)
         bias += self.topic_comments_weight * (relation.comments)
         bias += self.topic_sub_comments_weight * relation.sub_comments
@@ -70,45 +73,17 @@ class HazelRecommendationEngine():
 
     def mix_user_following_leaves(self):
         pass
-    
-    def get_leaves_query_set(self,topic_id):
-        return Leaf.objects.filter(leaf_topic_id= topic_id)
-
-    def get_user_preferences_query_set(self, user_object):
-        return UserLeafPreferences.objects.filter(user_object= user_object)
-    
-    def get_topics_frequency_wise(self, user_object):
-        return (self.get_user_preferences_query_set(user_object).
-                values("topic_id").
-                annotate(total_leaves=Count('topic_id'), total_frequency_per_topic = Sum("topic_visit_frequency ")).
-                order_by("-total_frequency_per_topic"))
-    
-    def get_topics_category_frequency_wise(self, user_object):
-        return (self.get_user_preferences_query_set(user_object).
-                values("topic_category_id").
-                annotate(total_leaves_in_topic=Count('topic_category_id'), total_visits=Sum('topic_visit_frequency')).
-                order_by("-total_visits"))
-    
-    def filter_out_interacted_leaves(self, user_object):
-        topics_batch =self.get_topics_frequency_wise(user_object)[0]
-        total_topics = len(topics_batch)
-        leaf_query_sets = {}
-        for i in range(total_topics if total_topics < self.MAX_TOPICS_AT_ONE_TIME
-                                         else self.MAX_TOPICS_AT_ONE_TIME):
-            topic = topics_batch[i]['topic_id']
-            topic_query_set = LeafInteraction.objects.filter(interacted_by= user_object).all()
-            priority = (topics_batch[i]['topic_visit_frequency'] / total_topics) * (1 / topics_batch[i]['total_leaves_in_topics'])
-            leaf_query_sets[i+1] = (self.get_leaves_query_set(topic_id=topic).
-                                    exclude(leaf__in=topic_query_set).all().
-                                    annotate(priority = (i+1).
-                                    order_by('-creation_date'))[0]
-
-        return leaf_query_sets
 
     def get_leaf_user_interaction(self, user_object): 
-        pass
+        return LeafInteraction.objects.filter(interacted_by = user_object)
+    
+    def get_user_preferred_topics(self, user_object):
+        return (UserLeafPreferences.objects.filter(user_object = user_object).
+                all().values('topic_id').
+                annotate(leaves_with_topic_id = Count('topic_id')).
+                order_by("-leaves_with_topic_id"))
 
     def initiate(self):
-        leaf_query
+        self.generate_bias_for_user_topics
         pass
         

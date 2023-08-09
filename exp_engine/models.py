@@ -16,6 +16,7 @@ class LeafInteraction(models.Model):
     leaf = models.ForeignKey(Leaf,  related_name="interacted_leaf", on_delete=models.DO_NOTHING)
     interacted_by = models.ForeignKey(UserProfile, related_name="related_user", on_delete=models.DO_NOTHING)
     interaction_type = models.CharField(choices=InteractionType.choices, max_length=15)
+    created_at = models.DateTimeField(auto_now_add=True)
     class Meta:
         unique_together = ["leaf", "interacted_by", "interaction_type"]
 
