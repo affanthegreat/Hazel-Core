@@ -1,5 +1,6 @@
 import logging
 import json
+import datetime
 
 from django.core.paginator import Paginator
 from django.db.models import Q
@@ -21,6 +22,9 @@ class EdenLeafCommunicator():
         return self.paginator(Leaf.objects.filter(leaf_topic_id=args['topic_id']).order_by('-creation_date').all(),
                               page_number=args['page_number'] if 'page_number' in args else 1)
 
+    def stream_leaves_topic_wise_query_set(self,args):
+        return Leaf.objects.filter(leaf_topic_id=args['topic_id'], creation_date__lte=datetime.datetime.now().astimezone(), creation_date__gt=(datetime.datetime.now() - datetime.timedelta(days=7))).order_by('-creation_date').all()
+                        
     def stream_negative_leaves(self,args):
         return self.paginator(Leaf.objects.filter(leaf_sentiment__lt=0, ).order_by('-creation_date').all(),
                               page_number=args['page_number'] if 'page_number' in args else 1)

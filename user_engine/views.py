@@ -39,8 +39,6 @@ def create_user_api(request):
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
 
-
-
 @csrf_exempt
 def validate_user_api(request):
     if request.method == "POST":
@@ -207,18 +205,50 @@ def modify_user_details(request):
         return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 @csrf_exempt
-def get_user_id(request):
+def block_user(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['blocked']
+            if check_field_validity(valid_fields,data):
+                user_id = user_control_object.add_user_blocked(data)
+                return make_response(user_id)
+        except Exception as e:
+            print(e)
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+
+@csrf_exempt
+def unblock_user(request):
     if request.method == "GET":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['blocked']
+            if check_field_validity(valid_fields,data):
+                user_id = user_control_object.unblock_user(data)
+                return make_response(user_id)
+        except:
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+@csrf_exempt
+def get_user_id(request):
+    if request.method == "POST":
         try:
             data = json.loads(request.body)
             valid_fields = ['user_name']
             if check_field_validity(valid_fields,data):
                 user_id = user_control_object.get_user_id(data)
                 return make_response(user_id)
-        except:
+        except Exception as e:
+            print(e)
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
+
 
 def get_logged_in_user(request):
     return session_management_object.get_session_user(request)

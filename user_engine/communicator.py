@@ -3,7 +3,7 @@ import logging
 from django.core.paginator import Paginator
 
 
-from user_engine.models import UserPreferredTopics
+from user_engine.models import UserPreferredTopics, UserBlockedAccounts
 from user_engine.user_management import EdenUserManagement
 
 EUM_Object = EdenUserManagement()
@@ -29,6 +29,8 @@ class EdenUserCommunicator():
     def stream_user_objects_by_topics(self,topic_id,page_number):
         return self.paginator(UserPreferredTopics.objects.filter(topic_id= topic_id).order_by('-created_date', '-exp_points').all(), page_number)
 
+    def stream_user_blocked_accounts_query_set(self, user_id):
+        return UserBlockedAccounts.objects.filter(blocker_profile= EUM_Object.get_user_object(user_id)).all()
     def check_user_exists(self,user_id):
         return EUM_Object.get_user_object(user_id) is not None
 

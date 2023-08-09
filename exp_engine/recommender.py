@@ -1,13 +1,15 @@
 import logging
 
-from django.db.models import Count, Sum
-from leaf_engine.leaf_management import EdenLeafManagement
+from django.db.models import Count, F
+from user_engine.models import UserFollowing
 
-from user_engine.models import *
-from leaf_engine.models import *
+from user_engine.user_management import EdenUserManagement
+from user_engine.communicator import EdenUserCommunicator
+from leaf_engine.leaf_management import EdenLeafManagement
+from leaf_engine.communicator import EdenLeafCommunicator
 from exp_engine.models import *
 from exp_engine.conx_manager import Eden_CONX_Engine
-from user_engine.user_management import EdenUserManagement
+
 
 conX_object = Eden_CONX_Engine()
 
@@ -57,33 +59,73 @@ class HazelRecommendationEngine():
         relation.favoritism_weight = bias
         relation.save()
         return bias
-
-    
-    def assign_priorities_topic_wise(self):
-        pass
     
     def sort_leaves(self):
         pass
 
-    def filter_leaves(self):
-        pass
+    def filter_leaves(self,queryset):
+        user_interacted_leaves = self.get_leaf_user_interaction()
+        user_blocked_accounts = EdenUserCommunicator().stream_user_blocked_accounts_query_set(self.user_object.user_id)
+        without_interacted_leaves = queryset.exclude(leaf_id__in=user_interacted_leaves.objects.values('leaf')).order_by('-leaf_exp_points')
+        without_blocked_users = without_interacted_leaves.exclude(owner__in=user_blocked_accounts.objects.values('blocked_profile'))
+        return without_blocked_users
 
+    def filter_following_leaves(self, queryset):
+        user_interacted_leaves = self.get_leaf_user_interaction()
+        without_interacted_leaves = queryset.exclude(leaf_id__in=user_interacted_leaves.objects.values('leaf')).order_by('-leaf_exp_points')
+        return without_interacted_leaves
+    
     def mix_new_categories(self):
         pass
 
-    def mix_user_following_leaves(self):
-        pass
+    def get_user_following_leaves(self):
+        query_set_list = []
+        elm_object = EdenLeafManagement
+        following_queryset = UserFollowing.objects.filter(slave=self.user_object)
+        for relation in following_queryset:
+            user = relation.master.user_id
+            leaves_query_set = elm_object.get_leaves_by_user_id(user)
+            query_set_list.append(self.filter_following_leaves(leaves_query_set))
+        return query_set_list
 
-    def get_leaf_user_interaction(self, user_object): 
-        return LeafInteraction.objects.filter(interacted_by = user_object)
+    def get_leaf_user_interaction(self): 
+        return LeafInteraction.objects.filter(interacted_by = self.user_object)
     
-    def get_user_preferred_topics(self, user_object):
-        return (UserLeafPreferences.objects.filter(user_object = user_object).
+    def get_user_preferred_topics(self):
+        return (UserLeafPreferences.objects.filter(user_object = self.user_object).
                 all().values('topic_id').
                 annotate(leaves_with_topic_id = Count('topic_id')).
                 order_by("-leaves_with_topic_id"))
 
-    def initiate(self):
-        self.generate_bias_for_user_topics
-        pass
+    def generate_bias_for_user_topics(self,topic_query_set):
+        bias_map = {}
+        for topic_obj in topic_query_set:
+            topic_id = topic_obj.topic_id
+            bias = self.calculate_favoritism_weight(topic_id, self.user_object)
+            bias_map[topic_id] = bias
+        return bias_map
+    
+    def get_leafs_priority_wise(self,topic_id):
+        leaf_communicator = EdenLeafCommunicator()
+        return leaf_communicator.stream_leaves_topic_wise_query_set({'topic_id':topic_id})
+    
+    def make_leaf_query_sets(self,bias_map):
+        queryset_list = []
+        sorted_bias_map = sorted(bias_map.items(),key=lambda x: x[1])[::-1]
+        for topic_id, bias in sorted_bias_map:
+            queryset= self.get_leafs_priority_wise(topic_id)
+            if queryset is not None:
+                filtered_query_set = self.filter_leaves(queryset)
+                queryset_list.append(filtered_query_set[:100])
+            else:
+               logging.info(f"No leaves found from the topic {topic_id}")
+        
+    def initiate(self, user_id):
+        eum_object = EdenUserManagement()
+        self.user_object = eum_object.get_user_object(user_id)
+        
+        topics = self.get_user_preferred_topics(self.user_object)
+        bias_map = self.generate_bias_for_user_topics(topics)
+        
+    
         
