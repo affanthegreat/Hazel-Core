@@ -41,6 +41,8 @@ class Leaf(models.Model):
     leaf_topic_category_id = models.IntegerField(max_length=3)
     leaf_sentiment = models.DecimalField(default=-69,max_digits=6,decimal_places=6)
     leaf_emotion_state = models.CharField(max_length=30,default="NULL")
+    is_promoted = models.BooleanField(default=False)
+    is_advertisement = models.BooleanField(default=False)
 
 
 class LeafLikes(models.Model):

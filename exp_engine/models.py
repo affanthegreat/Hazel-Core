@@ -43,3 +43,8 @@ class UserTopicRelations(models.Model):
     negative_comments_made = models.BigIntegerField(default=0)
     favoritism_weight = models.BigIntegerField(default=0)
     user = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name='topic_relation_user')
+    
+class AdvertisementRelation(models.Model):
+    created_by = models.ForeignKey(UserProfile, related_name='ad_creator', on_delete=models.DO_NOTHING)
+    leaf = models.ForeignKey(Leaf, related_name='advertisement', on_delete = models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)

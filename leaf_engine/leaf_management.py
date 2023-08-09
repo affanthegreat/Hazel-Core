@@ -77,6 +77,7 @@ class EdenLeafManagement:
                 self.run_user_middleware(self.get_logged_in_user(request), "update_public_leaf", 1)
             response["status"] = -100
             response["message"] = "Leaf successfully created."
+            response["leaf_id"] = new_leaf_object.leaf_id
             response["code"] = True
         else:
             response["status"] = -101

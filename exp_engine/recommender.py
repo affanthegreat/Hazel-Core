@@ -1,4 +1,6 @@
 import logging
+from itertools import chain
+import random
 
 from django.db.models import Count, F
 from user_engine.models import UserFollowing
@@ -37,8 +39,15 @@ class HazelRecommendationEngine():
 
     
     def parameters(self):
+        self.FOLLOWING_MIX = 1
+        self.RELEVENT_LEAF_MIX = 0.6
+        self.NEW_TOPICS_MIX = 0.2
+        self.ADS_MIX = 0.3
+        
         self.MAX_NUMBER_OF_NEW_TOPICS = 6
-    
+        self.MAX_LEAVES_PER_NEW_TOPIC = 10
+        self.MAX_lEAVES_PER_BIASED_TOPIC = 30
+        
     def calculate_favoritism_weight(self,topic_id,user_object):
         bias = 0
         relation = conX_object.get_user_topic_relation_object(topic_id,user_object)
@@ -55,11 +64,10 @@ class HazelRecommendationEngine():
         relation.favoritism_weight = bias
         relation.save()
         return bias
-    
-    def sort_leaves(self):
-        
-        pass
 
+    def total_items_in_query_set(self, query_set):
+        return query_set.count()
+    
     def filter_leaves(self,queryset):
         user_interacted_leaves = self.get_leaf_user_interaction()
         user_blocked_accounts = EdenUserCommunicator().stream_user_blocked_accounts_query_set(self.user_object.user_id)
@@ -71,9 +79,6 @@ class HazelRecommendationEngine():
         user_interacted_leaves = self.get_leaf_user_interaction()
         without_interacted_leaves = queryset.exclude(leaf_id__in=user_interacted_leaves.objects.values('leaf')).order_by('-leaf_exp_points')
         return without_interacted_leaves
-    
-    def mix_new_categories(self):
-        pass
 
     def make_user_following_query_sets(self):
         query_set_list = []
@@ -83,7 +88,8 @@ class HazelRecommendationEngine():
             user = relation.master.user_id
             leaves_query_set = elm_object.get_leaves_by_user_id(user)
             query_set_list.append(self.filter_following_leaves(leaves_query_set))
-        return query_set_list
+        merged_query_set = self.merge_query_sets(query_set_list)
+        return merged_query_set
 
     def get_leaf_user_interaction(self): 
         return LeafInteraction.objects.filter(interacted_by = self.user_object)
@@ -112,9 +118,11 @@ class HazelRecommendationEngine():
             queryset= self.get_leafs_priority_wise(topic_id)
             if queryset is not None:
                 filtered_query_set = self.filter_leaves(queryset)
-                queryset_list.append(filtered_query_set[:100])
+                queryset_list.append(filtered_query_set[:filtered_query_set.count() * self.RELEVENT_LEAF_MIX])
             else:
                logging.info(f"No leaves found from the topic {topic_id}")
+        merged_query_set = self.merge_query_sets(queryset_list)
+        return merged_query_set
 
     def make_topic_wise_query_sets(self):
         topics = self.get_user_preferred_topics(self.user_object)
@@ -126,6 +134,7 @@ class HazelRecommendationEngine():
             return (UserLeafPreferences.objects.filter(topic_id=topic_id).first()).topic_category_id
         except:
             None
+            
     def get_highest_rated_leaves_in_topic(self, topic_id):
         leaf_communicator = EdenLeafCommunicator()
         leaf_query_set = leaf_communicator.stream_top_rated_leaves_in_topic({'topic_id':topic_id})
@@ -138,26 +147,26 @@ class HazelRecommendationEngine():
         for topic_id, _ in bias_map:
             topic_category_id = self.get_topic_category_id(topic_id)
             if topic_category_id:
-                queryset_list.append(self.get_highest_rated_leaves_in_topic(topic_category_id))
-
-
+                query_set = self.get_highest_rated_leaves_in_topic(topic_category_id)
+                if query_set.count() > self.MAX_LEAVES_PER_NEW_TOPIC:
+                    queryset_list.append(query_set[:query_set.count() * self.NEW_TOPICS_MIX])
+        merged_query_set = self.merge_query_sets(queryset_list)
+        return merged_query_set
 
     def make_query_sets_list(self):
         query_sets = []
-        query_sets += self.make_user_following_query_sets()
-        query_sets += self.make_topic_wise_query_sets()
-        query_sets += self.make_similar_topics_query_sets()
-        query_sets += self.make_relevent_ad_query_sets()
-
-
+        query_sets.extend(self.make_user_following_query_sets())
+        query_sets.extend(self.make_topic_wise_query_sets())
+        query_sets.extend(self.make_similar_topics_query_sets())
+        #query_sets += self.make_relevent_ad_query_sets()
+        
         return query_sets
+    
+    def merge_query_sets(self, query_set_list):
+        return list(chain(*query_set_list))
+
+    
     def initiate(self, user_id):
         eum_object = EdenUserManagement()
         self.user_object = eum_object.get_user_object(user_id)
-        
-        
-        
-        
-        
-    
         
