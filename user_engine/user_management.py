@@ -5,12 +5,11 @@ import logging
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 
-from user_engine.backends import EdenSessionManagement
 from user_engine.middleware import EdenUserMiddleWare
 from user_engine.models import *
 
 
-session_management_object = EdenSessionManagement()
+
 class EdenUserManagement:
     def __init__(self) -> None:
         self.MAX_OBJECT_LIMIT = 50
@@ -354,9 +353,9 @@ class EdenUserManagement:
             return -103
         
     def add_user_blocked(self,request,data):
-        blocked = data['blocked']
-        if self.is_authorised(request):
-            user_object = self.get_logged_in_user(request)
+        try:
+            blocked = data['blocked']
+            user_object = self.get_user_object(data['user_id'])
             if not self.check_user_blocked_status(blocked, user_object):
                 user_block_obj = UserBlockedAccounts()
                 user_block_obj.blocker_profile = user_object
@@ -365,7 +364,7 @@ class EdenUserManagement:
                 return 100
             else:
                 return 102
-        else:
+        except:
             return -111
             
             
@@ -374,9 +373,9 @@ class EdenUserManagement:
                                                   blocked_profile__user_id = blocked).exists()
     
     def unblock_user(self,request, data):
-        blocked = data['blocked']
-        if self.is_authorised(request):
-            user_object = self.get_logged_in_user(request)
+        try:
+            blocked = data['blocked']
+            user_object = self.get_user_object(data['user_id'])
             if self.check_user_blocked_status(blocked, user_object):
                 blocked_user_object = self.get_user_block_object(blocked)
                 user_block_obj = self.get_user_block_object(blocked_user_object, user_block_obj)
@@ -384,7 +383,7 @@ class EdenUserManagement:
                 return 100
             else:
                 return 102
-        else:
+        except:
             return -111
         
     def get_user_block_object(self,blocked, blocked_by):
@@ -419,32 +418,6 @@ class EdenUserManagement:
                UserProfile or None: The user object if the user exists, or None otherwise.
            """
         return UserProfile.objects.filter(user_id=user_id).first()
-
-    def is_authorised(self, request) -> bool:
-        """Check if the given request is authorized.
-
-        Args:
-            request (HttpRequest): The HTTP request to check.
-
-        Returns:
-            bool: True if the request is authorized, False otherwise.
-        """
-        return session_management_object.current_session(
-            request
-        ) != None and session_management_object.check_session(
-            request.session["auth_token"]
-        )
-
-    def get_logged_in_user(self, request):
-        """Return the logged in user for the given request.
-
-        Args:
-            request (HttpRequest): The HTTP request to get the logged in user for.
-
-        Returns:
-            User or None: The logged in user for the given request, or None if no user is logged in.
-        """
-        return session_management_object.get_session_user(request)
     
     def run_user_middleware(self, user_object, operation, value):
         """

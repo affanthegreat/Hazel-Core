@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("user_engine", "0001_initial"),
+        ("user_engine", "0002_alter_useraccesstoken_creation_date_and_more"),
     ]
 
     operations = [
@@ -14,14 +14,14 @@ class Migration(migrations.Migration):
             model_name="useraccesstoken",
             name="creation_date",
             field=models.DateTimeField(
-                default=datetime.datetime(2023, 8, 9, 17, 58, 36, 12768)
+                default=datetime.datetime(2023, 8, 9, 17, 58, 41, 697977)
             ),
         ),
         migrations.AlterField(
             model_name="userprofile",
             name="previous_experience_generation_date",
             field=models.DateTimeField(
-                default=datetime.datetime(2023, 8, 9, 17, 58, 36, 12510)
+                default=datetime.datetime(2023, 8, 9, 17, 58, 41, 697722)
             ),
         ),
     ]

@@ -3,12 +3,15 @@ from itertools import chain
 import random
 
 from django.db.models import Count, F
-from user_engine.models import UserFollowing
+from django.core.paginator import Paginator
 
+from user_engine.models import UserFollowing
 from user_engine.user_management import EdenUserManagement
 from user_engine.communicator import EdenUserCommunicator
+
 from leaf_engine.leaf_management import EdenLeafManagement
 from leaf_engine.communicator import EdenLeafCommunicator
+
 from exp_engine.models import *
 from exp_engine.conx_manager import Eden_CONX_Engine
 
@@ -166,7 +169,29 @@ class HazelRecommendationEngine():
         return list(chain(*query_set_list))
 
     
-    def initiate(self, user_id):
+    def initiate(self, user_id,page_number=1):
         eum_object = EdenUserManagement()
         self.user_object = eum_object.get_user_object(user_id)
-        
+        resultant_query_list = self.make_leaf_query_sets()
+        return self.paginator(resultant_query_list)
+    
+    def paginator(self,query_set,page_number):
+        self.MAX_OBJECT_LIMIT = 100
+        pagination_obj = Paginator(query_set,self.MAX_OBJECT_LIMIT)
+        total_pages = pagination_obj.page_range[-1]
+        if page_number > total_pages:
+            return {
+                "message": f"Page number does not exists. (total pages available : {total_pages})"
+            }
+        try:
+            response = {
+                'page_number': page_number,
+                'total_pages': total_pages,
+                'data': list(pagination_obj.page(page_number).object_list.values()),
+            }
+        except Exception as E:
+            response = {
+                    "message": "Cannot load page."
+                }
+
+        return response

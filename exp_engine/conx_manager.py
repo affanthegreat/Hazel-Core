@@ -161,7 +161,7 @@ class Eden_CONX_Engine():
             return -103
 
     def get_leaf_interaction(self, leaf_object, interacted_by, interaction_type):
-        if self.check_leaf_interaction(leaf_object=leaf_object, interaction_type= interacted_by, interaction_type= interaction_type):
+        if self.check_leaf_interaction(leaf_object=leaf_object, interaction_type= interacted_by):
             return LeafInteraction.objects.filter(leaf=leaf_object, interacted_by= interacted_by, interaction_type= interaction_type).first()
         pass
 

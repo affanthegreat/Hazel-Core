@@ -8,6 +8,7 @@ from user_engine.backends import EdenSessionManagement
 from user_engine.middleware import EdenUserMiddleWare
 from user_engine.user_management import EdenUserManagement
 
+session_management_object = EdenSessionManagement()
 
 class EdenExperienceEngine():
     def __init__(self):
@@ -130,6 +131,7 @@ class EdenExperienceEngine():
             eden_user_middleware.update_user_level(level)
             eden_user_middleware.update_previous_experience_generation_date(self.time_of_running)
         logging.info(f"> Leaf owner metrics last performed on {leaf_owner.previous_experience_generation_date.strftime('%m/%d/%Y, %H:%M:%S')}.")
+        
     def initiate_per_leaf(self,leaf_object):
         try:
             ratings = self.pre_process(leaf_object)
@@ -146,7 +148,10 @@ class EdenExperienceEngine():
         elm_object = EdenLeafManagement()
         leaF_object = elm_object.get_leaf_object(leaf_id)
         response = self.initiate_per_leaf(leaF_object)
-        
+    
+    def get_logged_in_user(self, request):
+        return session_management_object.get_session_user(request)
+    
     def throw_process_complete_msg(self):
          return {'status': 100, 
                 'message': f"Experience Engine has completed it's task on user {self.user_object.user_id}."}

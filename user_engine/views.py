@@ -211,8 +211,9 @@ def block_user(request):
             data = json.loads(request.body)
             valid_fields = ['blocked']
             if check_field_validity(valid_fields,data):
-                user_id = user_control_object.add_user_blocked(data)
-                return make_response(user_id)
+                data['user_id'] = get_logged_in_user(request).user_id
+                response = user_control_object.add_user_blocked(data)
+                return make_response(response)
         except Exception as e:
             print(e)
             return make_response({"status": 200, "message": "Cannot unload data."})
@@ -227,8 +228,9 @@ def unblock_user(request):
             data = json.loads(request.body)
             valid_fields = ['blocked']
             if check_field_validity(valid_fields,data):
-                user_id = user_control_object.unblock_user(data)
-                return make_response(user_id)
+                data['user_id'] = get_logged_in_user(request).user_id
+                response = user_control_object.unblock_user(data)
+                return make_response(response)
         except:
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:

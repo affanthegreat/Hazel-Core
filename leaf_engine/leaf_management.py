@@ -2,7 +2,9 @@ import uuid
 import logging 
 
 from django.core.paginator import Paginator
-from exp_engine.conx_manager import Eden_CONX_Engine
+
+
+
 from exp_engine.middleware import EdenUserTopicRelationMiddleWare
 from exp_engine.models import InteractionType
 
@@ -101,7 +103,7 @@ class EdenLeafManagement:
         
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            query_set = Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public).order_by('-creation_date').all()
+            query_set = Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Public).order_by('-created_date').all()
             if require_pagination:
                 return self.paginator(query_set,page_number)
             else:
@@ -112,7 +114,7 @@ class EdenLeafManagement:
     def get_leaves_by_user_id(self,user_id):
         user_management_instance = EdenUserManagement()
         if user_management_instance.check_user_exists({'user_id': user_id}):
-            query_set = Leaf.objects.filter(owner= self.get_user_object(user_id)).order_by('-creation_date').all()
+            query_set = Leaf.objects.filter(owner= self.get_user_object(user_id)).order_by('-created_date').all()
             return query_set
         else:
             raise Exception("User does not exists")
@@ -142,9 +144,9 @@ class EdenLeafManagement:
         if user_management_instance.check_user_exists({'user_id': user_id}):
             following_object = user_management_instance.get_user_object(user_id)
             if user_management_instance.check_following(following_object, follower_user):
-                query_set = Leaf.objects.filter(owner=following_object).order_by('-creation_date').all()
+                query_set = Leaf.objects.filter(owner=following_object).order_by('-created_date').all()
             else:
-                query_set = Leaf.objects.filter(owner=following_object, leaf_type=LeafType.Public).order_by('-creation_date').all()
+                query_set = Leaf.objects.filter(owner=following_object, leaf_type=LeafType.Public).order_by('-created_date').all()
             if require_pagination: 
                 return self.paginator(query_set,page_number)
             else:
@@ -168,7 +170,7 @@ class EdenLeafManagement:
         """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            query_set = Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Private).order_by('-creation_date').all()
+            query_set = Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Private).order_by('-created_date').all()
             if require_pagination:
                 return self.paginator(query_set,page_number)
             else:
@@ -348,7 +350,7 @@ class EdenLeafManagement:
         QuerySet or int: If the leaf exists, the function returns a QuerySet object containing all the likes for the given leaf. If the leaf does not exist, it returns -104.
         """
         if self.check_leaf(leaf_id):
-            return self.paginator(LeafLikes.objects.filter(leaf_id=leaf_id).order_by('-creation_date').all(), page_number)
+            return self.paginator(LeafLikes.objects.filter(leaf_id=leaf_id).order_by('-created_date').all(), page_number)
         else:
             return -104
 
@@ -364,7 +366,7 @@ class EdenLeafManagement:
             If the leaf doesn't exist, the function returns -104.
         """
         if self.check_leaf(leaf_id):
-            return self.paginator(LeafDisLikes.objects.filter(leaf_id=leaf_id).order_by('-creation_date').all(),page_number)
+            return self.paginator(LeafDisLikes.objects.filter(leaf_id=leaf_id).order_by('-created_date').all(),page_number)
         else:
             return -104
 
@@ -385,7 +387,7 @@ class EdenLeafManagement:
 
         """
         if self.check_leaf(leaf_id):
-            return self.paginator(LeafComments.objects.filter(leaf_id=leaf_id).order_by('-creation_date').all(), page_number)
+            return self.paginator(LeafComments.objects.filter(leaf_id=leaf_id).order_by('-created_date').all(), page_number)
         else:
             return -104
 
@@ -975,6 +977,7 @@ class EdenLeafManagement:
         return exp_engine_object.initiate_per_leaf(leaf_object)
     
     def run_conX_engine(self,leaf_id, interaction, interacted_by):
+        from exp_engine.conx_manager import Eden_CONX_Engine
         conX_engine = Eden_CONX_Engine()
         allowed_interactions = ['like', 'dislike', 'comment', 'view', 'sub_comment']
         if interaction not in allowed_interactions:
@@ -1016,6 +1019,7 @@ class EdenLeafManagement:
             return -111
 
     def run_user_topic_middleware(self,leaf_id,interaction, user_object, value, comment_id=None):
+        from exp_engine.conx_manager import Eden_CONX_Engine
         conX_engine = Eden_CONX_Engine()
         leaf_object = self.get_leaf_object(leaf_id)
         topic_id = leaf_object.leaf_topic_id

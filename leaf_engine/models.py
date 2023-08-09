@@ -82,7 +82,7 @@ class LeafComments(models.Model):
     parent_comment = models.ForeignKey('self',null=True,blank=True,on_delete=models.CASCADE,related_name='replies')
     created_date = models.DateTimeField(auto_now_add=True)
 
-class LeafViewedBy(models.Models):
+class LeafViewedBy(models.Model):
     leaf = models.ForeignKey(Leaf, related_name="viewed_leaf", on_delete=models.CASCADE)
     viewed_by = models.ForeignKey(
         UserProfile, related_name="viewer", on_delete=models.DO_NOTHING

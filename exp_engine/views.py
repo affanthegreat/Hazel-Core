@@ -8,9 +8,12 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate
 
 from exp_engine.exp_manager import *
+from exp_engine.recommender import HazelRecommendationEngine
 
 
 exp_engine_instance = EdenExperienceEngine()
+recommendation_engine= HazelRecommendationEngine()
+
 
 def check_field_validity(valid_fields, data):
     condition = True
@@ -66,3 +69,24 @@ def initiate_exp_engine_per_leaf(request):
             raise E
     else:
         return throw_http_method_not_supported_error()
+    
+
+@csrf_exempt
+def get_recommended_posts(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['page_number']
+            if check_field_validity(valid_fields, data):
+                user_object = get_logged_in_user(request)
+                response = recommendation_engine.initiate(user_object.user_id, data['page_number'])
+                return make_http_response(response)
+            else:
+                return throw_invalid_fields_error()
+        except Exception as E:
+            raise E
+    else:
+        return throw_http_method_not_supported_error()
+    
+def get_logged_in_user(request):
+    return exp_engine_instance.get_logged_in_user(request)

@@ -31,19 +31,6 @@ def throw_http_method_not_supported_error():
         )
 
 @csrf_exempt
-def stream_users_by_topics_view(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-            if 'topic_id' in data and 'page_number' in data:
-                stream_data = communicator_object.stream_user_objects_by_topics(data['topic_id'], data['page_number'])
-                return make_json_response(stream_data)
-        except Exception as E:
-           return throw_invalid_fields_error()
-    else:
-        return throw_http_method_not_supported_error()
-
-@csrf_exempt
 def update_user_topics(request):
     if request.method == "POST":
         try:
