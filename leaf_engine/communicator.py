@@ -23,7 +23,8 @@ class EdenLeafCommunicator():
                               page_number=args['page_number'] if 'page_number' in args else 1)
 
     def stream_leaves_topic_wise_query_set(self,args):
-        return Leaf.objects.filter(leaf_topic_id=args['topic_id'], creation_date__lte=datetime.datetime.now().astimezone(), creation_date__gt=(datetime.datetime.now() - datetime.timedelta(days=7))).order_by('-creation_date').all()
+        return Leaf.objects.filter(leaf_topic_id=args['topic_id'], creation_date__lte=datetime.datetime.now().astimezone(),
+                                    creation_date__gt=(datetime.datetime.now() - datetime.timedelta(days=7))).order_by('-creation_date').all()
                         
     def stream_negative_leaves(self,args):
         return self.paginator(Leaf.objects.filter(leaf_sentiment__lt=0, ).order_by('-creation_date').all(),
@@ -38,6 +39,9 @@ class EdenLeafCommunicator():
         return self.paginator(LeafComments.objects.filter(~Q(comment_sentiment=-9)).order_by('-creation_date').all(),
                                                         page_number=args['page_number'] if 'page_number' in args else 1 )
 
+    def stream_top_rated_leaves_in_topic(self,args):
+        return Leaf.objects.filter(leaf_topic_id=args['topic_id'], creation_date__lte=datetime.datetime.now().astimezone(),
+                                    creation_date__gt=(datetime.datetime.now() - datetime.timedelta(days=7))).order_by('-leaf_exp_points').all()
     def get_leaf_metrics(self,leaf_id):
         return Leaf.objects.filter(leaf_id=leaf_id).first()
 

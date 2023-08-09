@@ -23,6 +23,7 @@ class HazelRecommendationEngine():
     def __init__(self) -> None:
         self.meta()
         self.priority_weights()
+        self.parameters()
         logging.info("Hazel Recommendation Engine")
 
     def priority_weights(self):
@@ -35,13 +36,8 @@ class HazelRecommendationEngine():
         self.average_sentiment_value = 0.2
 
     
-    def sort_parameters(self):
-        self.use_user_following = True
-        self.use_visit_frequency = True
-        self.use_leaf_sentiment = True
-        self.use_leaf_emotion = True
-        self.use_exp_points = True
-        self.use_creation_date = True
+    def parameters(self):
+        self.MAX_NUMBER_OF_NEW_TOPICS = 6
     
     def calculate_favoritism_weight(self,topic_id,user_object):
         bias = 0
@@ -61,6 +57,7 @@ class HazelRecommendationEngine():
         return bias
     
     def sort_leaves(self):
+        
         pass
 
     def filter_leaves(self,queryset):
@@ -78,7 +75,7 @@ class HazelRecommendationEngine():
     def mix_new_categories(self):
         pass
 
-    def get_user_following_leaves(self):
+    def make_user_following_query_sets(self):
         query_set_list = []
         elm_object = EdenLeafManagement
         following_queryset = UserFollowing.objects.filter(slave=self.user_object)
@@ -103,7 +100,7 @@ class HazelRecommendationEngine():
             topic_id = topic_obj.topic_id
             bias = self.calculate_favoritism_weight(topic_id, self.user_object)
             bias_map[topic_id] = bias
-        return bias_map
+        return sorted(bias_map.items(),key=lambda x: x[1])[::-1]
     
     def get_leafs_priority_wise(self,topic_id):
         leaf_communicator = EdenLeafCommunicator()
@@ -111,21 +108,56 @@ class HazelRecommendationEngine():
     
     def make_leaf_query_sets(self,bias_map):
         queryset_list = []
-        sorted_bias_map = sorted(bias_map.items(),key=lambda x: x[1])[::-1]
-        for topic_id, bias in sorted_bias_map:
+        for topic_id, _ in bias_map:
             queryset= self.get_leafs_priority_wise(topic_id)
             if queryset is not None:
                 filtered_query_set = self.filter_leaves(queryset)
                 queryset_list.append(filtered_query_set[:100])
             else:
                logging.info(f"No leaves found from the topic {topic_id}")
-        
+
+    def make_topic_wise_query_sets(self):
+        topics = self.get_user_preferred_topics(self.user_object)
+        bias_map = self.generate_bias_for_user_topics(topics)
+        return self.make_leaf_query_sets(bias_map)
+
+    def get_topic_category_id(self,topic_id):
+        try:
+            return (UserLeafPreferences.objects.filter(topic_id=topic_id).first()).topic_category_id
+        except:
+            None
+    def get_highest_rated_leaves_in_topic(self, topic_id):
+        leaf_communicator = EdenLeafCommunicator()
+        leaf_query_set = leaf_communicator.stream_top_rated_leaves_in_topic({'topic_id':topic_id})
+        return self.filter_leaves(leaf_query_set)
+
+    def make_similar_topics_query_sets(self):
+        queryset_list = []
+        topics = self.get_user_preferred_topics(self.user_object)
+        bias_map = self.generate_bias_for_user_topics(topics)[:self.MAX_TOPICS_AT_ONE_TIME]
+        for topic_id, _ in bias_map:
+            topic_category_id = self.get_topic_category_id(topic_id)
+            if topic_category_id:
+                queryset_list.append(self.get_highest_rated_leaves_in_topic(topic_category_id))
+
+
+
+    def make_query_sets_list(self):
+        query_sets = []
+        query_sets += self.make_user_following_query_sets()
+        query_sets += self.make_topic_wise_query_sets()
+        query_sets += self.make_similar_topics_query_sets()
+        query_sets += self.make_relevent_ad_query_sets()
+
+
+        return query_sets
     def initiate(self, user_id):
         eum_object = EdenUserManagement()
         self.user_object = eum_object.get_user_object(user_id)
         
-        topics = self.get_user_preferred_topics(self.user_object)
-        bias_map = self.generate_bias_for_user_topics(topics)
+        
+        
+        
         
     
         

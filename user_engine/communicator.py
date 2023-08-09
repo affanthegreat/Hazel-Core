@@ -31,6 +31,7 @@ class EdenUserCommunicator():
 
     def stream_user_blocked_accounts_query_set(self, user_id):
         return UserBlockedAccounts.objects.filter(blocker_profile= EUM_Object.get_user_object(user_id)).all()
+    
     def check_user_exists(self,user_id):
         return EUM_Object.get_user_object(user_id) is not None
 
