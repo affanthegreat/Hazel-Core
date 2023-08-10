@@ -13,7 +13,7 @@ from leaf_engine.leaf_management import EdenLeafManagement
 from leaf_engine.communicator import EdenLeafCommunicator
 
 from exp_engine.models import *
-from exp_engine.conx_manager import Eden_CONX_Engine
+from exp_engine.exp_conx_manager import Eden_CONX_Engine
 
 
 conX_object = Eden_CONX_Engine()

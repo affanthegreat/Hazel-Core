@@ -8,7 +8,7 @@ from django.http import HttpResponse, JsonResponse
 from django.contrib.auth import authenticate
 
 from exp_engine.exp_manager import *
-from exp_engine.recommender import HazelRecommendationEngine
+from exp_engine.exp_recommender import HazelRecommendationEngine
 
 
 exp_engine_instance = EdenExperienceEngine()

@@ -977,7 +977,7 @@ class EdenLeafManagement:
         return exp_engine_object.initiate_per_leaf(leaf_object)
     
     def run_conX_engine(self,leaf_id, interaction, interacted_by):
-        from exp_engine.conx_manager import Eden_CONX_Engine
+        from exp_engine.exp_conx_manager import Eden_CONX_Engine
         conX_engine = Eden_CONX_Engine()
         allowed_interactions = ['like', 'dislike', 'comment', 'view', 'sub_comment']
         if interaction not in allowed_interactions:
@@ -1019,7 +1019,7 @@ class EdenLeafManagement:
             return -111
 
     def run_user_topic_middleware(self,leaf_id,interaction, user_object, value, comment_id=None):
-        from exp_engine.conx_manager import Eden_CONX_Engine
+        from exp_engine.exp_conx_manager import Eden_CONX_Engine
         conX_engine = Eden_CONX_Engine()
         leaf_object = self.get_leaf_object(leaf_id)
         topic_id = leaf_object.leaf_topic_id
