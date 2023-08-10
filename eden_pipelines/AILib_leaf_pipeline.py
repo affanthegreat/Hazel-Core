@@ -32,11 +32,16 @@ class HazelAI_Leaf_Pipeline():
             'comment_count': str(leaf_object.comments_count),
             'view_count': str(leaf_object.view_count),
             'leaf_type': str(leaf_object.leaf_type),
-            'engagement_rating': leaf_object.engagement_rating,
-            'experience_rating': leaf_object.experience_rating,
+            'engagement_rating': str(leaf_object.engagement_rating),
+            'experience_rating': str(leaf_object.experience_rating),
+            'exp_points': str(leaf_object.exp_points),
             'previous_analytics_run': str(leaf_object.previous_analytics_run),
-            'leaf_topic_id': leaf_object.leaf_topic_id,
-            'leaf_sentiment': leaf_object.leaf_sentiment
+            'leaf_topic_id': str(leaf_object.leaf_topic_id),
+            'leaf_sentiment': str(leaf_object.leaf_sentiment),
+            'topic_category_id': str(leaf_object.leaf_topic_category_id),
+            'leaf_emotion_state': str(leaf_object.leaf_emotion_state),
+            'is_promoted': str(leaf_object.is_promoted),
+            'is_advertisement': str(leaf_object.is_advertisement)
         }
     
     def comment_to_json(self, comment_object):

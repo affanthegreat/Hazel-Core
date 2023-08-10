@@ -1,9 +1,12 @@
 import logging
 from itertools import chain
 import random
+import json 
 
 from django.db.models import Count, F
 from django.core.paginator import Paginator
+from django.core import serializers
+
 
 from user_engine.models import UserFollowing
 from user_engine.user_management import EdenUserManagement
@@ -74,18 +77,18 @@ class HazelRecommendationEngine():
     def filter_leaves(self,queryset):
         user_interacted_leaves = self.get_leaf_user_interaction()
         user_blocked_accounts = EdenUserCommunicator().stream_user_blocked_accounts_query_set(self.user_object.user_id)
-        without_interacted_leaves = queryset.exclude(leaf_id__in=user_interacted_leaves.objects.values('leaf')).order_by('-leaf_exp_points')
-        without_blocked_users = without_interacted_leaves.exclude(owner__in=user_blocked_accounts.objects.values('blocked_profile'))
+        without_interacted_leaves = queryset.exclude(leaf_id__in=user_interacted_leaves.values('leaf')).order_by('-exp_points')
+        without_blocked_users = without_interacted_leaves.exclude(owner__in=user_blocked_accounts.values('blocked_profile'))
         return without_blocked_users
 
     def filter_following_leaves(self, queryset):
         user_interacted_leaves = self.get_leaf_user_interaction()
-        without_interacted_leaves = queryset.exclude(leaf_id__in=user_interacted_leaves.objects.values('leaf')).order_by('-leaf_exp_points')
+        without_interacted_leaves = queryset.exclude(leaf_id__in=user_interacted_leaves.values('leaf')).order_by('-created_date')
         return without_interacted_leaves
 
     def make_user_following_query_sets(self):
         query_set_list = []
-        elm_object = EdenLeafManagement
+        elm_object = EdenLeafManagement()
         following_queryset = UserFollowing.objects.filter(slave=self.user_object)
         for relation in following_queryset:
             user = relation.master.user_id
@@ -128,7 +131,7 @@ class HazelRecommendationEngine():
         return merged_query_set
 
     def make_topic_wise_query_sets(self):
-        topics = self.get_user_preferred_topics(self.user_object)
+        topics = self.get_user_preferred_topics()
         bias_map = self.generate_bias_for_user_topics(topics)
         return self.make_leaf_query_sets(bias_map)
 
@@ -145,7 +148,7 @@ class HazelRecommendationEngine():
 
     def make_similar_topics_query_sets(self):
         queryset_list = []
-        topics = self.get_user_preferred_topics(self.user_object)
+        topics = self.get_user_preferred_topics()
         bias_map = self.generate_bias_for_user_topics(topics)[:self.MAX_TOPICS_AT_ONE_TIME]
         for topic_id, _ in bias_map:
             topic_category_id = self.get_topic_category_id(topic_id)
@@ -172,24 +175,28 @@ class HazelRecommendationEngine():
     def initiate(self, user_id,page_number=1):
         eum_object = EdenUserManagement()
         self.user_object = eum_object.get_user_object(user_id)
-        resultant_query_list = self.make_leaf_query_sets()
-        return self.paginator(resultant_query_list)
+        resultant_query_list = self.make_query_sets_list()
+        return self.paginator(resultant_query_list,page_number)
     
     def paginator(self,query_set,page_number):
         self.MAX_OBJECT_LIMIT = 100
         pagination_obj = Paginator(query_set,self.MAX_OBJECT_LIMIT)
         total_pages = pagination_obj.page_range[-1]
+        print(query_set)
         if page_number > total_pages:
             return {
                 "message": f"Page number does not exists. (total pages available : {total_pages})"
             }
         try:
+            from eden_pipelines.AILib_leaf_pipeline import HazelAI_Leaf_Pipeline
+            pipeline_obj = HazelAI_Leaf_Pipeline()
             response = {
                 'page_number': page_number,
                 'total_pages': total_pages,
-                'data': list(pagination_obj.page(page_number).object_list.values()),
+                'data': [pipeline_obj.leaf_to_json(obj) for obj in query_set],
             }
         except Exception as E:
+            print(E)
             response = {
                     "message": "Cannot load page."
                 }

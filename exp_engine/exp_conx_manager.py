@@ -19,8 +19,8 @@ class Eden_CONX_Engine():
                     condition = False
         return condition
 
-    def throw_object_creation_failed_error(self):
-        raise Exception("Object Creation")
+    def throw_object_creation_failed_error(self,E):
+        raise Exception(E)
     
     def throw_invalid_fields_error(self):
         return {"status": 200, "message": "Cannot unload data."}
@@ -31,6 +31,7 @@ class Eden_CONX_Engine():
 
     def create_leaf_interaction(self,leaf_object, interacted_by, interaction_type):
         try:
+
             if not self.check_leaf_interaction(leaf_object,interacted_by,interaction_type):
                 leaf_interaction_object = LeafInteraction()
                 leaf_interaction_object.leaf = leaf_object
@@ -46,7 +47,8 @@ class Eden_CONX_Engine():
         
     def create_user_leaf_preference(self, data):
         try:
-            if not self.check_leaf_interaction(data):
+            elm_object =EdenLeafManagement()
+            if not self.check_user_leaf_preference(data):
                 eum_object = EdenUserManagement()
                 user_leaf_preference_object = UserLeafPreferences()
                 user_leaf_preference_object.topic_id = data['topic_id']
@@ -58,7 +60,7 @@ class Eden_CONX_Engine():
             else:
                 return -111
         except Exception as E:
-            self.throw_object_creation_failed_error()
+            self.throw_object_creation_failed_error(E)
     
     def create_user_topic_relation(self,data):
         try:
@@ -73,7 +75,7 @@ class Eden_CONX_Engine():
             else:
                 return -111
         except Exception as E:
-            self.throw_object_creation_failed_error()
+            self.throw_object_creation_failed_error(E)
     
     def check_user_topic_relation(self, topic_id, user_object):
         return UserTopicRelations.objects.filter(topic_id=topic_id, user= user_object).exists()
@@ -88,7 +90,6 @@ class Eden_CONX_Engine():
                                         'comment', 
                                         'sub_comment',
                                         'leaves_served',
-
                                         'favoritism_weight']
                 if interaction not in allowed_interactions:
                     return -111
