@@ -193,7 +193,7 @@ class HazelRecommendationEngine():
             response = {
                 'page_number': page_number,
                 'total_pages': total_pages,
-                'data': [pipeline_obj.leaf_to_json(obj) for obj in query_set],
+                'data': [pipeline_obj.leaf_to_json(obj) for obj in pagination_obj.get_page(page_number)],
             }
         except Exception as E:
             print(E)
