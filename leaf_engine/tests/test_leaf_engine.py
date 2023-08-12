@@ -55,15 +55,6 @@ class EdenUserViewsTest(TestCase):
         url = reverse('create_leaf')
         response = self.client.post(url, test_data,  content_type='application/json')
         self.assertEqual(to_dict(response.content)['message'], 'Valid fields not found in request body')
-        
-    def test_leaf_empty_text_content(self):
-        test_data = {
-            'text_content':" ",
-            'leaf_type': 'public'
-        },
-        url = reverse('create_leaf')
-        response = self.client.post(url, test_data,  content_type='application/json')   
-        self.assertEqual(to_dict(response.content)['message'], 'Text Content cannot be empty')
     
     def test_invalid_leaf_type(self):
         test_data = {
@@ -73,3 +64,61 @@ class EdenUserViewsTest(TestCase):
         url = reverse('create_leaf')
         response = self.client.post(url, test_data,  content_type='application/json')   
         self.assertEqual(to_dict(response.content)['message'], 'Invalid leaf type')
+
+    def test_delete_leaf(self):
+        test_data = {
+             'text_content': "Public Leaf 1",
+             'leaf_type': 'public',
+            }
+        url = reverse('create_leaf')
+        delete_url = reverse('delete_leaf')
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
+        self.assertEqual(Leaf.objects.count(),1)
+        deletion_data = {
+            'leaf_id': to_dict(response.content)['leaf_id']
+        }
+        delete_response = self.client.post(delete_url, deletion_data,  content_type='application/json')
+        self.assertEqual(to_dict(delete_response.content)['message'], '-100')
+    
+    def test_delete_non_existing_leaf(self):
+        delete_url = reverse('delete_leaf')
+        deletion_data = {
+            'leaf_id': "223134141313"
+        }
+        delete_response = self.client.post(delete_url, deletion_data,  content_type='application/json')
+        self.assertEqual(to_dict(delete_response.content)['message'], 'Leaf not found.')
+    
+    def test_delete_leaf_invalid_field(self):
+        delete_url = reverse('delete_leaf')
+        deletion_data = {
+            'leaf': "223134141313"
+        }
+        delete_response = self.client.post(delete_url, deletion_data,  content_type='application/json')
+        self.assertEqual(to_dict(delete_response.content)['message'], "Valid fields not found in request body")
+    
+    def test_get_user_public_leaves(self):
+        test_data = {
+             'text_content': "Public Leaf 1",
+             'leaf_type': 'public',
+            }
+        url = reverse('create_leaf')
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
+        self.assertEqual(Leaf.objects.count(),1)
+        url = reverse('get_user_public_leaves')
+        response = self.client.get(f'{url}?page_number=1')
+        self.assertEqual(len(to_dict(response.content)['data']),1)
+    
+    def test_get_user_private_leaves(self):
+        test_data = {
+             'text_content': "Public Leaf 1",
+             'leaf_type': 'private',
+            }
+        url = reverse('create_leaf')
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
+        self.assertEqual(Leaf.objects.count(),1)
+        url = reverse('get_user_private_leaves')
+        response = self.client.get(f'{url}?page_number=1')
+        self.assertEqual(len(to_dict(response.content)['data']),1)

@@ -39,7 +39,7 @@ def create_leaf_view(request):
         data = json.loads(request.body)
         valid_fields = ['text_content', 'leaf_type']
         if check_field_validity(valid_fields,data):
-            if data['text_content'] == "":
+            if not data['text_content']:
                 return make_response({"status":200, "message": "Text Content cannot be empty"})
             if data['leaf_type'] not in ['public', 'private']:
                 return make_response({"status":200, "message": "Invalid leaf type"})
@@ -53,17 +53,16 @@ def create_leaf_view(request):
 @csrf_exempt
 def get_user_public_leaves_view(request):
     if request.method == "GET":
-        data = json.loads(request.body)
-        valid_fields = ['page_number']
-        if check_field_validity(valid_fields,data):
+        try:    
+            page_number = request.GET.get('page_number')
             response = {}
-            response_status = ELM_object.get_user_public_leaves(request, data['page_number'])
+            response_status = ELM_object.get_user_public_leaves(request, int(page_number))
             if response_status == -101:
                 response['message'] = 'Auth Error.'
                 return response
             else:
                 return JsonResponse(response_status, safe=False)
-        else:
+        except Exception as e:
             return throw_invalid_fields_error()
     else:
         return throw_http_method_not_supported_error()
@@ -71,18 +70,18 @@ def get_user_public_leaves_view(request):
 
 @csrf_exempt
 def get_leaves_view(request):
-    if request.method == "POST":
-        response = {}
-        data = json.loads(request.body)
-        valid_fields = ['page_number', 'user_id']
-        if check_field_validity(valid_fields,data):
-            response_status = ELM_object.get_leaves(request, data['user_id'], data['page_number'])
+    if request.method == "GET":
+        try:
+            response = {}
+            user_id = request.GET.get('user_id')
+            page_number = request.GET.get('page_number')
+            response_status = ELM_object.get_leaves(request, user_id, int(page_number))
             if response_status == -101:
                 response['message'] = 'Auth Error.'
                 return response
             else:
                 return JsonResponse(response_status, safe=False)
-        else:
+        except:
             return throw_invalid_fields_error()
     else:
        return throw_http_method_not_supported_error()
@@ -91,17 +90,16 @@ def get_leaves_view(request):
 @csrf_exempt
 def get_user_private_leaves_view(request):
     if request.method == "GET":
-        data = json.loads(request.body)
-        valid_fields = ['page_number']
-        if check_field_validity(valid_fields,data):
+        try:
+            page_number = request.GET.get('page_number')
             response = {}
-            response_status = ELM_object.get_user_private_leaves(request, data['page_number'])
+            response_status = ELM_object.get_user_private_leaves(request, int(page_number))
             if response_status == -101:
                 response['message'] = 'Auth Error.'
                 return response
             else:
                return JsonResponse(response_status, safe=False)
-        else:
+        except Exception as e:
             return throw_invalid_fields_error()
     else:
         return throw_http_method_not_supported_error()

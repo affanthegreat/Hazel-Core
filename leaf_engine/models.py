@@ -138,6 +138,7 @@ def start_comment_text_ml_pipeline(sender, instance, **kwargs):
             instance.comment_sentiment = response['sentiment_value'] 
             instance.comment_emotion = response['emotion_state']
         except Exception as E:
+            print(E)
             instance.delete()
             throw_model_not_saved_error()
     try:

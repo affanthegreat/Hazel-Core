@@ -57,7 +57,7 @@ class EdenLeafManagement:
         - message: A string representing the message of the response.
         - code: A boolean value indicating the success or failure of the operation.
         """
-        
+    
         response = {}
         if self.get_logged_in_user(request):
             new_leaf_object = Leaf()
@@ -204,9 +204,11 @@ class EdenLeafManagement:
             response = {}
             user_object = self.get_logged_in_user(request)
             leaf_object = self.get_leaf_object(leaf_id)
+            if leaf_object is None:
+                return {'message': "Leaf not found."}
             if leaf_object.owner == user_object:
                 leaf_object.delete()
-                response["message"] = f"-100"
+                response["message"] = "-100"
             else:
                 response["message"] = "-102"
             return response
