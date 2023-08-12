@@ -3,6 +3,8 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
+from leaf_engine.models import LeafType
+
 from .leaf_management import EdenLeafManagement
 
 ELM_object = EdenLeafManagement()
@@ -15,12 +17,13 @@ def check_field_validity(valid_fields, data):
     condition = True
     for field in valid_fields:
             if field not in data.keys():
+                print(field)
                 condition = False
     return condition
 
 def throw_invalid_fields_error():
     response = {}
-    response['messaage'] = "Valid fields not found in request body"
+    response['message'] = "Valid fields not found in request body"
     response['status'] = 200
     return make_response(response)
 
@@ -36,6 +39,10 @@ def create_leaf_view(request):
         data = json.loads(request.body)
         valid_fields = ['text_content', 'leaf_type']
         if check_field_validity(valid_fields,data):
+            if data['text_content'] == "":
+                return make_response({"status":200, "message": "Text Content cannot be empty"})
+            if data['leaf_type'] not in ['public', 'private']:
+                return make_response({"status":200, "message": "Invalid leaf type"})
             response = ELM_object.create_leaf(request, data)
             return make_response(response)
         else:

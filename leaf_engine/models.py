@@ -111,7 +111,6 @@ def start_leaf_text_ml_pipeline(sender, instance, **kwargs):
             instance.leaf_emotion_state = response['emotion_state']
             instance.leaf_topic_category_id = response['topic_category_id']
         except Exception as E:
-            print(E)
             instance.delete()
             throw_model_not_saved_error()
     try:
@@ -139,7 +138,6 @@ def start_comment_text_ml_pipeline(sender, instance, **kwargs):
             instance.comment_sentiment = response['sentiment_value'] 
             instance.comment_emotion = response['emotion_state']
         except Exception as E:
-            print(E)
             instance.delete()
             throw_model_not_saved_error()
     try:

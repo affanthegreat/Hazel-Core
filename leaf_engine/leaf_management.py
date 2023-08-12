@@ -57,7 +57,7 @@ class EdenLeafManagement:
         - message: A string representing the message of the response.
         - code: A boolean value indicating the success or failure of the operation.
         """
-
+        
         response = {}
         if self.get_logged_in_user(request):
             new_leaf_object = Leaf()
@@ -66,17 +66,21 @@ class EdenLeafManagement:
             new_leaf_object.text_content = data["text_content"]
             new_leaf_object.image_content = None
             new_leaf_object.leaf_type = LeafType(data["leaf_type"])
+            if LeafType(data['leaf_type']) == LeafType.Private:
+                middleware_status = self.run_user_middleware(self.get_logged_in_user(request), "update_private_leaf", 1)
+            else:
+                middleware_status = self.run_user_middleware(self.get_logged_in_user(request), "update_public_leaf", 1)
             try:
-                new_leaf_object.save()
-            except:
+                if middleware_status is not False:
+                    new_leaf_object.save()
+                else:
+                    raise Exception("Middleware failed.")
+            except Exception as e:
                 return {
                     "status": -101,
                     "message": "Model not saved."
                 }
-            if LeafType(data['leaf_type']) == LeafType.Private:
-                self.run_user_middleware(self.get_logged_in_user(request), "update_private_leaf", 1)
-            else:
-                self.run_user_middleware(self.get_logged_in_user(request), "update_public_leaf", 1)
+           
             response["status"] = -100
             response["message"] = "Leaf successfully created."
             response["leaf_id"] = new_leaf_object.leaf_id
