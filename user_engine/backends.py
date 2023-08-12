@@ -11,10 +11,8 @@ class EdenLoginManagement(EdenUserManagement, ModelBackend):
 
     def authenticate(self, request, username=None, password=None):
         if UserProfile.objects.filter(user_name=username).exists():
-            print("here")
             user_object = self.get_user(username)
             if crypt.crypt(password, user_object.user_password) == user_object.user_password:
-                print("password correct")
                 return user_object
         return None
 
@@ -53,6 +51,8 @@ class EdenSessionManagement():
         if self.check_session(auth_token):
             auth_object = self.get_session_object(auth_token)
             auth_object.delete()
+        else:
+            raise Exception("session not found")
 
     def encrypt_session_id(self, session_id, key):
         return crypt.crypt(session_id, key)

@@ -8,9 +8,9 @@ class UserProfile(models.Model):
     user_name = models.CharField(max_length=60, unique=True)
     user_password = models.CharField(max_length=250)
     user_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True, default=uuid.uuid4)
-    user_public_leaf_count = models.BigIntegerField()
-    user_private_leaf_count = models.BigIntegerField()
-    user_experience_points = models.BigIntegerField()
+    user_public_leaf_count = models.BigIntegerField(default=0)
+    user_private_leaf_count = models.BigIntegerField(default=0)
+    user_experience_points = models.BigIntegerField(default=0)
     user_verified = models.BooleanField(default=False)
     user_followers = models.BigIntegerField(default=0)
     user_following = models.BigIntegerField(default=0)
@@ -39,8 +39,6 @@ class UserDetails(models.Model):
     user_address = models.CharField(max_length=50,null=False)
     user_phone_id = models.CharField(max_length=120,unique= True,null=False)
 
-
-#TODO ADD eden user management classes and communicators.
 class UserBlockedAccounts(models.Model):
     blocker_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='sigma')
     blocked_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='beta')

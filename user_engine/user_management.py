@@ -8,11 +8,18 @@ from django.http import JsonResponse
 from user_engine.middleware import EdenUserMiddleWare
 from user_engine.models import *
 
+import re
+
 
 
 class EdenUserManagement:
     def __init__(self) -> None:
         self.MAX_OBJECT_LIMIT = 50
+    
+    
+    def is_valid_email(self,email):
+        pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+        return re.match(pattern, email) is not None
 
     def make_password(self, txt) -> str:
         """
@@ -44,38 +51,29 @@ class EdenUserManagement:
         user_name = data["user_name"]
         user_email = data["user_email"]
         user_password = data["user_password"]
-        user_public_leaf_count = 0
-        user_private_leaf_count = 0
-        user_experience_points = 0
-        user_verified = False
-        user_followers = 0
-        user_following = 0
-        user_level = 0
+        if len(user_password) < 6:
+            return {"status": False, "issue": "Password too short"}
+        if not self.is_valid_email(user_email):
+            return{"status": False, "issue": "Not a valid email"}
+       
 
         verification_data = {
             "user_email": user_email,
             "user_name": user_name,
         }
         if self.check_user_exists(verification_data):
-            response = {"status": False, "issue": "User already exists."}
+            response = {"status": False, "issue": "User already exists"}
             return response
         else:
             user_profile_object = UserProfile()
             user_profile_object.user_email = user_email
-            user_profile_object.user_private_leaf_count = user_private_leaf_count
-            user_profile_object.user_public_leaf_count = user_public_leaf_count
-            user_profile_object.user_experience_points = user_experience_points
-            user_profile_object.user_verified = user_verified
             user_profile_object.user_password = self.make_password(user_password)
             user_profile_object.user_name = user_name
-            user_profile_object.user_followers = user_followers
-            user_profile_object.user_following = user_following
-            user_profile_object.user_level = user_level
             try:
                 user_profile_object.save()
-                response = {"status": True, "issue": "Success."}
+                response = {"status": True, "issue": "Success"}
             except Exception:
-                response = {"status": False, "issue": "object creation failed."}
+                response = {"status": False, "issue": "object creation failed"}
             return response
 
     def check_user_exists(self, data) -> bool:
@@ -170,7 +168,7 @@ class EdenUserManagement:
                     self.run_user_middleware(following_object, "update_followers", 1)
                     response = {
                         "status": 200,
-                        "message": f"{follower} added as follower added to {follows}",
+                        "message": f"{follower_object.user_name} added as follower to {following_object.user_name}",
                     }
                 except Exception as E:
                     print(E)
@@ -180,7 +178,7 @@ class EdenUserManagement:
             else:
                 response = {
                     "status": 200,
-                    "message": f"{follower_object} already follows {following_object}",
+                    "message": f"{follower_object.user_name} already follows {following_object.user_name}",
                 }
                 return response
         else:
@@ -238,9 +236,13 @@ class EdenUserManagement:
             following_object = self.get_user_object(follows)
             if self.check_follower(following_object, follower_object):
                 UserFollowing.objects.filter(master=following_object, slave=follower_object).first().delete()
-                return {"status": 200, "message": f"{follower_object} successfully unfollowed {following_object}."}
+                return {"status": 200, "message": f"{follower_object.user_name} successfully unfollowed {following_object.user_name}"}
             else:
-                return {"status": 200, "message": f"{follower_object} doesn't follow {following_object}."}
+                return {"status": 200, "message": f"{follower_object.user_name} doesn't follow {following_object.user_name}"}
+        else:
+            response = {"status": 200, "message": "One of the user does not exists."}
+            return response
+
 
     def get_user_followers(self, data):
         """
@@ -298,6 +300,7 @@ class EdenUserManagement:
             Args:
                 data (dict): A dictionary containing the user data.
                     - user_id (int): The ID of the user.
+                    - user_password (str): User current password.
                     - user_password1 (str): The new password.
                     - user_password2 (str): The confirmation of the new password.
 
@@ -352,7 +355,7 @@ class EdenUserManagement:
         else:
             return -103
         
-    def add_user_blocked(self,request,data):
+    def add_user_blocked(self,data):
         try:
             blocked = data['blocked']
             user_object = self.get_user_object(data['user_id'])
@@ -372,22 +375,23 @@ class EdenUserManagement:
         return UserBlockedAccounts.objects.filter(blocker_profile = blocked_by,
                                                   blocked_profile__user_id = blocked).exists()
     
-    def unblock_user(self,request, data):
+    def unblock_user(self, data):
         try:
             blocked = data['blocked']
-            user_object = self.get_user_object(data['user_id'])
-            if self.check_user_blocked_status(blocked, user_object):
-                blocked_user_object = self.get_user_block_object(blocked)
-                user_block_obj = self.get_user_block_object(blocked_user_object, user_block_obj)
+            blocker = self.get_user_object(data['user_id'])
+            if self.check_user_blocked_status(blocked, blocker):
+                blocked_user_object = self.get_user_object(blocked)
+                user_block_obj = self.get_user_block_object(blocked_user_object, blocker)
                 user_block_obj.delete()
                 return 100
             else:
                 return 102
-        except:
+        except Exception as e:
+            raise e
             return -111
         
-    def get_user_block_object(self,blocked, blocked_by):
-        return UserBlockedAccounts.objects.filter(blocker_profile = blocked_by, blocked_profile= blocked).first()
+    def get_user_block_object(self,blocked, blocker):
+        return UserBlockedAccounts.objects.filter(blocker_profile = blocker, blocked_profile= blocked).first()
     
     def get_user_detail_object(self, user_id):
         return  UserDetails.objects.filter(user_id= user_id).first()
@@ -404,8 +408,10 @@ class EdenUserManagement:
                int: The ID of the user, or None if the user doesn't exist.
            """
         user_name = data['user_name']
-        user_obj = UserProfile.objects.filter(user_name=user_name).first()
-        return user_obj.user_id
+        if self.check_user_exists(data):
+            user_obj = UserProfile.objects.filter(user_name=user_name).first()
+            return user_obj.user_id
+        
 
     def get_user_object(self, user_id):
         """
