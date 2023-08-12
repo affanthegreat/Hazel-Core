@@ -21,14 +21,7 @@ session_management_object = EdenSessionManagement()
 
 class EdenLeafManagement:
     def generate_leaf_id(self):
-        """
-        Generate a unique identifier for a leaf node.
 
-        The function generates a unique identifier for a leaf node by creating a session ID using the uuid module.
-        Returns:
-        A string representing the generated session ID.
-
-        """
         session_id = str(uuid.uuid4()).upper().replace("-", "")
         return session_id
 
@@ -37,27 +30,7 @@ class EdenLeafManagement:
         pass
 
     def create_leaf(self, request, data):
-        """
-        Create a new leaf object with provided data.
 
-        This function creates a new leaf object with the given data by first checking if the user is logged in or not.
-        If the user is logged in, it creates a new Leaf object with the provided data such as text content, image content,
-        leaf type, and generates a unique ID for the new leaf object using the generate_leaf_id() method.
-        After creating the new Leaf object, it is saved to the database and the user's middleware is updated accordingly.
-        If the leaf type is Private, the user's "update_private_leaf" middleware is updated. If the leaf type is Public, the
-        user's "update_public_leaf" middleware is updated.
-
-        Args:
-        request: HttpRequest object representing the incoming request.
-        data: A dictionary containing the necessary data for creating a new Leaf object.
-
-        Returns:
-        A dictionary with the following keys:
-        - status: An integer representing the status code of the response.
-        - message: A string representing the message of the response.
-        - code: A boolean value indicating the success or failure of the operation.
-        """
-    
         response = {}
         if self.get_logged_in_user(request):
             new_leaf_object = Leaf()
@@ -74,8 +47,10 @@ class EdenLeafManagement:
                 if middleware_status is not False:
                     new_leaf_object.save()
                 else:
+                    
                     raise Exception("Middleware failed.")
             except Exception as e:
+                logging.ERROR(e)
                 return {
                     "status": -101,
                     "message": "Model not saved."
@@ -91,19 +66,7 @@ class EdenLeafManagement:
         return response
 
     def get_user_public_leaves(self, request, page_number, require_pagination= True):
-        """
-        Retrieve all public leaf objects associated with the logged-in user.
 
-        This function retrieves all public leaf objects associated with the logged-in user. If the user is not logged in or
-        not authorized to access the resource, it returns a status code of -101.
-
-        Args:
-        request: HttpRequest object representing the incoming request.
-
-        Returns:
-        If the user is authorized, a QuerySet containing all the public leaf objects associated with the logged-in user
-        is returned. Otherwise, a status code of -101 is returned to indicate unauthorized access.
-        """
         
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
@@ -121,28 +84,11 @@ class EdenLeafManagement:
             query_set = Leaf.objects.filter(owner= self.get_user_object(user_id)).order_by('-created_date').all()
             return query_set
         else:
-            raise Exception("User does not exists")
+            raise logging.ERROR(Exception("User does not exists"))
 
 
     def get_leaves(self, request, user_id, page_number, require_pagination = True):
-        """
-        Retrieve all leaf objects associated with a given user ID.
 
-        This function retrieves all leaf objects associated with a given user ID by first checking if the logged-in user is
-        authorized to access the resource. If the user is authorized and the user ID exists, it returns all leaf objects
-        associated with the user ID. If the logged-in user is not following the user with the given ID, it returns only the
-        public leaf objects. If the user ID does not exist, it returns a status code of -101.
-
-        Args:
-        request: HttpRequest object representing the incoming request.
-        user_id: A string representing the user ID whose leaf objects need to be retrieved.
-
-        Returns:
-        If the user is authorized and the user ID exists, a QuerySet containing all the leaf objects associated with the
-        user ID is returned. If the logged-in user is not following the user with the given ID, it returns only the public
-        leaf objects. If the user ID does not exist, a status code of -101 is returned to indicate the non-existence of the
-        user.
-        """
         follower_user = self.get_logged_in_user(request)
         user_management_instance = EdenUserManagement()
         if user_management_instance.check_user_exists({'user_id': user_id}):
@@ -159,19 +105,7 @@ class EdenLeafManagement:
             return -101
 
     def get_user_private_leaves(self, request, page_number,require_pagination= True):
-        """
-        Retrieve all private leaf objects associated with the logged-in user.
 
-        This function retrieves all private leaf objects associated with the logged-in user. If the user is not logged in or
-        not authorized to access the resource, it returns a status code of -101.
-
-        Args:
-        request: HttpRequest object representing the incoming request.
-
-        Returns:
-        If the user is authorized, a QuerySet containing all the private leaf objects associated with the logged-in user
-        is returned. Otherwise, a status code of -101 is returned to indicate unauthorized access.
-        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             query_set = Leaf.objects.filter(owner=user_object, leaf_type=LeafType.Private).order_by('-created_date').all()
@@ -183,23 +117,7 @@ class EdenLeafManagement:
             return -101
 
     def delete_leaf(self, request, leaf_id):
-        """
-        Delete the leaf object with the given ID if authorized.
 
-        This function deletes the leaf object with the given ID if the logged-in user is authorized to do so. If the user is
-        not authorized, it returns a status code of -102. If the leaf object does not exist, an appropriate error message is
-        returned.
-
-        Args:
-        request: HttpRequest object representing the incoming request.
-        leaf_id: A string representing the ID of the leaf object that needs to be deleted.
-
-        Returns:
-        A dictionary containing the response message indicating whether the leaf object was successfully deleted or not.
-        If the logged-in user is authorized and the leaf object exists, a message of -100 is returned indicating
-        successful deletion. If the user is not authorized, a message of -102 is returned. If the leaf object does not
-        exist, an appropriate error message is returned.
-        """
         if self.is_authorised(request):
             response = {}
             user_object = self.get_logged_in_user(request)
@@ -214,26 +132,9 @@ class EdenLeafManagement:
             return response
 
     def like_leaf(self, request, leaf_id):
-        """
-        Like a leaf if authorized and not already liked by the user.
 
-        This function allows a logged-in user to like a leaf object if the user is authorized and the leaf object has not been
-        liked by the user before. If the user is not authorized or the leaf object has already been liked by the user, it
-        returns an appropriate error message.
-
-        Args:
-        request: HttpRequest object representing the incoming request.
-        leaf_id: A string representing the ID of the leaf object that the user wants to like.
-
-        Returns:
-        If the logged-in user is authorized and the leaf object has not been liked by the user before, the function
-        creates a new LeafLikes object and returns a status code of -100 indicating successful liking of the leaf object.
-        If the user is not authorized, a status code of -101 is returned. If the leaf object does not exist, an appropriate
-        error message is returned. If the leaf object has already been liked by the user, a status code of -103 is returned.
-        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            print(self.check_like(leaf_id, user_object.user_id)["message"])
             if (
                 self.check_leaf(leaf_id)
                 and not self.check_like(leaf_id, user_object.user_id)["message"]
@@ -242,33 +143,35 @@ class EdenLeafManagement:
                 like_object.leaf = self.get_leaf_object(leaf_id)
                 like_object.liked_by = user_object
                 try:
-                    self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", 1)
-                    self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
-                    self.run_conX_engine(leaf_id,'like',user_object)
-                    self.run_user_topic_middleware(leaf_id,
+                    leaf_middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", 1)
+                    exp_engine_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
+                    conX_status = self.run_conX_engine(leaf_id,'like',user_object)
+                    user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "like",
                                                 self.get_user_object(user_object.user_id),
                                                     1)
-                except:
-                    return -103
-                finally:
-                    like_object.save()
-                    return -100
+                    if (leaf_middleware_status == 100 
+                        and exp_engine_status == 100 
+                        and conX_status == 100
+                        and user_topic_status == 100):
+                            like_object.save()
+                            return -100
+                    else:
+                        print(leaf_middleware_status)
+                        print(exp_engine_status)
+                        print(conX_status)
+                        print(user_topic_status)
+                        return -121
+                except Exception as e:
+                    logging.ERROR(e)
+                    return -122
             else:
                 return -103
+        else:
+            return -111
 
     def dislike_leaf(self, request, leaf_id):
-        """
-        Dislikes a leaf identified by the given leaf_id and associates the dislike with the currently logged-in user.
 
-        Args:
-            request: The HTTP request object containing metadata about the request.
-            leaf_id: The unique identifier of the leaf to be disliked.
-
-        Returns:
-            Returns -100 if the dislike operation was successful, indicating that the leaf was successfully disliked.
-            Returns -103 if the dislike operation was unsuccessful, indicating that the leaf could not be disliked, either because it does not exist or because the user has already disliked the leaf.
-        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             print(self.check_dislike(leaf_id, user_object.user_id)["message"])
@@ -281,54 +184,63 @@ class EdenLeafManagement:
                 dislike_object.disliked_by = user_object
                 dislike_object.save()
                 try:
-                    self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1)
-                    self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
-                    self.run_conX_engine(leaf_id,'dislike',user_object)
-                    self.run_user_topic_middleware(leaf_id,
+                    leaf_middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1)
+                    exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
+                    conX_status = self.run_conX_engine(leaf_id,'dislike',user_object)
+                    user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "dislike",
                                                 self.get_user_object(user_object.user_id),
                                                     1)
+                    
+                    if (leaf_middleware_status == 100 
+                        and exp_status == 100
+                        and conX_status == 100
+                        and user_topic_status == 100):
+                        dislike_object.save()
+                        return -100
+                    else:
+                        print(leaf_middleware_status)
+                        print(exp_status)
+                        print(conX_status)
+                        print(user_topic_status)
+                        return -121
                 except:
-                    return -103
-                finally:
-                    dislike_object.save()
-                    return -103
-                return -100
+                    return -122
             else:
                 return -103
+        else:
+            return -111
 
     def remove_like(self, request, leaf_id):
-        """
-        The remove_like function takes a request and leaf_id as input parameters, and removes the like on a leaf if it exists. It first checks if the request is authorized, then gets the logged-in user object and checks the like status of the leaf for that user. If the leaf exists and the user has liked it, the like object is retrieved and deleted, and the update_likes middleware is run to update the like count. The function returns -100 if the like is successfully removed, and -105 if the user has not liked the leaf or the leaf does not exist.
-        Args:
 
-        request: A HttpRequest object that contains metadata about the request.
-        leaf_id: An integer value representing the ID of the leaf that the user is attempting to remove the like from.
-        Returns:
-
-        -100 if the like is successfully removed.
-        -105 if the user has not liked the leaf or the leaf does not exist.
-        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_like(leaf_id, user_object.user_id)
             if self.check_leaf(leaf_id) and like_status["message"]:
                 like_object = self.get_like_object(leaf_id, user_object.user_id)
-                like_object.delete()
                 try:
-                    self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1)
-                    self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
-                    self.run_user_topic_middleware(leaf_id,
+                    middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1)
+                    exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
+                    user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "like",
                                                 self.get_user_object(user_object.user_id),
                                                     -1)
+                    if (middleware_status == 100 and
+                        exp_status == 100 and
+                        user_topic_status == 100):
+                        like_object.delete()
+                        return -100
+                    else:
+                        print(middleware_status)
+                        print(exp_status)
+                        print(user_topic_status)
+                        return -121
                 except:
-                    return -103
-                finally:
-                    like_object.delete()
-                    return -100
+                    return -122      
             else:
-                return -105
+                return -103
+        else:
+            return -111
 
     def remove_dislike(self, request, leaf_id):
         """
@@ -349,21 +261,29 @@ class EdenLeafManagement:
             print(like_status)
             if self.check_leaf(leaf_id) and like_status["message"]:
                 dislike_object = self.get_dislike_object(leaf_id, user_object.user_id)
-                dislike_object.delete()
                 try:
-                    self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1)
-                    self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
-                    self.run_user_topic_middleware(leaf_id,
+                    middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1)
+                    exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
+                    user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "dislike",
                                                 self.get_user_object(user_object.user_id),
                                                     -1)
+                    if (middleware_status == 100 and
+                        exp_status == 100 and 
+                        user_topic_status == 100):
+                        dislike_object.delete()
+                        return -100
+                    else:
+                        print(middleware_status)
+                        print(exp_status)
+                        print(user_topic_status)
+                        return -121
                 except:
-                    return -103
-                finally:
-                    dislike_object.delete()
-                    return -100
+                    return -122
             else:
-                return -105
+                return -103
+        else:
+            return -111
 
     def get_total_likes(self, leaf_id, page_number):
         """
@@ -449,30 +369,38 @@ class EdenLeafManagement:
                         leaf_comment_object.save()
                         logging.info("root comment saved to leaf_comment object.")
                         try:
-                            self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", 1)
-                            self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
-                            self.run_conX_engine(leaf_id,'comment', user_object)
-                            self.run_user_topic_middleware(leaf_id,
+                            middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", 1)
+                            exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
+                            conx_status = self.run_conX_engine(leaf_id,'comment', user_object)
+                            user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "comment",
-                                                user_object.user_id,
+                                                user_object,
                                                     1, comment_id=leaf_comment_object.comment_id)
-                            response = {
-                                'status_code':-100,
-                                'leaf_comment_id':str(leaf_comment_object.comment_id)
-                            }
-                            return response
-                        except:
+                            
+                            if(middleware_status == 100 and 
+                               exp_status == 100 and
+                               conx_status == 100 and 
+                               user_topic_status):
+                                return -100
+                            else:
+                                print(middleware_status)
+                                print(exp_status)
+                                print(user_topic_status)
+                                print(conx_status)
+                                return -121
+                        except Exception as e:
+                            raise e
                             leaf_comment_object.delete()
-                            return -103
+                            return -122
                     else:
-                        return {"status_code":-105}
+                        return -103
                 except Exception as E:
-                    print(E)
-                    return -103
+                    raise E
+                    return -122
             else:
                 return -106
         else:
-            return -101
+            return -111
 
     def remove_comment(self, request, leaf_id):
         """
@@ -503,8 +431,8 @@ class EdenLeafManagement:
                         self.run_exp_engine_per_leaf(leaf_object)
                         self.run_user_topic_middleware(leaf_id,
                                                 "comment",
-                                                self.get_user_object(leaf_object.owner.user_id),
-                                                    -1, comment_id=comment_object.comment_id)
+                                                leaf_object.owner,
+                                                -1, comment_id=comment_object.comment_id)
                     except:
                         return -103
                     comment_object.delete()
@@ -522,7 +450,7 @@ class EdenLeafManagement:
                 self.run_exp_engine_per_leaf(leaf_object)
                 self.run_user_topic_middleware(leaf_id,
                                                 "sub_comment",
-                                                self.get_user_object(leaf_object.owner.user_id),
+                                                leaf_object.owner,
                                                 -1, comment_id=comment_id)
             except:
                 return -103
@@ -555,7 +483,7 @@ class EdenLeafManagement:
                 self.run_conX_engine(leaf_object.leaf_id,'view', user_object)
                 self.run_user_topic_middleware(leaf_object.leaf_id,
                                                 "leaves_served",
-                                                self.get_user_object(leaf_object.owner.user_id),
+                                                leaf_object.owner,
                                                     1)
             except:
                 return -103
@@ -618,7 +546,7 @@ class EdenLeafManagement:
                 root_leaf_object = self.get_leaf_object(comment_object.leaf_id)
                 self.run_user_topic_middleware(comment_object.leaf_id,
                                                "sub_comment",
-                                               self.get_user_object(root_leaf_object.owner.user_id),
+                                               root_leaf_object.owner,
                                                 1, comment_id= comment_object.comment_id)
                 return -100
             except Exception as E:
@@ -650,7 +578,7 @@ class EdenLeafManagement:
             self.run_exp_engine_per_leaf(leaf_object)
             self.run_user_topic_middleware(comment_object.leaf_id,
                                                comment_type,
-                                               self.get_user_object(leaf_object.owner.user_id),
+                                               leaf_object.owner,
                                                 -1, 
                                                 comment_id= comment_object.comment_id)
             comment_object.delete()
@@ -1028,7 +956,7 @@ class EdenLeafManagement:
                     leaf_interaction = InteractionType.Like 
                 case "dislike":
                     leaf_interaction = InteractionType.Dislike
-                case "comments":
+                case "comment":
                     leaf_interaction = InteractionType.Comment
                 case "view":
                     leaf_interaction = InteractionType.View
@@ -1039,8 +967,8 @@ class EdenLeafManagement:
                 'leaf_interaction': leaf_interaction,
                 'interacted_by': interacted_by
             }
-            conX_engine.start_pipeline(data)
-            return 100
+            return conX_engine.start_pipeline(data)
+            
 
     def handle_comment_sentiment_middleware(self,comment_id, topic_id, user_object, value):
         try:

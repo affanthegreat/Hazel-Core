@@ -63,7 +63,7 @@ def get_user_public_leaves_view(request):
             else:
                 return JsonResponse(response_status, safe=False)
         except Exception as e:
-            return throw_invalid_fields_error()
+            return make_response({'message': str(e)})
     else:
         return throw_http_method_not_supported_error()
 
@@ -81,8 +81,8 @@ def get_leaves_view(request):
                 return response
             else:
                 return JsonResponse(response_status, safe=False)
-        except:
-            return throw_invalid_fields_error()
+        except Exception as e:
+            return make_response({'message': str(e)})
     else:
        return throw_http_method_not_supported_error()
 
@@ -100,7 +100,7 @@ def get_user_private_leaves_view(request):
             else:
                return JsonResponse(response_status, safe=False)
         except Exception as e:
-            return throw_invalid_fields_error()
+            return make_response({'message': str(e)})
     else:
         return throw_http_method_not_supported_error()
 
@@ -126,6 +126,7 @@ def like_leaf_view(request):
         valid_fields = ['leaf_id']
         if check_field_validity(valid_fields,data):
             response = ELM_object.like_leaf(request, data['leaf_id'])
+            print(response)
             return make_response(response)
         else:
             return throw_invalid_fields_error()
@@ -191,14 +192,16 @@ def remove_sub_comment_view(request):
 @csrf_exempt
 def get_all_likes(request):
     if request.method == "GET":
-        data = json.loads(request.body)
-        response = {}
-        valid_fields = ['leaf_id', "page_number"]
-        if check_field_validity(valid_fields,data):
-            response = ELM_object.get_total_likes(data['leaf_id'], data['page_number'])
+        try:
+            page_number = request.GET.get('page_number')
+            leaf_id = request.GET.get('leaf_id')
+            response = {}
+            valid_fields = ['leaf_id', "page_number"]
+            response = ELM_object.get_total_likes(leaf_id=leaf_id, page_number=int(page_number))
             return JsonResponse(response, safe=False)
-        else:
-           return throw_invalid_fields_error()
+        except Exception as e:
+           raise e
+           return make_response({'message': str(e)})
     else:
        return throw_http_method_not_supported_error()
 
@@ -206,17 +209,17 @@ def get_all_likes(request):
 @csrf_exempt
 def get_all_comments(request):
     if request.method == "GET":
-        data = json.loads(request.body)
-        valid_fields = ['leaf_id', 'page_number']
-        if check_field_validity(valid_fields,data):
-            response = ELM_object.get_total_comments(request, data['leaf_id'],data['page_number'])
+        try:
+            page_number = request.GET.get('page_number')
+            leaf_id = request.GET.get('leaf_id')
+            response = ELM_object.get_total_comments(request, leaf_id,int(page_number))
             if response == -104:
                return HttpResponse(
                     content=json.dumps({"status": 200, "message": "No comments found."})
                 )
             return JsonResponse(response, safe=False)
-        else:
-           return throw_invalid_fields_error()
+        except Exception as e:
+           return make_response({'message': str(e)})
     else:
        return throw_http_method_not_supported_error()
 

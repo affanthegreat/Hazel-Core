@@ -7,3 +7,5 @@ ELM Module Status Codes:
 "-104": Object does not exists
 "-105": Combination of -102 and -103
 "-106": issue while parsing.
+"-111": Error or Exception raised
+"-121": Middleware failed.

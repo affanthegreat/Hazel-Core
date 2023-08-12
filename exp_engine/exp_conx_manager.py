@@ -47,14 +47,13 @@ class Eden_CONX_Engine():
         
     def create_user_leaf_preference(self, data):
         try:
-            elm_object =EdenLeafManagement()
             if not self.check_user_leaf_preference(data):
                 eum_object = EdenUserManagement()
                 user_leaf_preference_object = UserLeafPreferences()
                 user_leaf_preference_object.topic_id = data['topic_id']
                 user_leaf_preference_object.topic_category_id = data['topic_category_id']
                 user_leaf_preference_object.topic_visit_frequency = 1
-                user_leaf_preference_object.user_object = eum_object.get_user_object(data['user_id'])
+                user_leaf_preference_object.user_object = data['user_id']
                 user_leaf_preference_object.save()
                 return 100
             else:
@@ -64,12 +63,14 @@ class Eden_CONX_Engine():
     
     def create_user_topic_relation(self,data):
         try:
-            if not self.check_user_topic_relation(data):
-                eum_object = EdenUserManagement()
+            eum_object = EdenUserManagement()
+            user = eum_object.get_user_object(data['user_id'])
+            if not self.check_user_topic_relation(data['topic_id'], user) :
+                
                 user_topic_relation_object = UserTopicRelations()
                 user_topic_relation_object.topic_id = data['topic_id']
                 user_topic_relation_object.topic_category_id = data['topic_category_id']
-                user_topic_relation_object.user = eum_object.get_user_object(data['user_id'])
+                user_topic_relation_object.user = user
                 user_topic_relation_object.save()
                 return 100
             else:
@@ -193,7 +194,7 @@ class Eden_CONX_Engine():
                 'user_id': leaf_interacted_by,
             }
             self.create_leaf_interaction(leaf_object ,leaf_interacted_by, leaf_interaction_type)
-            self.create_user_leaf_preference(data)
+            self.create_user_leaf_preference(req_data)
             return 100
         else:
             leaf_topic_id = leaf_object.leaf_topic_id
