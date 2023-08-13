@@ -50,7 +50,6 @@ class EdenLeafManagement:
                     
                     raise Exception("Middleware failed.")
             except Exception as e:
-                raise e
                 return {
                     "status": -101,
                     "message": "Model not saved."
@@ -157,14 +156,8 @@ class EdenLeafManagement:
                             like_object.save()
                             return -100
                     else:
-                        print(leaf_middleware_status)
-                        print(exp_engine_status)
-                        print(conX_status)
-                        print(user_topic_status)
                         return -121
                 except Exception as e:
-                    print("||||||||||||||||||||||||||||||||||||")
-                    raise e
                     return -122
             else:
                 return -103
@@ -200,10 +193,6 @@ class EdenLeafManagement:
                         dislike_object.save()
                         return -100
                     else:
-                        print(leaf_middleware_status)
-                        print(exp_status)
-                        print(conX_status)
-                        print(user_topic_status)
                         return -121
                 except:
                     return -122
@@ -232,9 +221,6 @@ class EdenLeafManagement:
                         like_object.delete()
                         return -100
                     else:
-                        print(middleware_status)
-                        print(exp_status)
-                        print(user_topic_status)
                         return -121
                 except:
                     return -122      
@@ -275,9 +261,6 @@ class EdenLeafManagement:
                         dislike_object.delete()
                         return -100
                     else:
-                        print(middleware_status)
-                        print(exp_status)
-                        print(user_topic_status)
                         return -121
                 except:
                     return -122
@@ -372,16 +355,10 @@ class EdenLeafManagement:
 
                                 return response
                             else:
-                                print("++++++++++++++++++++_RRERER++++++++")
-                                print(middleware_status)
-                                print(exp_status)
-                                print(user_topic_status)
-                                print(conx_status)
-                                leaf_comment_object.delete()
                                 response['message'] = -121
                                 return response
                         except Exception as e:
-                            raise e
+
                             leaf_comment_object.delete()
                             response['message'] = -122
                             return response
@@ -389,7 +366,6 @@ class EdenLeafManagement:
                         response['message'] = -103
                         return response
                 except Exception as E:
-                    raise E
                     response['exception']= str(E)
                     response['message'] = -122
                     return response
@@ -487,10 +463,6 @@ class EdenLeafManagement:
                     obj.save()
                     return -100
                 else:
-                    print(middleware_status)
-                    print(exp_status)
-                    print(conx_status)
-                    print(user_topic_status)
                     return -121
             except: 
                 return -122

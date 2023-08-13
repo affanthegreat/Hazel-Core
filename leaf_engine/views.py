@@ -199,11 +199,9 @@ def get_all_likes(request):
             page_number = request.GET.get('page_number')
             leaf_id = request.GET.get('leaf_id')
             response = {}
-            valid_fields = ['leaf_id', "page_number"]
             response = ELM_object.get_total_likes(leaf_id=leaf_id, page_number=int(page_number))
             return JsonResponse(response, safe=False)
         except Exception as e:
-           raise e
            return make_response({'message': str(e)})
     else:
        return throw_http_method_not_supported_error()
@@ -276,6 +274,12 @@ def add_sub_comment_view(request):
         data = json.loads(request.body)
         valid_fields = ['leaf_id', 'comment_string','parent_comment_id']
         if check_field_validity(valid_fields,data):
+            if not ELM_object.check_leaf(data['leaf_id']):
+                return throw_invalid_fields_error()
+            
+            if not ELM_object.check_comment(data['leaf_id'], data['parent_comment_id']):
+                return throw_invalid_fields_error()
+            
             object_creation_status = json.loads((add_comment_view(request).content).decode('utf-8'))
             if object_creation_status['message'] == -100:
                 comment_id = object_creation_status['leaf_comment_id']
@@ -283,7 +287,6 @@ def add_sub_comment_view(request):
                 response = ELM_object.add_sub_comment_db(comment_id,parent_comment_id)
                 return make_response(response)
             else:
-                raise Exception(object_creation_status)
                 return make_response(-103)
         else:
             return throw_invalid_fields_error()

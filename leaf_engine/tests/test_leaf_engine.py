@@ -417,9 +417,9 @@ class EdenLeafFunctionalityTests(TestCase):
         response = self.client.post(comment_url, test_data,  content_type='application/json')
         self.assertEqual(to_dict(response.content), -100)
         self.assertEqual(LeafComments.objects.count(), 2)
-        self.assertEqual(LeafInteraction.objects.count(), 1)
-        self.assertEqual(UserTopicRelations.objects.count(), 1)
-        self.assertEqual(UserLeafPreferences.objects.count(), 1)
+        self.assertEqual(LeafInteraction.objects.count(), 2)
+        self.assertEqual(UserTopicRelations.objects.count(), 2)
+        self.assertEqual(UserLeafPreferences.objects.count(), 2)
     
     def test_add_sub_comment_invalid_parent_comment_id(self):
         comment_url = reverse('add_sub_comment')
@@ -434,6 +434,21 @@ class EdenLeafFunctionalityTests(TestCase):
         self.assertEqual(LeafInteraction.objects.count(), 1)
         self.assertEqual(UserTopicRelations.objects.count(), 1)
         self.assertEqual(UserLeafPreferences.objects.count(), 1)
+    
+    def test_add_sub_comment_invalid_leaf_id(self):
+        comment_url = reverse('add_sub_comment')
+        test_data = {
+            'leaf_id': "NON EXISTANT",
+            'comment_string': "Test comment 1",
+            'parent_comment_id': "NON EXISTANT"
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'],"Valid fields not found in request body")
+        self.assertEqual(LeafComments.objects.count(), 0)
+        self.assertEqual(LeafInteraction.objects.count(), 0)
+        self.assertEqual(UserTopicRelations.objects.count(), 0)
+        self.assertEqual(UserLeafPreferences.objects.count(), 0)
+    
 
     def test_add_view(self):
         comment_url = reverse('add_view')

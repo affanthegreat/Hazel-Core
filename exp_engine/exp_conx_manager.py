@@ -183,9 +183,6 @@ class Eden_CONX_Engine():
         leaf_object = elm_object.get_leaf_object(leaf_id)
         interaction_status = self.check_leaf_interaction(leaf_object ,leaf_interacted_by, leaf_interaction_type)
         if leaf_interacted_by is None:
-            print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
-            print(leaf_interacted_by)
-            print(data)
             raise Exception("User Not found.")
         if not interaction_status:
             req_data = {
