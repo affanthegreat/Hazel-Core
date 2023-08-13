@@ -28,7 +28,6 @@ class UserLeafPreferences(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
-
 class UserTopicRelations(models.Model):
     topic_id = models.BigIntegerField(default= -1)
     topic_category_id = models.BigIntegerField(default=-1)

@@ -1,8 +1,10 @@
 import logging
 from datetime import datetime, timedelta
+from django.db.models.signals import pre_save
+from django.db.models.signals import disable_signals
 
 from leaf_engine.leaf_management import EdenLeafManagement
-from leaf_engine.models import LeafType
+from leaf_engine.models import Leaf, LeafType
 from leaf_engine.middleware import EdenLeafMiddleware
 from user_engine.backends import EdenSessionManagement
 from user_engine.middleware import EdenUserMiddleWare
@@ -14,6 +16,8 @@ class EdenExperienceEngine():
     def __init__(self):
         self.exp_points_weight = 0.4
         self.engagement_points_weight = 0.6
+        self.promoted_weight = 1.7
+        self.advertisement_weight = 2.2
         logging.info("================EDEN EXP-PBR ENGINE================")
         self.time_of_running = datetime.now().astimezone()
 
@@ -24,11 +28,29 @@ class EdenExperienceEngine():
         delta = self.time_of_running - prev_date
         return delta > timedelta(minutes=2)
     
-    def generate_exp_points(self, engagement_rating, experience_rating):
+    def generate_exp_points(self, leaf_object, engagement_rating, experience_rating):
         leaf_exp_points = 0
         leaf_exp_points += self.exp_points_weight * experience_rating
         leaf_exp_points += self.engagement_points_weight * engagement_rating
+        if leaf_object.is_promoted:
+            leaf_exp_points = self.promoted_weight * leaf_exp_points
+        if leaf_object.is_advertisement:
+            leaf_exp_points = self.advertisement_weight * leaf_exp_points
+        
+        topic_id = leaf_object.leaf_topic_id
+        topic_category = leaf_object.leaf_topic_category_id
+
+        with disable_signals(pre_save):
+            leaf_object.topic_relevancy_percentage = (leaf_exp_points / self.get_highest_exp_topic_id(topic_id))  
+            leaf_object.category_relevancy_percentage = (leaf_exp_points / self.get_highest_exp_topic_category(topic_category))  
+            leaf_object.save()
         return leaf_exp_points
+
+    def get_highest_exp_topic_id(self, topic_id):
+        return Leaf.objects.filter(leaf_topic_id=topic_id).order_by('-exp_points').first().exp_points
+    
+    def get_highest_exp_topic_category(self, topic_category):
+        return Leaf.objects.filter(leaf_topic_category_id=topic_category).order_by('-exp_points').first().exp_points
 
     def generate_batch_exp_points(self, engagement_map, experience_map):
         total_user_exp = 0
@@ -131,12 +153,13 @@ class EdenExperienceEngine():
             eden_user_middleware.update_user_level(level)
             eden_user_middleware.update_previous_experience_generation_date(self.time_of_running)
         logging.info(f"> Leaf owner metrics last performed on {leaf_owner.previous_experience_generation_date.strftime('%m/%d/%Y, %H:%M:%S')}.")
-        
+    
+    #root
     def initiate_per_leaf(self,leaf_object):
         try:
             ratings = self.pre_process(leaf_object)
             engagement_rating, experience_rating = ratings['engagement_rate'], ratings['experience_rate']
-            ratings['leaf_total_exp_points'] = self.generate_exp_points(engagement_rating, experience_rating)
+            ratings['leaf_total_exp_points'] = self.generate_exp_points(leaf_object, engagement_rating, experience_rating)
             logging.info(f"> Leaf Object {leaf_object.leaf_id} total exp points: {ratings}")
             self.run_per_leaf_middleware(leaf_object, ratings)
             self.update_leaf_owner_metrics(leaf_object)
@@ -146,8 +169,8 @@ class EdenExperienceEngine():
         
     def initiate_per_leaf_view(self, leaf_id):
         elm_object = EdenLeafManagement()
-        leaF_object = elm_object.get_leaf_object(leaf_id)
-        response = self.initiate_per_leaf(leaF_object)
+        leaf_object = elm_object.get_leaf_object(leaf_id)
+        return self.initiate_per_leaf(leaf_object)
     
     def get_logged_in_user(self, request):
         return session_management_object.get_session_user(request)
@@ -249,6 +272,7 @@ class EdenAnalyticsEngine():
     def process_user_private_leaves(self):
         if self.request == None:
             return self.throw_request_not_found_error()
+        
         eden_leaf_manager = EdenLeafManagement()
         private_leaf_objects = eden_leaf_manager.get_user_private_leaves(self.request, require_pagination= False)
         for private_leaf in private_leaf_objects:

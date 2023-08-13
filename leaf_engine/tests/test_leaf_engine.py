@@ -37,7 +37,7 @@ class EdenUserViewsTest(TestCase):
         self.assertEqual(to_dict(response.content)['message'], "Login successful.")
         self.assertEqual(UserAccessToken.objects.count(), 1)
     
-
+    #CREATE LEAF 
     def test_create_leaf(self):
         test_data = {
              'text_content': "Public Leaf 1",
@@ -66,6 +66,55 @@ class EdenUserViewsTest(TestCase):
         response = self.client.post(url, test_data,  content_type='application/json')   
         self.assertEqual(to_dict(response.content)['message'], 'Invalid leaf type')
 
+    #GET USER PUBLIC LEAF
+    def test_get_user_public_leaves(self):
+        test_data = {
+             'text_content': "Public Leaf 1",
+             'leaf_type': 'public',
+            }
+        url = reverse('create_leaf')
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
+        self.assertEqual(Leaf.objects.count(),1)
+        url = reverse('get_user_public_leaves')
+        response = self.client.get(f'{url}?page_number=1')
+        self.assertEqual(len(to_dict(response.content)['data']),1)
+
+    def test_get_user_public_leaves_empty(self):
+        url = reverse('get_user_public_leaves')
+        response = self.client.get(f'{url}?page_number=1')
+        self.assertEqual(len(to_dict(response.content)['data']),0)
+    
+    def test_get_user_public_leaves_invalid(self):
+        url = reverse('get_user_public_leaves')
+        response = self.client.get(f'{url}?page_number=2')
+        self.assertEqual(len(to_dict(response.content)['status']),-131)
+    
+    #GET USER PRIVATE LEAF
+    def test_get_user_private_leaves(self):
+        test_data = {
+             'text_content': "Public Leaf 1",
+             'leaf_type': 'private',
+            }
+        url = reverse('create_leaf')
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
+        self.assertEqual(Leaf.objects.count(),1)
+        url = reverse('get_user_private_leaves')
+        response = self.client.get(f'{url}?page_number=1')
+        self.assertEqual(len(to_dict(response.content)['data']),1)
+    
+    def test_get_user_private_leaves_empty(self):
+        url = reverse('get_user_private_leaves')
+        response = self.client.get(f'{url}?page_number=1')
+        self.assertEqual(len(to_dict(response.content)['data']),0)
+    
+    def test_get_user_private_leaves_invalid(self):
+        url = reverse('get_user_private_leaves')
+        response = self.client.get(f'{url}?page_number=1')
+        self.assertEqual(len(to_dict(response.content)['status']),-131)
+
+    #DELETE LEAF
     def test_delete_leaf(self):
         test_data = {
              'text_content': "Public Leaf 1",
@@ -98,31 +147,7 @@ class EdenUserViewsTest(TestCase):
         delete_response = self.client.post(delete_url, deletion_data,  content_type='application/json')
         self.assertEqual(to_dict(delete_response.content)['message'], "Valid fields not found in request body")
     
-    def test_get_user_public_leaves(self):
-        test_data = {
-             'text_content': "Public Leaf 1",
-             'leaf_type': 'public',
-            }
-        url = reverse('create_leaf')
-        response = self.client.post(url, test_data,  content_type='application/json')
-        self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
-        self.assertEqual(Leaf.objects.count(),1)
-        url = reverse('get_user_public_leaves')
-        response = self.client.get(f'{url}?page_number=1')
-        self.assertEqual(len(to_dict(response.content)['data']),1)
     
-    def test_get_user_private_leaves(self):
-        test_data = {
-             'text_content': "Public Leaf 1",
-             'leaf_type': 'private',
-            }
-        url = reverse('create_leaf')
-        response = self.client.post(url, test_data,  content_type='application/json')
-        self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
-        self.assertEqual(Leaf.objects.count(),1)
-        url = reverse('get_user_private_leaves')
-        response = self.client.get(f'{url}?page_number=1')
-        self.assertEqual(len(to_dict(response.content)['data']),1)
 
 class EdenLeafFunctionalityTests(TestCase):
     def setUp(self):
@@ -183,7 +208,8 @@ class EdenLeafFunctionalityTests(TestCase):
         login_response = self.client.post(reverse('login'), self.test_user_1,  content_type='application/json')
         self.assertEqual(to_dict(login_response.content)['message'], "Login successful.")
         self.assertEqual(UserAccessToken.objects.count(), 1)
-        
+    
+    #Like leaf    
     def test_like_leaf(self):
         like_url = reverse('like_leaf')
         test_data = {
@@ -208,6 +234,25 @@ class EdenLeafFunctionalityTests(TestCase):
         self.assertEqual(UserTopicRelations.objects.count(), 0)
         self.assertEqual(UserLeafPreferences.objects.count(), 0)
     
+    def test_like_leaf_without_login(self):
+        logout_url = reverse('logout')
+        logout_response = self.client.post(logout_url, self.test_user_1,  content_type='application/json')
+        self.assertEqual(to_dict(logout_response.content)['message'], "Logout successful.")
+        self.assertEqual(UserAccessToken.objects.count(), 0)
+
+
+        like_url = reverse('like_leaf')
+        test_data = {
+            'leaf_id': "DOES NOT EXISTS"
+        }
+        response = self.client.post(like_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content), -111)
+        self.assertEqual(LeafLikes.objects.count(), 0)
+        self.assertEqual(LeafInteraction.objects.count(), 0)
+        self.assertEqual(UserTopicRelations.objects.count(), 0)
+        self.assertEqual(UserLeafPreferences.objects.count(), 0)
+    
+    #Dislike
     def test_dislike_leaf(self):
         dislike_url = reverse('dislike_leaf')
         test_data = {
@@ -221,6 +266,24 @@ class EdenLeafFunctionalityTests(TestCase):
         self.assertEqual(UserLeafPreferences.objects.count(), 1)
     
     def test_dislike_leaf_non_existant(self):
+        logout_url = reverse('logout')
+        logout_response = self.client.post(logout_url, self.test_user_1,  content_type='application/json')
+        self.assertEqual(to_dict(logout_response.content)['message'], "Logout successful.")
+        self.assertEqual(UserAccessToken.objects.count(), 0)
+
+
+        dislike_url = reverse('dislike_leaf')
+        test_data = {
+            'leaf_id': "THIS DOES NOT EXISTS"
+        }
+        response = self.client.post(dislike_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content), -111)
+        self.assertEqual(LeafDisLikes.objects.count(), 0)
+        self.assertEqual(LeafInteraction.objects.count(), 0)
+        self.assertEqual(UserTopicRelations.objects.count(), 0)
+        self.assertEqual(UserLeafPreferences.objects.count(), 0)
+    
+    def test_dislike_leaf_non_existant(self):
         dislike_url = reverse('dislike_leaf')
         test_data = {
             'leaf_id': "THIS DOES NOT EXISTS"
@@ -231,7 +294,8 @@ class EdenLeafFunctionalityTests(TestCase):
         self.assertEqual(LeafInteraction.objects.count(), 0)
         self.assertEqual(UserTopicRelations.objects.count(), 0)
         self.assertEqual(UserLeafPreferences.objects.count(), 0)
-    
+
+    #remove like
     def test_remove_like(self):
         like_url = reverse('like_leaf')
         test_data = {

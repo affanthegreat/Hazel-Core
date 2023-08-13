@@ -43,7 +43,8 @@ class Leaf(models.Model):
     leaf_emotion_state = models.CharField(max_length=30,default="NULL")
     is_promoted = models.BooleanField(default=False)
     is_advertisement = models.BooleanField(default=False)
-
+    topic_relevenacy_percentage= models.IntegerField(default=0)
+    category_relevancy_percentage = models.IntegerField(default=0)
 
 class LeafLikes(models.Model):
     like_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True ,default=uuid.uuid4)

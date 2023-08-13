@@ -2,8 +2,8 @@ import uuid
 import logging 
 
 from django.core.paginator import Paginator
-
-
+from django.db.models.signals import pre_save
+from django.db.models.signals import disable_signals
 
 from exp_engine.middleware import EdenUserTopicRelationMiddleWare
 from exp_engine.models import InteractionType
@@ -176,7 +176,6 @@ class EdenLeafManagement:
                 dislike_object = LeafDisLikes()
                 dislike_object.leaf = self.get_leaf_object(leaf_id)
                 dislike_object.disliked_by = user_object
-                dislike_object.save()
                 try:
                     leaf_middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1)
                     exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
@@ -335,7 +334,8 @@ class EdenLeafManagement:
                         logging.info("partial saving leaf comment object.")
                         leaf_comment_object.save()
                         leaf_comment_object.root_comment = leaf_comment_object
-                        leaf_comment_object.save()
+                        with disable_signals(pre_save):
+                            leaf_comment_object.save()
                         logging.info("root comment saved to leaf_comment object.")
                         response['leaf_comment_id'] = str(leaf_comment_object.comment_id)
                         try:
@@ -522,7 +522,6 @@ class EdenLeafManagement:
                     comment_object.root_comment = parent_object
                 else:
                     comment_object.root_comment = parent_object.root_comment
-                comment_object.save()
                 middleware_status = self.run_leaf_middleware(self.get_leaf_object(comment_object.leaf_id), "update_comments", 1)
                 exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(comment_object.leaf_id))
                 conx_status = self.run_conX_engine(comment_object.leaf_id,"sub_comment",comment_object.commented_by)
@@ -540,7 +539,6 @@ class EdenLeafManagement:
                     comment_object.delete()
                     return -121
             except Exception as E:
-                raise E
                 return -105
         else:
             comment_object.delete()
@@ -835,6 +833,7 @@ class EdenLeafManagement:
         total_pages = pagination_obj.page_range[-1]
         if page_number > total_pages:
             return {
+                'status': -131,
                 "message": f"Page number does not exists. (total pages available : {total_pages})"
             }
         try:

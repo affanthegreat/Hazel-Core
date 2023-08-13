@@ -24,6 +24,8 @@ conX_object = Eden_CONX_Engine()
 class HazelRecommendationEngine():
 
     def meta(self):
+        self.MAX_OBJECT_LIMIT = 100
+        self.TOPIC_WISE_MAX_ADS = 10
         self.VERSION = 0.1
         self.BUILD_TYPE = "ALPHA"
         self.MAX_TOPICS_AT_ONE_TIME = 25
@@ -118,22 +120,25 @@ class HazelRecommendationEngine():
         leaf_communicator = EdenLeafCommunicator()
         return leaf_communicator.stream_leaves_topic_wise_query_set({'topic_id':topic_id})
     
-    def make_leaf_query_sets(self,bias_map):
+    def make_leaf_query_sets(self,bias_map,higher_priority = False):
         queryset_list = []
         for topic_id, _ in bias_map:
             queryset= self.get_leafs_priority_wise(topic_id)
             if queryset is not None:
-                filtered_query_set = self.filter_leaves(queryset)
+                if higher_priority:
+                    filtered_query_set = self.filter_leaves(queryset).filter(topic_relevancy_percentage__gt = 0.75)
+                else:
+                    filtered_query_set = self.filter_leaves(queryset).filter(topic_relevancy_percentage_lte = 0.75)
                 queryset_list.append(filtered_query_set[:filtered_query_set.count() * self.RELEVENT_LEAF_MIX])
             else:
                logging.info(f"No leaves found from the topic {topic_id}")
         merged_query_set = self.merge_query_sets(queryset_list)
         return merged_query_set
 
-    def make_topic_wise_query_sets(self):
+    def make_topic_wise_query_sets(self, higher_priority= False):
         topics = self.get_user_preferred_topics()
         bias_map = self.generate_bias_for_user_topics(topics)
-        return self.make_leaf_query_sets(bias_map)
+        return self.make_leaf_query_sets(bias_map, higher_priority)
 
     def get_topic_category_id(self,topic_id):
         try:
@@ -146,14 +151,17 @@ class HazelRecommendationEngine():
         leaf_query_set = leaf_communicator.stream_top_rated_leaves_in_topic({'topic_id':topic_id})
         return self.filter_leaves(leaf_query_set)
 
-    def make_similar_topics_query_sets(self):
+    def make_similar_topics_query_sets(self, higher_priority = False):
         queryset_list = []
         topics = self.get_user_preferred_topics()
         bias_map = self.generate_bias_for_user_topics(topics)[:self.MAX_TOPICS_AT_ONE_TIME]
         for topic_id, _ in bias_map:
             topic_category_id = self.get_topic_category_id(topic_id)
             if topic_category_id:
-                query_set = self.get_highest_rated_leaves_in_topic(topic_category_id)
+                if higher_priority:
+                    query_set = self.get_highest_rated_leaves_in_topic(topic_category_id).filter(topic_category_id__gt = 0.75)
+                else:
+                    query_set = self.get_highest_rated_leaves_in_topic(topic_category_id).filter(topic_category_id__lte = 0.75)
                 if query_set.count() > self.MAX_LEAVES_PER_NEW_TOPIC:
                     queryset_list.append(query_set[:query_set.count() * self.NEW_TOPICS_MIX])
         merged_query_set = self.merge_query_sets(queryset_list)
@@ -161,16 +169,25 @@ class HazelRecommendationEngine():
 
     def make_query_sets_list(self):
         query_sets = []
-        query_sets.extend(self.make_user_following_query_sets())
-        query_sets.extend(self.make_topic_wise_query_sets())
-        query_sets.extend(self.make_similar_topics_query_sets())
-        #query_sets += self.make_relevent_ad_query_sets()
-        
+        query_sets.extend(self.mix_query_sets(self.make_user_following_query_sets()))
+        query_sets.extend(self.make_topic_related_query_sets(high_priority=True))
+        query_sets.extend(self.make_topic_related_query_sets(high_priority=False))
         return query_sets
     
-    def merge_query_sets(self, query_set_list):
-        return list(chain(*query_set_list))
+    def make_topic_related_query_sets(self,high_priority):
+        result_query_set = []
+        result_query_set.append(self.make_topic_wise_query_sets(higher_priority=high_priority))
+        result_query_set.append(self.make_similar_topics_query_sets(higher_priority=high_priority))
+        return self.mix_query_sets(result_query_set)
 
+    def mix_query_sets(self,mul_query_sets):
+        max_length = max([queryset.count() for queryset in mul_query_sets])
+        result_query_set = []
+        for index in range(max_length):
+            for queryset in mul_query_sets:
+                if index < queryset.count():
+                    result_query_set.append(queryset[index])
+        return result_query_set
     
     def initiate(self, user_id,page_number=1):
         eum_object = EdenUserManagement()
@@ -179,7 +196,7 @@ class HazelRecommendationEngine():
         return self.paginator(resultant_query_list,page_number)
     
     def paginator(self,query_set,page_number):
-        self.MAX_OBJECT_LIMIT = 100
+        
         pagination_obj = Paginator(query_set,self.MAX_OBJECT_LIMIT)
         total_pages = pagination_obj.page_range[-1]
         print(query_set)
