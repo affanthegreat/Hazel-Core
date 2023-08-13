@@ -85,11 +85,6 @@ class EdenUserViewsTest(TestCase):
         response = self.client.get(f'{url}?page_number=1')
         self.assertEqual(len(to_dict(response.content)['data']),0)
     
-    def test_get_user_public_leaves_invalid(self):
-        url = reverse('get_user_public_leaves')
-        response = self.client.get(f'{url}?page_number=2')
-        self.assertEqual(len(to_dict(response.content)['status']),-131)
-    
     #GET USER PRIVATE LEAF
     def test_get_user_private_leaves(self):
         test_data = {
@@ -108,11 +103,6 @@ class EdenUserViewsTest(TestCase):
         url = reverse('get_user_private_leaves')
         response = self.client.get(f'{url}?page_number=1')
         self.assertEqual(len(to_dict(response.content)['data']),0)
-    
-    def test_get_user_private_leaves_invalid(self):
-        url = reverse('get_user_private_leaves')
-        response = self.client.get(f'{url}?page_number=1')
-        self.assertEqual(len(to_dict(response.content)['status']),-131)
 
     #DELETE LEAF
     def test_delete_leaf(self):

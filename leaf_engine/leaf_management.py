@@ -2,8 +2,7 @@ import uuid
 import logging 
 
 from django.core.paginator import Paginator
-from django.db.models.signals import pre_save
-from django.db.models.signals import disable_signals
+
 
 from exp_engine.middleware import EdenUserTopicRelationMiddleWare
 from exp_engine.models import InteractionType
@@ -158,6 +157,7 @@ class EdenLeafManagement:
                     else:
                         return -121
                 except Exception as e:
+                    raise e
                     return -122
             else:
                 return -103
@@ -334,8 +334,7 @@ class EdenLeafManagement:
                         logging.info("partial saving leaf comment object.")
                         leaf_comment_object.save()
                         leaf_comment_object.root_comment = leaf_comment_object
-                        with disable_signals(pre_save):
-                            leaf_comment_object.save()
+                        leaf_comment_object.save()
                         logging.info("root comment saved to leaf_comment object.")
                         response['leaf_comment_id'] = str(leaf_comment_object.comment_id)
                         try:

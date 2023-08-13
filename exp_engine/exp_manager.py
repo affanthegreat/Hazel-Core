@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from django.db.models.signals import pre_save
-from django.db.models.signals import disable_signals
+
 
 from leaf_engine.leaf_management import EdenLeafManagement
 from leaf_engine.models import Leaf, LeafType
@@ -39,19 +38,22 @@ class EdenExperienceEngine():
         
         topic_id = leaf_object.leaf_topic_id
         topic_category = leaf_object.leaf_topic_category_id
-
-        with disable_signals(pre_save):
-            leaf_object.topic_relevancy_percentage = (leaf_exp_points / self.get_highest_exp_topic_id(topic_id))  
-            leaf_object.category_relevancy_percentage = (leaf_exp_points / self.get_highest_exp_topic_category(topic_category))  
-            leaf_object.save()
+        leaf_object.topic_relevancy_percentage = (leaf_exp_points / self.get_highest_exp_topic_id(topic_id))  
+        leaf_object.category_relevancy_percentage = (leaf_exp_points / self.get_highest_exp_topic_category(topic_category))  
+        leaf_object.save()
         return leaf_exp_points
 
     def get_highest_exp_topic_id(self, topic_id):
-        return Leaf.objects.filter(leaf_topic_id=topic_id).order_by('-exp_points').first().exp_points
+        score = Leaf.objects.filter(leaf_topic_id=topic_id).order_by('-exp_points').first().exp_points
+        if score == 0:
+            return 1
+        return score 
     
     def get_highest_exp_topic_category(self, topic_category):
-        return Leaf.objects.filter(leaf_topic_category_id=topic_category).order_by('-exp_points').first().exp_points
-
+        score = Leaf.objects.filter(leaf_topic_category_id=topic_category).order_by('-exp_points').first().exp_points
+        if score == 0:
+            return 1
+        return score 
     def generate_batch_exp_points(self, engagement_map, experience_map):
         total_user_exp = 0
         leaf_ids = engagement_map.keys()
