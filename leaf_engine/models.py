@@ -35,7 +35,7 @@ class Leaf(models.Model):
     leaf_type = models.CharField(choices=LeafType.choices, max_length=30)
     engagement_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
     experience_rating = models.DecimalField(default=0, decimal_places=2, max_digits=125)
-    exp_points = models.BigIntegerField(default=0, max_length=25)
+    exp_points = models.DecimalField(default=0,max_digits=15,decimal_places=6)
     previous_analytics_run = models.DateTimeField(default=datetime.datetime.now())
     leaf_topic_id = models.BigIntegerField(default= -1)
     leaf_topic_category_id = models.IntegerField(max_length=3)
@@ -43,8 +43,8 @@ class Leaf(models.Model):
     leaf_emotion_state = models.CharField(max_length=30,default="NULL")
     is_promoted = models.BooleanField(default=False)
     is_advertisement = models.BooleanField(default=False)
-    topic_relevenacy_percentage= models.IntegerField(default=0)
-    category_relevancy_percentage = models.IntegerField(default=0)
+    topic_relevenacy_percentage= models.DecimalField(default=0,max_digits=15,decimal_places=6)
+    category_relevancy_percentage = models.DecimalField(default=0,max_digits=15,decimal_places=6)
 
 class LeafLikes(models.Model):
     like_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True ,default=uuid.uuid4)

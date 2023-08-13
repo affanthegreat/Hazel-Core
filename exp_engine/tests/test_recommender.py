@@ -47,7 +47,7 @@ class EdenUserViewsTest(TestCase):
         self.assertEqual(UserAccessToken.objects.count(), 1)
         #leaf_creation
         test_data = {
-             'text_content': "Private leaf 1",
+             'text_content': "Apple will launch next iphone in september",
              'leaf_type': 'public',
             }
         url = reverse('create_leaf')
@@ -57,7 +57,7 @@ class EdenUserViewsTest(TestCase):
         self.assertEqual(Leaf.objects.count(),1)
 
         test_data = {
-             'text_content': "private leaf 2",
+             'text_content': "Everyone is excited for the next iphone",
              'leaf_type': 'public',
             }
         url = reverse('create_leaf')
@@ -65,6 +65,28 @@ class EdenUserViewsTest(TestCase):
         self.leaf_id_2 = to_dict(response.content)['leaf_id']
         self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
         self.assertEqual(Leaf.objects.count(),2)
+
+        test_data = {
+             'text_content': "This year iphone sales are too low and stock market has seen affecting.",
+             'leaf_type': 'public',
+            }
+        url = reverse('create_leaf')
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.leaf_id_3 = to_dict(response.content)['leaf_id']
+        self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
+        self.assertEqual(Leaf.objects.count(),3)
+
+
+        test_data = {
+             'text_content': "Samsung is the best! android wins!",
+             'leaf_type': 'public',
+            }
+        url = reverse('create_leaf')
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.leaf_id_4 = to_dict(response.content)['leaf_id']
+        self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
+        self.assertEqual(Leaf.objects.count(),4)
+        
         #user 1 logouts and user 2 logins and creates a leaf
         logout_url = reverse('logout')
         logout_response = self.client.post(logout_url, self.test_user_2,  content_type='application/json')
@@ -76,14 +98,14 @@ class EdenUserViewsTest(TestCase):
         self.assertEqual(UserAccessToken.objects.count(), 1)
         #user 2 creates a leaf
         test_data = {
-             'text_content': "private leaf 3",
+             'text_content': "Heard that iphone 15 will have 5 cameras!",
              'leaf_type': 'public',
             }
         url = reverse('create_leaf')
         response = self.client.post(url, test_data,  content_type='application/json')
-        self.leaf_id_3 = to_dict(response.content)['leaf_id']
+        self.leaf_id_5 = to_dict(response.content)['leaf_id']
         self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
-        self.assertEqual(Leaf.objects.count(),3)
+        self.assertEqual(Leaf.objects.count(),5)
 
          #user 2 logouts and user 3 logins and likes user 2's leaf
         logout_url = reverse('logout')
@@ -97,9 +119,16 @@ class EdenUserViewsTest(TestCase):
         self.assertEqual(UserAccessToken.objects.count(), 1)
         like_url = reverse('like_leaf')
         test_data = {
-            'leaf_id': self.leaf_id_3
+            'leaf_id': self.leaf_id_2
         }
         response = self.client.post(like_url, test_data,  content_type='application/json')
+
+        print("//////////////////////////////////////////////////////////")
+        print(Leaf.objects.filter(leaf_id=self.leaf_id_1).values('text_content', 'leaf_topic_id', 'leaf_topic_category_id', 'topic_relevenacy_percentage',  'category_relevancy_percentage', 'exp_points'))
+        print(Leaf.objects.filter(leaf_id=self.leaf_id_2).values('text_content', 'leaf_topic_id', 'leaf_topic_category_id', 'topic_relevenacy_percentage', 'category_relevancy_percentage', 'exp_points'))
+        print(Leaf.objects.filter(leaf_id=self.leaf_id_3).values('text_content', 'leaf_topic_id', 'leaf_topic_category_id', 'topic_relevenacy_percentage', 'category_relevancy_percentage', 'exp_points'))
+        print(Leaf.objects.filter(leaf_id=self.leaf_id_4).values('text_content', 'leaf_topic_id', 'leaf_topic_category_id', 'topic_relevenacy_percentage', 'category_relevancy_percentage', 'exp_points'))
+        print(Leaf.objects.filter(leaf_id=self.leaf_id_5).values('text_content', 'leaf_topic_id', 'leaf_topic_category_id', 'topic_relevenacy_percentage', 'category_relevancy_percentage', 'exp_points'))
 
     def test_recommender_engine(self):
         url = reverse('get_recommended_posts')
@@ -108,4 +137,5 @@ class EdenUserViewsTest(TestCase):
         }
         response = self.client.post(url, test_data,  content_type='application/json')
         r = to_dict(response.content)
-        self.assertEqual(len(r['data']), 1)
+        print(r['data'])
+        self.assertEqual(len(r['data']), 4)

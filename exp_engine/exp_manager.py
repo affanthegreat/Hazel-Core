@@ -16,7 +16,7 @@ class EdenExperienceEngine():
         self.exp_points_weight = 0.4
         self.engagement_points_weight = 0.6
         self.promoted_weight = 1.7
-        self.advertisement_weight = 2.2
+        self.advertisement_weight = 3.2
         logging.info("================EDEN EXP-PBR ENGINE================")
         self.time_of_running = datetime.now().astimezone()
 
@@ -38,8 +38,10 @@ class EdenExperienceEngine():
         
         topic_id = leaf_object.leaf_topic_id
         topic_category = leaf_object.leaf_topic_category_id
-        leaf_object.topic_relevancy_percentage = (leaf_exp_points / self.get_highest_exp_topic_id(topic_id))  
-        leaf_object.category_relevancy_percentage = (leaf_exp_points / self.get_highest_exp_topic_category(topic_category))  
+        leaf_object.topic_relevancy_percentage = (leaf_exp_points / (leaf_exp_points if self.get_highest_exp_topic_id(topic_id) == 0 
+                                                                     else self.get_highest_exp_topic_id(topic_id)))   * 100
+        leaf_object.category_relevancy_percentage = (leaf_exp_points / (leaf_exp_points if self.get_highest_exp_topic_category(topic_category) 
+                                                                        else self.get_highest_exp_topic_category(topic_category)))  * 100
         leaf_object.save()
         return leaf_exp_points
 

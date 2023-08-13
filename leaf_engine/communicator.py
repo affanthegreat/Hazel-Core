@@ -40,7 +40,7 @@ class EdenLeafCommunicator():
                                                         page_number=args['page_number'] if 'page_number' in args else 1 )
 
     def stream_top_rated_leaves_in_topic(self,args):
-        return Leaf.objects.filter(leaf_topic_id=args['topic_id'], created_date__lte=datetime.datetime.now().astimezone(),
+        return Leaf.objects.filter(leaf_topic_category_id=args['topic_category_id'], created_date__lte=datetime.datetime.now().astimezone(),
                                     created_date__gt=(datetime.datetime.now() - datetime.timedelta(days=7))).order_by('-exp_points').all()
     def get_leaf_metrics(self,leaf_id):
         return Leaf.objects.filter(leaf_id=leaf_id).first()
