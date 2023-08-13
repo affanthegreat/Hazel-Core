@@ -48,19 +48,25 @@ class Eden_CONX_Engine():
     def create_user_leaf_preference(self, data):
         try:
             if not self.check_user_leaf_preference(data):
-                eum_object = EdenUserManagement()
                 user_leaf_preference_object = UserLeafPreferences()
                 user_leaf_preference_object.topic_id = data['topic_id']
                 user_leaf_preference_object.topic_category_id = data['topic_category_id']
                 user_leaf_preference_object.topic_visit_frequency = 1
-                user_leaf_preference_object.user_object = data['user_id']
+                user_leaf_preference_object.user_object = data['user']
                 user_leaf_preference_object.save()
                 return 100
             else:
                 return -111
         except Exception as E:
             self.throw_object_creation_failed_error(E)
-    
+
+    def check_user_leaf_preference(self, data):
+        eum_object = EdenUserManagement()
+        return UserLeafPreferences.objects.filter(topic_id= data['topic_id'], 
+                                                      topic_category_id = data['topic_category_id'],
+                                                      user_object = eum_object.get_user_object(data['user'])).exists()
+
+        
     def create_user_topic_relation(self,data):
         try:
             eum_object = EdenUserManagement()
@@ -122,8 +128,6 @@ class Eden_CONX_Engine():
                     return 100
         except:
             return -112
-                            
-
     
     def get_user_topic_relation_object(self, topic_id, user_object):
         return UserTopicRelations.objects.filter(topic_id=topic_id, user= user_object).first()
@@ -131,16 +135,7 @@ class Eden_CONX_Engine():
     def check_leaf_interaction(self,leaf_object,user_object, interaction_type):
         return LeafInteraction.objects.filter(leaf=leaf_object, interacted_by= user_object, interaction_type= interaction_type).exists()
     
-    def check_user_leaf_preference(self, data):
-        eum_object = EdenUserManagement()
-        data_fields = ['topic_id','topic_category','topic_category_id', 'user_id']
-        if self.check_field_validity(data_fields, data):
-            return UserLeafPreferences.objects.filter(topic_id= data['topic_id'], 
-                                                      topic_category_id = data['topic_category_id'],
-                                                      user_object = eum_object.get_user_object(data['user_id'])).exists()
-        else:
-            return False
-        
+
     def check_user_leaf_perference_mini(self,data):
         eum_object = EdenUserManagement()
         data_fields = ['topic_id', 'user_id']
@@ -170,7 +165,7 @@ class Eden_CONX_Engine():
     def update_topic_visit_frequency(self, topic_id, user_object):
         data = {
             'topic_id': topic_id,
-            'user_id': user_object.user_id
+            'user_id': str(user_object.user_id)
         }
         if self.check_user_leaf_perference_mini(data):
             try:
@@ -187,18 +182,23 @@ class Eden_CONX_Engine():
         leaf_id, leaf_interaction_type, leaf_interacted_by = data['leaf_id'], data['leaf_interaction'], data['interacted_by']
         leaf_object = elm_object.get_leaf_object(leaf_id)
         interaction_status = self.check_leaf_interaction(leaf_object ,leaf_interacted_by, leaf_interaction_type)
+        if leaf_interacted_by is None:
+            print('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA')
+            print(leaf_interacted_by)
+            print(data)
+            raise Exception("User Not found.")
         if not interaction_status:
             req_data = {
                 'topic_id': leaf_object.leaf_topic_id,
                 'topic_category_id': leaf_object.leaf_topic_category_id,
-                'user_id': leaf_interacted_by,
+                'user': leaf_interacted_by,
             }
             self.create_leaf_interaction(leaf_object ,leaf_interacted_by, leaf_interaction_type)
             self.create_user_leaf_preference(req_data)
             return 100
         else:
             leaf_topic_id = leaf_object.leaf_topic_id
-            interacted_by_object = elm_object.get_user_object(leaf_interacted_by)
+            interacted_by_object = leaf_interacted_by
             self.update_topic_visit_frequency(leaf_topic_id,interacted_by_object)
             return 100
 

@@ -103,6 +103,7 @@ def start_leaf_text_ml_pipeline(sender, instance, **kwargs):
         logging.info("> Initiating pre save function.")
         try:
             response = json.loads(leaf_text_pipeline_object.start_leaf_text_ml_workflow(instance).content)
+            print("|//////////////////////////////////////////////////////")
             print(response)
             if 'status' in response and response('status') == -101:
                 raise Exception(response['message'])

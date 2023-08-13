@@ -282,6 +282,21 @@ class EdenLeafFunctionalityTests(TestCase):
         url = reverse('get_all_likes')
         response = self.client.get(f'{url}?page_number=1&leaf_id={self.leaf_id}')
         self.assertEqual(len(to_dict(response.content)['data']),1)
+    
+    def test_get_total_likes_non_existant_leaf(self):
+        like_url = reverse('like_leaf')
+        test_data = {
+            'leaf_id': "Non Existing Leaf"
+        }
+        response = self.client.post(like_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content), -103)
+        self.assertEqual(LeafLikes.objects.count(), 0)
+        self.assertEqual(LeafInteraction.objects.count(), 0)
+        self.assertEqual(UserTopicRelations.objects.count(), 0)
+        self.assertEqual(UserLeafPreferences.objects.count(), 0)
+        url = reverse('get_all_likes')
+        response = self.client.get(f'{url}?page_number=1&leaf_id={self.leaf_id}')
+        self.assertEqual(len(to_dict(response.content)['data']),0)
 
     def test_get_total_comments(self):
         comment_url = reverse('add_comment')
@@ -290,15 +305,13 @@ class EdenLeafFunctionalityTests(TestCase):
             'comment_string': "Test comment 1"
         }
         response = self.client.post(comment_url, test_data,  content_type='application/json')
-        self.assertEqual(to_dict(response.content), -100)
+        self.assertEqual(to_dict(response.content)['message'], -100)
         self.assertEqual(LeafComments.objects.count(), 1)
         self.assertEqual(LeafInteraction.objects.count(), 1)
         self.assertEqual(UserTopicRelations.objects.count(), 1)
         self.assertEqual(UserLeafPreferences.objects.count(), 1)
         url = reverse('get_all_comments')
         response = self.client.get(f'{url}?page_number=1&leaf_id={self.leaf_id}')
-        print("||||||||||||||||||||||||||||||||")
-        print(to_dict(response.content))
         self.assertEqual(len(to_dict(response.content)['data']),1)
     
     def test_add_comment(self):
@@ -308,8 +321,140 @@ class EdenLeafFunctionalityTests(TestCase):
             'comment_string': "Test comment 1"
         }
         response = self.client.post(comment_url, test_data,  content_type='application/json')
-        self.assertEqual(to_dict(response.content), -100)
+        self.assertEqual(to_dict(response.content)['message'], -100)
         self.assertEqual(LeafComments.objects.count(), 1)
         self.assertEqual(LeafInteraction.objects.count(), 1)
         self.assertEqual(UserTopicRelations.objects.count(), 1)
         self.assertEqual(UserLeafPreferences.objects.count(), 1)
+
+    def test_add_comment_non_existant_leaf(self):
+        comment_url = reverse('add_comment')
+        test_data = {
+            'leaf_id': "THIS NOT EXISTS",
+            'comment_string': "Test comment 1"
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], -103)
+        self.assertEqual(LeafComments.objects.count(), 0)
+        self.assertEqual(LeafInteraction.objects.count(), 0)
+        self.assertEqual(UserTopicRelations.objects.count(), 0)
+        self.assertEqual(UserLeafPreferences.objects.count(), 0)
+    
+    def test_add_comment_empty_string(self):
+        comment_url = reverse('add_comment')
+        test_data = {
+            'leaf_id': "THIS NOT EXISTS",
+            'comment_string': " "
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], -103)
+        self.assertEqual(LeafComments.objects.count(), 0)
+        self.assertEqual(LeafInteraction.objects.count(), 0)
+        self.assertEqual(UserTopicRelations.objects.count(), 0)
+        self.assertEqual(UserLeafPreferences.objects.count(), 0)
+    
+    
+    def test_remove_comment(self):
+        comment_url = reverse('add_comment')
+        test_data = {
+            'leaf_id': self.leaf_id,
+            'comment_string': "Test comment 1"
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], -100)
+        self.assertEqual(LeafComments.objects.count(), 1)
+        self.assertEqual(LeafInteraction.objects.count(), 1)
+        self.assertEqual(UserTopicRelations.objects.count(), 1)
+        self.assertEqual(UserLeafPreferences.objects.count(), 1)
+        comment_url = reverse('remove_comment')
+        test_data = {
+            'leaf_id': self.leaf_id,
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content), -100)
+        self.assertEqual(LeafComments.objects.count(), 0)
+        self.assertEqual(LeafInteraction.objects.count(), 1)
+        self.assertEqual(UserTopicRelations.objects.count(), 2)
+        self.assertEqual(UserLeafPreferences.objects.count(), 1)
+    
+    def test_remove_comment_non_existant_leaf(self):
+        comment_url = reverse('add_comment')
+        test_data = {
+            'leaf_id': self.leaf_id,
+            'comment_string': "Test comment 1"
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], -100)
+        self.assertEqual(LeafComments.objects.count(), 1)
+        self.assertEqual(LeafInteraction.objects.count(), 1)
+        self.assertEqual(UserTopicRelations.objects.count(), 1)
+        self.assertEqual(UserLeafPreferences.objects.count(), 1)
+        comment_url = reverse('remove_comment')
+        test_data = {
+            'leaf_id': "NON EXISTANT LEAF",
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content), -103)
+        self.assertEqual(LeafComments.objects.count(), 1)
+        self.assertEqual(LeafInteraction.objects.count(), 1)
+        self.assertEqual(UserTopicRelations.objects.count(), 1)
+        self.assertEqual(UserLeafPreferences.objects.count(), 1)
+    
+    def test_add_sub_comment(self):
+        comment_url = reverse('add_comment')
+        test_data = {
+            'leaf_id': self.leaf_id,
+            'comment_string': "Test comment 1"
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], -100)
+        comment_url = reverse('add_sub_comment')
+        test_data = {
+            'leaf_id': self.leaf_id,
+            'comment_string': "Test comment 1",
+            'parent_comment_id': LeafComments.objects.first().comment_id
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content), -100)
+        self.assertEqual(LeafComments.objects.count(), 2)
+        self.assertEqual(LeafInteraction.objects.count(), 1)
+        self.assertEqual(UserTopicRelations.objects.count(), 1)
+        self.assertEqual(UserLeafPreferences.objects.count(), 1)
+    
+    def test_add_sub_comment_invalid_parent_comment_id(self):
+        comment_url = reverse('add_sub_comment')
+        test_data = {
+            'leaf_id': self.leaf_id,
+            'comment_string': "Test comment 1",
+            'parent_comment_id': "NON EXISTANT"
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content), -103)
+        self.assertEqual(LeafComments.objects.count(), 1)
+        self.assertEqual(LeafInteraction.objects.count(), 1)
+        self.assertEqual(UserTopicRelations.objects.count(), 1)
+        self.assertEqual(UserLeafPreferences.objects.count(), 1)
+
+    def test_add_view(self):
+        comment_url = reverse('add_view')
+        test_data = {
+            'leaf_id': self.leaf_id,
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content), -100)
+        self.assertEqual(LeafViewedBy.objects.count(), 1)
+        self.assertEqual(LeafInteraction.objects.count(), 1)
+        self.assertEqual(UserTopicRelations.objects.count(), 1)
+        self.assertEqual(UserLeafPreferences.objects.count(), 1)
+    
+    def test_add_view_non_existant_leaf(self):
+        comment_url = reverse('add_view')
+        test_data = {
+            'leaf_id': "NON EXISTANT LEAF",
+        }
+        response = self.client.post(comment_url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content), -124)
+        self.assertEqual(LeafViewedBy.objects.count(), 0)
+        self.assertEqual(LeafInteraction.objects.count(), 0)
+        self.assertEqual(UserTopicRelations.objects.count(), 0)
+        self.assertEqual(UserLeafPreferences.objects.count(), 0)

@@ -26,8 +26,7 @@ class UserLeafPreferences(models.Model):
     topic_visit_frequency = models.BigIntegerField(default=0)
     user_object = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING,related_name='user_obj')
     created_at = models.DateTimeField(auto_now_add=True)
-    class Meta:
-        unique_together = ["topic_id", "topic_category_id", "user_object"]
+
 
 
 class UserTopicRelations(models.Model):

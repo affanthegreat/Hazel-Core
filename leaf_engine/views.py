@@ -168,8 +168,11 @@ def remove_comment_view(request):
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
         if check_field_validity(valid_fields,data):
-            response = ELM_object.remove_comment(request, data['leaf_id'])
-            return make_response(response)
+           if ELM_object.check_leaf(data['leaf_id']):
+                response = ELM_object.remove_comment(request, data['leaf_id'])
+                return make_response(response)
+           else:
+               return make_response(-103)
         else:
            return throw_invalid_fields_error()
     else:
@@ -274,11 +277,14 @@ def add_sub_comment_view(request):
         valid_fields = ['leaf_id', 'comment_string','parent_comment_id']
         if check_field_validity(valid_fields,data):
             object_creation_status = json.loads((add_comment_view(request).content).decode('utf-8'))
-            if object_creation_status['status_code'] == -100:
+            if object_creation_status['message'] == -100:
                 comment_id = object_creation_status['leaf_comment_id']
                 parent_comment_id = data['parent_comment_id']
                 response = ELM_object.add_sub_comment_db(comment_id,parent_comment_id)
                 return make_response(response)
+            else:
+                raise Exception(object_creation_status)
+                return make_response(-103)
         else:
             return throw_invalid_fields_error()
     else:
@@ -292,7 +298,8 @@ def add_leaf_view(request):
         data = json.loads(request.body)
         valid_fields = ['leaf_id']
         if check_field_validity(valid_fields,data):
-           ELM_object.create_view_object(request,data['leaf_id'])
+           response = ELM_object.create_view_object(request,data['leaf_id'])
+           return make_response(response)
         else:
             return throw_invalid_fields_error()
     else:

@@ -50,7 +50,7 @@ class EdenLeafManagement:
                     
                     raise Exception("Middleware failed.")
             except Exception as e:
-                logging.ERROR(e)
+                raise e
                 return {
                     "status": -101,
                     "message": "Model not saved."
@@ -148,7 +148,7 @@ class EdenLeafManagement:
                     conX_status = self.run_conX_engine(leaf_id,'like',user_object)
                     user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "like",
-                                                self.get_user_object(user_object.user_id),
+                                                user_object,
                                                     1)
                     if (leaf_middleware_status == 100 
                         and exp_engine_status == 100 
@@ -163,7 +163,8 @@ class EdenLeafManagement:
                         print(user_topic_status)
                         return -121
                 except Exception as e:
-                    logging.ERROR(e)
+                    print("||||||||||||||||||||||||||||||||||||")
+                    raise e
                     return -122
             else:
                 return -103
@@ -338,25 +339,10 @@ class EdenLeafManagement:
             return -104
 
     def add_comment(self, request, leaf_id, comment_string):
-        """
-        Add a new comment to the specified leaf.
-
-        Args:
-        - request: HttpRequest object representing the incoming request.
-        - leaf_id: integer representing the ID of the leaf to add the comment to.
-        - comment_string: string representing the comment text to be added.
-
-        Returns:
-        - integer: returns -100 and leaf_comment_id if the comment was successfully added.
-                returns -101 if the user is not authorized.
-                returns -103 if an exception occurs.
-                returns -106 if the comment_string is None.
-                returns -108 if the comment already exists for the given leaf_id.
-
-        """
+        response = {}
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            if comment_string != None:
+            if comment_string != None or comment_string.strip() == "":
                 try:
                     if self.check_leaf(leaf_id):
                         leaf_comment_object = LeafComments()
@@ -368,6 +354,7 @@ class EdenLeafManagement:
                         leaf_comment_object.root_comment = leaf_comment_object
                         leaf_comment_object.save()
                         logging.info("root comment saved to leaf_comment object.")
+                        response['leaf_comment_id'] = str(leaf_comment_object.comment_id)
                         try:
                             middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", 1)
                             exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
@@ -381,41 +368,40 @@ class EdenLeafManagement:
                                exp_status == 100 and
                                conx_status == 100 and 
                                user_topic_status):
-                                return -100
+                                response['message'] = -100
+
+                                return response
                             else:
+                                print("++++++++++++++++++++_RRERER++++++++")
                                 print(middleware_status)
                                 print(exp_status)
                                 print(user_topic_status)
                                 print(conx_status)
-                                return -121
+                                leaf_comment_object.delete()
+                                response['message'] = -121
+                                return response
                         except Exception as e:
                             raise e
                             leaf_comment_object.delete()
-                            return -122
+                            response['message'] = -122
+                            return response
                     else:
-                        return -103
+                        response['message'] = -103
+                        return response
                 except Exception as E:
                     raise E
-                    return -122
+                    response['exception']= str(E)
+                    response['message'] = -122
+                    return response
             else:
-                return -106
+                response['message'] = -106
+                return response
         else:
-            return -111
+            response['message'] = -111
+            return response
 
     def remove_comment(self, request, leaf_id):
-        """
-        Removes a comment from a leaf object if it exists and if the user making the request is authorized to do so.
 
-        Args:
-        - request: a HTTP request object
-        - leaf_id: an integer representing the ID of the leaf object
-
-        Returns:
-        - an integer code indicating the result of the operation:
-            - -100: comment removed successfully
-            - -101: user not authorized to perform the action
-            - -105: comment not found or unexpected error occurred
-        """
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             comment_status = self.check_comment(leaf_id, user_object.user_id)
@@ -427,38 +413,49 @@ class EdenLeafManagement:
                     )
                     
                     try:
-                        self.run_leaf_middleware(leaf_object, "update_comments", -1)
-                        self.run_exp_engine_per_leaf(leaf_object)
-                        self.run_user_topic_middleware(leaf_id,
+                        middleware_status = self.run_leaf_middleware(leaf_object, "update_comments", -1)
+                        exp_status = self.run_exp_engine_per_leaf(leaf_object)
+                        user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "comment",
                                                 leaf_object.owner,
                                                 -1, comment_id=comment_object.comment_id)
-                    except:
-                        return -103
-                    comment_object.delete()
-                    return -100
+                        if(middleware_status == 100 and 
+                           exp_status == 100 and
+                           user_topic_status ==100):
+                            comment_object.delete()
+                            return -100
+                        else:
+                            return -121
+                    except Exception as e:
+                        return -121
+                    
             except Exception as E:
-                print(E)
-                return -105
-        pass
+                return -122
+        else:
+            return -111
+   
     
-    def remove_sub_comment(self, request,leaf_id, comment_id):
+    def remove_sub_comment(self,leaf_id, comment_id):
         if self.check_comment(leaf_id,comment_id):
             leaf_object = self.get_leaf_object(leaf_id)
             try:
-                self.run_leaf_middleware(leaf_object, "update_comments", -1)
-                self.run_exp_engine_per_leaf(leaf_object)
-                self.run_user_topic_middleware(leaf_id,
+                middleware_status = self.run_leaf_middleware(leaf_object, "update_comments", -1)
+                exp_status = self.run_exp_engine_per_leaf(leaf_object)
+                user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "sub_comment",
                                                 leaf_object.owner,
                                                 -1, comment_id=comment_id)
+                if(middleware_status == 100 and
+                   exp_status == 100 and
+                   user_topic_status == 100):
+                    LeafComments.objects.filter(comment_id= comment_id).first().delete()
+                    return -100
+                else:
+                    return -121
             except:
-                return -103
-
-            LeafComments.objects.filter(comment_id= comment_id).first().delete()
-            return -100
+                return -122
         else:
-            return -104
+            return -111
 
     def add_view(self,leaf_object, user_object):
         """
@@ -478,30 +475,41 @@ class EdenLeafManagement:
             obj.leaf = leaf_object
             obj.viewed_by = user_object
             try:
-                self.run_leaf_middleware(leaf_object, "update_view", 1)
-                self.run_exp_engine_per_leaf(leaf_object)
-                self.run_conX_engine(leaf_object.leaf_id,'view', user_object)
-                self.run_user_topic_middleware(leaf_object.leaf_id,
+                middleware_status = self.run_leaf_middleware(leaf_object, "update_views", 1)
+                exp_status = self.run_exp_engine_per_leaf(leaf_object)
+                conx_status = self.run_conX_engine(leaf_object.leaf_id,'view', user_object)
+                user_topic_status = self.run_user_topic_middleware(leaf_object.leaf_id,
                                                 "leaves_served",
                                                 leaf_object.owner,
                                                     1)
-            except:
-                return -103
-            
-            return -100
+                if(middleware_status == 100 and exp_status == 100 and
+                   conx_status == 100 and user_topic_status == 100):
+                    obj.save()
+                    return -100
+                else:
+                    print(middleware_status)
+                    print(exp_status)
+                    print(conx_status)
+                    print(user_topic_status)
+                    return -121
+            except: 
+                return -122
         except Exception:
-            return -105
+            return -103
 
     def create_view_object(self,request,leaf_id):
         if self.is_authorised(request):
             try:
                 user_object = self.get_logged_in_user(request)
                 leaf_object = self.get_leaf_object(leaf_id)
-                if self.check_leaf(leaf_id) and self.check_viewed_by(user_object,leaf_object):
-                    self.add_view(leaf_object,user_object)
-                    return -100
+                if self.check_leaf(leaf_id) and not self.check_viewed_by(user_object,leaf_object):
+                    return self.add_view(leaf_object,user_object)
+                else:
+                    return -124
             except Exception:
                 return -105
+        else:
+            return -111
     
     def check_viewed_by(self, user_object, leaf_object):
         try:
@@ -525,6 +533,10 @@ class EdenLeafManagement:
         """
         comment_object = LeafComments.objects.filter(comment_id=leaf_comment_id).first()
         parent_object = LeafComments.objects.filter(comment_id=leaf_comment_parent_id).first()
+        if parent_object is None:
+            return -103
+        if comment_object is None:
+            return -115
         base_comment = False
         if parent_object.comment_depth == 1:
             base_comment = True
@@ -539,18 +551,24 @@ class EdenLeafManagement:
                 else:
                     comment_object.root_comment = parent_object.root_comment
                 comment_object.save()
-                self.run_leaf_middleware(self.get_leaf_object(comment_object.leaf_id), "update_comments", 1)
-                self.run_exp_engine_per_leaf(self.get_leaf_object(comment_object.leaf_id))
-                self.run_conX_engine(comment_object.leaf_id,"sub_comment",comment_object.commented_by)
+                middleware_status = self.run_leaf_middleware(self.get_leaf_object(comment_object.leaf_id), "update_comments", 1)
+                exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(comment_object.leaf_id))
+                conx_status = self.run_conX_engine(comment_object.leaf_id,"sub_comment",comment_object.commented_by)
 
                 root_leaf_object = self.get_leaf_object(comment_object.leaf_id)
-                self.run_user_topic_middleware(comment_object.leaf_id,
+                user_topic_status = self.run_user_topic_middleware(comment_object.leaf_id,
                                                "sub_comment",
                                                root_leaf_object.owner,
                                                 1, comment_id= comment_object.comment_id)
-                return -100
+                if(middleware_status == 100 and exp_status == 100 and
+                   conx_status == 100 and user_topic_status == 100):
+                    comment_object.save()
+                    return -100
+                else:
+                    comment_object.delete()
+                    return -121
             except Exception as E:
-                comment_object.delete()
+                raise E
                 return -105
         else:
             comment_object.delete()
@@ -765,7 +783,7 @@ class EdenLeafManagement:
             LeafComments or None: The comment object with the given leaf_id and user_id, or None if the leaf does not exist.
         """
         if self.check_leaf(leaf_id):
-            return Leaf.objects.filter(leaf_id=leaf_id)
+            return LeafComments.objects.filter(leaf_id=leaf_id).first()
 
     def get_like_object(self, leaf_id, user_id):
         """Return the like object with the given leaf_id and user_id if the leaf exists and the user has liked it, otherwise return None.
