@@ -106,7 +106,7 @@ class HazelRecommendationEngine():
         return (UserLeafPreferences.objects.filter(user_object = self.user_object).
                 all().values('topic_id').
                 annotate(leaves_with_topic_id = Count('topic_id')).
-                order_by("-leaves_with_topic_id"))
+                order_by("-leaves_with_topic_id that user interacted with"))
 
     def generate_bias_for_user_topics(self,topic_query_set):
         bias_map = {}
