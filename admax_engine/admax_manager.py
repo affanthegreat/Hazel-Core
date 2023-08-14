@@ -1,6 +1,7 @@
 import logging 
 
 from leaf_engine.leaf_management import EdenLeafManagement
+from admax_engine.models import Advertisements
 
 class Eden_ADMAX_Engine():
     
@@ -12,7 +13,6 @@ class Eden_ADMAX_Engine():
         logging.info(f"Eden_ADMAX_Engine {self.VERSION}")
     
     def create_ad(self):
-        pass
     
     def delete_ad(self):
         pass
@@ -32,5 +32,4 @@ class Eden_ADMAX_Engine():
     def stream_ads_topic_category_wise(self):
         pass
     
-    def 
     
