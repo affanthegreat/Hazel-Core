@@ -120,10 +120,13 @@ class EdenLeafManagement:
             response = {}
             user_object = self.get_logged_in_user(request)
             leaf_object = self.get_leaf_object(leaf_id)
+            leaf_exp_points = leaf_object.exp_points
             if leaf_object is None:
                 return {'message': "Leaf not found."}
             if leaf_object.owner == user_object:
                 leaf_object.delete()
+                user_object.user_experience_points -= leaf_exp_points
+                user_object.save()
                 response["message"] = "-100"
             else:
                 response["message"] = "-102"
@@ -357,7 +360,6 @@ class EdenLeafManagement:
                                 response['message'] = -121
                                 return response
                         except Exception as e:
-
                             leaf_comment_object.delete()
                             response['message'] = -122
                             return response
