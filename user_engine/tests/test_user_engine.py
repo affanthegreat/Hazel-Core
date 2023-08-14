@@ -78,6 +78,8 @@ class ExistingUserTestCase(TestCase):
              'user_password': 'something',
             }
         user_control_object.create_user(self.test_data)
+        self.test_user_1_id = user_control_object.get_user_id(self.test_data)
+
 
     def test_duplicate_user(self):
         url = reverse('create_user')
@@ -108,10 +110,14 @@ class ExistingUserTestCase(TestCase):
             'user_phone_number': '696969696969',
             'user_address': 'planet earth',
             'user_phone_id': 'user_phone_id',
+            'user_ip_location':"india",
+            'user_city':'hyderabad',
+            'user_gender':'batman',
+            'user_dob':str(datetime.datetime.now().date())
         }
         modify_response = self.client.post(modify_url, test_data,  content_type='application/json')
         self.assertEqual(to_dict(modify_response.content)['message'],"Sucess")
-        get_response = self.client.post(get_url, test_data,  content_type='application/json')
+        get_response = self.client.post(get_url, {'user_id': self.test_user_1_id},  content_type='application/json')
         get_body = to_dict(get_response.content)
         get_body['user_id'] = test_data['user_id']
         self.assertEqual(get_body,test_data)
@@ -180,6 +186,40 @@ class UserFunctionTestCase(TestCase):
         test_data = {'follower':self.test_user_1_id, 'follows':"test3"}
         response = self.client.post(url, test_data,  content_type='application/json')
         self.assertEqual(to_dict(response.content)['message'], 'One of the user does not exists.')
+
+    def test_add_user_private_relation(self):
+        url = reverse('add_user_private_relation')
+        test_data = {'main_user':self.test_user_1_id, 'secondary_user':self.test_user_2_id}
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], '100')
+        self.assertEqual(UserPrivateRelation.objects.count(), 1)
+    
+    def test_add_user_private_relation_invalid_user(self):
+        url = reverse('add_user_private_relation')
+        test_data = {'main_user':"NON EXISTANT", 'secondary_user':self.test_user_2_id}
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], '102')
+        self.assertEqual(UserPrivateRelation.objects.count(), 0)
+    
+    def test_remove_user_private_relation_non_existing_relation(self):
+        url = reverse('add_user_private_relation')
+        test_data = {'main_user':self.test_user_1_id, 'secondary_user':self.test_user_2_id}
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], '100')
+        self.assertEqual(UserPrivateRelation.objects.count(), 1)
+    
+        url = reverse('remove_user_private_relation')
+        test_data = {'main_user':self.test_user_1_id, 'secondary_user':self.test_user_2_id}
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], '100')
+        self.assertEqual(UserPrivateRelation.objects.count(), 0)
+
+    def test_remove_user_private_relation(self):
+        url = reverse('remove_user_private_relation')
+        test_data = {'main_user':self.test_user_1_id, 'secondary_user':self.test_user_2_id}
+        response = self.client.post(url, test_data,  content_type='application/json')
+        self.assertEqual(to_dict(response.content)['message'], '102')
+        self.assertEqual(UserPrivateRelation.objects.count(), 0)
 
     def test_user_block(self):
         url = reverse('login')

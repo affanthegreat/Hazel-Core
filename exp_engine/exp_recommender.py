@@ -2,13 +2,15 @@ import logging
 from itertools import chain
 import random
 import json 
+import datetime
 
-from django.db.models import Count, F
+from django.db.models import Count, F,  Q
 from django.core.paginator import Paginator
 from django.core import serializers
+from leaf_engine.models import LeafType
 
 
-from user_engine.models import UserFollowing
+from user_engine.models import UserFollowing, UserPrivateRelation, UserDetails
 from user_engine.user_management import EdenUserManagement
 from user_engine.communicator import EdenUserCommunicator
 
@@ -26,6 +28,7 @@ class HazelRecommendationEngine():
     def meta(self):
         self.MAX_OBJECT_LIMIT = 100
         self.MAX_ADS_PER_PAGE = 30
+        self.MAX_LEAFS_PER_UNKNOWN_USER = 15
         self.VERSION = 0.1
         self.BUILD_TYPE = "ALPHA"
         self.MAX_TOPICS_AT_ONE_TIME = 25
@@ -79,11 +82,15 @@ class HazelRecommendationEngine():
     def filter_leaves(self,queryset):
         user_interacted_leaves = self.get_leaf_user_interaction()
         user_blocked_accounts = EdenUserCommunicator().stream_user_blocked_accounts_query_set(self.user_object.user_id)
+
         without_interacted_leaves = queryset.exclude(leaf_id__in=user_interacted_leaves.values('leaf')).order_by('-exp_points')
         without_blocked_users = without_interacted_leaves.exclude(owner__in=user_blocked_accounts.values('blocked_profile'))
+
+        without_private_leaves = without_blocked_users.exclude(~Q(owner__in =UserPrivateRelation.objects.filter(secondary_user=self.user_object).values('main_user')),
+                                                                leaf_type= LeafType.Private)
         print("============= IN FILTER LEAVES FUNCTION ==============")
-        print(user_blocked_accounts.count(), without_interacted_leaves.count(),without_blocked_users.count())
-        return without_blocked_users
+        print(user_blocked_accounts.count(), without_interacted_leaves.count(),without_blocked_users.count(), without_private_leaves.count())
+        return without_private_leaves
 
     def filter_following_leaves(self, queryset):
         user_interacted_leaves = self.get_leaf_user_interaction()
@@ -97,7 +104,9 @@ class HazelRecommendationEngine():
         for relation in following_queryset:
             user = relation.master.user_id
             leaves_query_set = elm_object.get_leaves_by_user_id(user)
-            query_set_list.append(self.filter_following_leaves(leaves_query_set))
+            query_set = self.filter_following_leaves(leaves_query_set)
+            query_set = self.filter_private_leaves(query_set,relation.master)
+            query_set_list.append(query_set)
         merged_query_set = self.merge_query_sets(query_set_list)
         return merged_query_set
 
@@ -173,13 +182,44 @@ class HazelRecommendationEngine():
                 queryset_list.append(query_set)
         merged_query_set = self.merge_query_sets(queryset_list)
         return merged_query_set
+    
+    def filter_private_leaves(self,query_set, owner):
+        private_rel_status = EdenUserManagement().check_user_private_leaf_model(owner, self.user_object)
+        if not private_rel_status:
+            query_set.exclude(leaf_type=LeafType.Private)
+            return query_set
+        else:
+            return query_set
 
+    def user_interacted_other_user_leaves(self, higher_priority= False):
+        queryset_list = []
+        user_interacted_leaves = self.get_leaf_user_interaction()
+        leaves_count = user_interacted_leaves.count()
+        for i in range(leaves_count):
+            owner = user_interacted_leaves[i].leaf.owner
+            if higher_priority:
+                owner_leaf_set = Leaf.objects.filter(created_date__lte=datetime.datetime.now().astimezone(),
+                                    created_date__gt=(datetime.datetime.now() - datetime.timedelta(days=7)), owner=owner).all().order_by('-exp_points')
+            else:
+                owner_leaf_set = Leaf.objects.filter(created_date__lte=(datetime.datetime.now() - datetime.timedelta(days=7)), owner=owner).all().order_by('-exp_points')
+            
+            owner_leaf_set = self.filter_leaves(owner_leaf_set)
+            if owner_leaf_set.count() > self.MAX_LEAFS_PER_UNKNOWN_USER:
+                queryset_list.append(owner_leaf_set[:self.MAX_LEAFS_PER_UNKNOWN_USER])
+            else:
+                queryset_list.append(owner_leaf_set)
+
+        result_query_set = self.merge_query_sets(queryset_list)
+        return result_query_set
+    
     def make_query_sets_list(self):
-        query_sets = []
-        query_sets.extend(self.mix_query_sets(self.make_user_following_query_sets(), "following queryset"))
-        query_sets.extend(self.make_topic_related_query_sets(high_priority=True))
-        query_sets.extend(self.make_topic_related_query_sets(high_priority=False))
-        return query_sets
+        query_sets = set()
+        query_sets.update(self.mix_query_sets(self.make_user_following_query_sets(), "following queryset"))
+        query_sets.update(self.user_interacted_other_user_leaves(higher_priority= True))
+        query_sets.update(self.make_topic_related_query_sets(high_priority=True))
+        query_sets.update(self.user_interacted_other_user_leaves(higher_priority= False))
+        query_sets.update(self.make_topic_related_query_sets(high_priority=False))
+        return list(query_sets)
     
     def make_topic_related_query_sets(self,high_priority):
         result_query_set = []
@@ -189,11 +229,11 @@ class HazelRecommendationEngine():
 
     def mix_query_sets(self,mul_query_sets,name):
         max_length = max([len(queryset) for queryset in mul_query_sets]) if len(mul_query_sets) > 0 else 0
-        result_query_set = set()
+        result_query_set = []
         for index in range(max_length):
             for queryset in mul_query_sets:
                 if index < len(queryset):
-                    result_query_set.add(queryset[index])
+                    result_query_set.append(queryset[index])
         print("++++++++++++++|||||||||||||||||||++++++++++++++++++")
         print(f"{name} - {len(result_query_set)}")
         return list(result_query_set)

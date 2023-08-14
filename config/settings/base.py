@@ -90,7 +90,8 @@ LOCAL_APPS = [
     "leaf_engine",
     "user_engine",
     "eden_backend",
-    "eden_pipelines"
+    "eden_pipelines",
+    "admax_engine"
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

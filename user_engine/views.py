@@ -179,7 +179,11 @@ def get_user_details(request):
                     "user_full_name": user_data.user_full_name, 
                     "user_phone_number": user_data.user_phone_number,
                     "user_address":user_data.user_address, 
-                    "user_phone_id":user_data.user_phone_id
+                    "user_phone_id":user_data.user_phone_id,
+                     "user_ip_location": user_data.user_ip_location,
+                    "user_city": user_data.user_city,
+                    "user_gender": user_data.user_gender,
+                    "user_dob": str(user_data.user_dob)
                 })
         except Exception as e:
             raise e
@@ -196,15 +200,55 @@ def modify_user_details(request):
                             "user_full_name", 
                             "user_phone_number",
                             "user_address", 
-                            "user_phone_id"]
+                            "user_phone_id",
+                            "user_ip_location",
+                            "user_city",
+                            "user_gender",
+                            "user_dob"
+                            ]
             if check_field_validity(valid_fields,data):
                 user_control_object.add_user_details(data)
                 return make_response({"message": "Sucess"})
+            else:
+                print(valid_fields)
+                print(data.keys())
+                return make_response({"status": 200, "message": "Cannot unload data."})
         except Exception as e:
-            print(e)
+            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+
+@csrf_exempt
+def add_user_private_relation(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['main_user', 'secondary_user']
+            if check_field_validity(valid_fields,data):
+                response = user_control_object.add_user_private_leaf_model(data)
+                return make_response({"message":str(response)})
+        except Exception as e:
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+@csrf_exempt
+def remove_user_private_relation(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['main_user', 'secondary_user']
+            if check_field_validity(valid_fields,data):
+                response = user_control_object.remove_user_private_leaf_model(data)
+                return make_response({"message":str(response)})
+        except Exception as e:
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+
 
 @csrf_exempt
 def block_user(request):
@@ -233,7 +277,6 @@ def unblock_user(request):
                 response = user_control_object.unblock_user(data)
                 return make_response({"message":str(response)})
         except Exception as e:
-            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -248,7 +291,6 @@ def get_user_id(request):
                 user_id = user_control_object.get_user_id(data)
                 return make_response({'user_id':user_id})
         except Exception as e:
-            print(e)
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})

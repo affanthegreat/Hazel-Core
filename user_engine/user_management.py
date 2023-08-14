@@ -1,6 +1,7 @@
 import crypt
 import json
 import logging
+from datetime import datetime
 
 from django.core.paginator import Paginator
 from django.http import JsonResponse
@@ -335,11 +336,18 @@ class EdenUserManagement:
         user_id = data['user_id']
         if self.get_user_object(user_id):
             user_detail_object = self.get_user_detail_object(user_id)
+            print(data['user_dob'])
             if user_detail_object:
                 user_detail_object.user_full_name = data['user_full_name'] if 'user_full_name' in data else user_detail_object.user_full_name
                 user_detail_object.user_phone_number = data['user_phone_number'] if 'user_phone_number' in data else user_detail_object.user_phone_number
                 user_detail_object.user_address = data['user_address'] if 'user_address' in data else user_detail_object.user_address
                 user_detail_object.user_phone_id = data['user_phone_id'] if 'user_phone_id' in data else user_detail_object.user_phone_id
+
+                user_detail_object.user_ip_location = data['user_ip_location'] if 'user_ip_location' in data else user_detail_object.user_ip_location
+                user_detail_object.user_city = data['user_city'] if 'user_city' in data else user_detail_object.user_city
+                user_detail_object.user_gender = data['user_gender'] if 'user_gender' in data else user_detail_object.user_gender
+                year, month, day = [int(i) for i in data['user_dob'].split("-")]
+                user_detail_object.user_dob = datetime.datetime(year=year,month=month,day=day) if 'dob' in data else user_detail_object.user_dob
             else:
                 user_detail_object = UserDetails()
                 user_detail_object.user_id = self.get_user_object(user_id)
@@ -347,6 +355,12 @@ class EdenUserManagement:
                 user_detail_object.user_phone_number = data['user_phone_number']
                 user_detail_object.user_address = data['user_address']
                 user_detail_object.user_phone_id = data['user_phone_id']
+
+                user_detail_object.user_ip_location = data['user_ip_location']
+                user_detail_object.user_city = data['user_city']
+                user_detail_object.user_gender = data['user_gender']
+                year, month, day = [int(i) for i in data['user_dob'].split("-")]
+                user_detail_object.user_dob = datetime.datetime(year=year,month=month,day=day)
             try:
                 user_detail_object.save()
                 return 100
@@ -387,7 +401,6 @@ class EdenUserManagement:
             else:
                 return 102
         except Exception as e:
-            raise e
             return -111
         
     def get_user_block_object(self,blocked, blocker):
@@ -395,7 +408,37 @@ class EdenUserManagement:
     
     def get_user_detail_object(self, user_id):
         return  UserDetails.objects.filter(user_id= user_id).first()
+    
+    def add_user_private_leaf_model(self,data):
+        main_user = self.get_user_object(data['main_user'])
+        secondary_user = self.get_user_object(data['secondary_user'])
+        if (main_user is not None and secondary_user is not None and 
+            not self.check_user_private_leaf_model(user_1=main_user, user_2=secondary_user)):
+            relation_obj = UserPrivateRelation()
+            relation_obj.main_user = main_user
+            relation_obj.secondary_user = secondary_user
+            relation_obj.save()
+            return 100
+        else:
+            return 102
 
+    def remove_user_private_leaf_model(self,data):
+        main_user = self.get_user_object(data['main_user'])
+        secondary_user = self.get_user_object(data['secondary_user'])
+        if (main_user is not None and secondary_user is not None
+            and self.check_user_private_leaf_model(user_1=main_user, user_2=secondary_user)):
+            relation_obj = self.get_user_private_relation_obj(user_1=main_user, user_2=secondary_user)
+            relation_obj.delete()
+            return 100
+        else:
+            return 102
+
+    def check_user_private_leaf_model(self,user_1, user_2):
+        return UserPrivateRelation.objects.filter(main_user= user_1, secondary_user = user_2).exists()
+    
+    def get_user_private_relation_obj(self, user_1, user_2):
+        return UserPrivateRelation.objects.filter(main_user= user_1, secondary_user = user_2).first()
+    
     def get_user_id(self,data):
         """
            Retrieves the ID of a user based on the provided username.

@@ -16,5 +16,7 @@ urlpatterns = [
     path('get_user_details',get_user_details, name='get_user_details'), 
     path('modify_user_details',modify_user_details, name = 'modify_user_details'),
     path('block_user',block_user, name='block_user'),
-    path('unblock_user', unblock_user, name='unblock_user')
+    path('unblock_user', unblock_user, name='unblock_user'),
+    path('add_user_private_relation', add_user_private_relation, name='add_user_private_relation'),
+    path('remove_user_private_relation', remove_user_private_relation, name= 'remove_user_private_relation')
 ]

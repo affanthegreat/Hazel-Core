@@ -41,48 +41,48 @@ class EdenUserViewsTest(TestCase):
         user_control_object.create_user(self.test_user_1)
         user_control_object.create_user(self.test_user_2)
         user_control_object.create_user(self.test_user_3)
-        #user 1 logins and creates a leaf
+        #user 1 logins and creates two leafs
         response = self.client.post(self.url, self.test_user_1,  content_type='application/json')
         self.assertEqual(to_dict(response.content)['message'], "Login successful.")
         self.assertEqual(UserAccessToken.objects.count(), 1)
         #leaf_creation
-        test_data = {
-             'text_content': "Apple will launch next iphone in september",
+        test_data_1 = {
+             'text_content': "Salman khan goes with a car on footpath.",
              'leaf_type': 'public',
             }
         url = reverse('create_leaf')
-        response = self.client.post(url, test_data,  content_type='application/json')
+        response = self.client.post(url, test_data_1,  content_type='application/json')
         self.leaf_id_1 = to_dict(response.content)['leaf_id']
         self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
         self.assertEqual(Leaf.objects.count(),1)
 
-        test_data = {
+        test_data_2 = {
              'text_content': "Everyone is excited for the next iphone",
              'leaf_type': 'public',
             }
         url = reverse('create_leaf')
-        response = self.client.post(url, test_data,  content_type='application/json')
+        response = self.client.post(url, test_data_2,  content_type='application/json')
         self.leaf_id_2 = to_dict(response.content)['leaf_id']
         self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
         self.assertEqual(Leaf.objects.count(),2)
 
-        test_data = {
+        test_data_3 = {
              'text_content': "This year iphone sales are too low and stock market has seen affecting.",
              'leaf_type': 'public',
             }
         url = reverse('create_leaf')
-        response = self.client.post(url, test_data,  content_type='application/json')
+        response = self.client.post(url, test_data_3,  content_type='application/json')
         self.leaf_id_3 = to_dict(response.content)['leaf_id']
         self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
         self.assertEqual(Leaf.objects.count(),3)
 
 
-        test_data = {
+        test_data_4 = {
              'text_content': "Samsung is the best! android wins!",
              'leaf_type': 'public',
             }
         url = reverse('create_leaf')
-        response = self.client.post(url, test_data,  content_type='application/json')
+        response = self.client.post(url, test_data_4,  content_type='application/json')
         self.leaf_id_4 = to_dict(response.content)['leaf_id']
         self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
         self.assertEqual(Leaf.objects.count(),4)
@@ -97,12 +97,12 @@ class EdenUserViewsTest(TestCase):
         self.assertEqual(to_dict(response.content)['message'], "Login successful.")
         self.assertEqual(UserAccessToken.objects.count(), 1)
         #user 2 creates a leaf
-        test_data = {
-             'text_content': "Heard that iphone 15 will have 5 cameras!",
+        test_data_5 = {
+             'text_content': "Views in goa are so good.",
              'leaf_type': 'public',
             }
         url = reverse('create_leaf')
-        response = self.client.post(url, test_data,  content_type='application/json')
+        response = self.client.post(url, test_data_5,  content_type='application/json')
         self.leaf_id_5 = to_dict(response.content)['leaf_id']
         self.assertEqual(to_dict(response.content)['message'], 'Leaf successfully created.')
         self.assertEqual(Leaf.objects.count(),5)
@@ -131,11 +131,19 @@ class EdenUserViewsTest(TestCase):
         print(Leaf.objects.filter(leaf_id=self.leaf_id_5).values('text_content', 'leaf_topic_id', 'leaf_topic_category_id', 'topic_relevenacy_percentage', 'category_relevancy_percentage', 'exp_points'))
 
     def test_recommender_engine(self):
+        import time 
+        st = time.time()
         url = reverse('get_recommended_posts')
         test_data = {
             'page_number': 1
         }
         response = self.client.post(url, test_data,  content_type='application/json')
         r = to_dict(response.content)
+        et = time.time()
+        elapsed_time = et - st
+        print("++++++++++++++++++++PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP")
+        print('Execution time:', elapsed_time, 'seconds')
         print(r['data'])
-        self.assertEqual(len(r['data']), 4)
+        print()
+        st = time.time()
+        self.assertEqual(len(r['data']), 3)

@@ -33,6 +33,10 @@ class UserAccessToken(models.Model):
     creation_date = models.DateTimeField(default=datetime.datetime.now())
 
 class UserDetails(models.Model):
+    user_ip_location = models.CharField(max_length=40,null= False)
+    user_city = models.CharField(max_length=100, null= False)
+    user_gender = models.CharField(max_length=15, null = False)
+    user_dob = models.DateField(null=False)
     user_full_name = models.CharField(max_length=100,null=False)
     user_id = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='detail')
     user_phone_number = models.CharField(max_length=15,null=False,unique= True)
@@ -42,3 +46,7 @@ class UserDetails(models.Model):
 class UserBlockedAccounts(models.Model):
     blocker_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='sigma')
     blocked_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='beta')
+
+class UserPrivateRelation(models.Model):
+    main_user =  models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="truster")
+    secondary_user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="trust_worthy")
