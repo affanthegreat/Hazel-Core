@@ -144,11 +144,11 @@ class HazelRecommendationEngine():
                 else:
                     filtered_query_set = self.filter_leaves(queryset).filter(topic_relevenacy_percentage__lte = 75)
                 
-                topic_category_related_ads = admax_object.stream_ads_topic_wise(topic_id)
-                if topic_category_related_ads.count > self.MAX_ADS_PER_CATEGORY:
-                    queryset_list.append(topic_category_related_ads[:self.MAX_ADS_PER_CATEGORY])
+                topic_related_ads = admax_object.stream_ads_topic_wise(topic_id)
+                if topic_related_ads.count() > self.MAX_ADS_PER_CATEGORY:
+                    queryset_list.append(topic_related_ads[:self.MAX_ADS_PER_CATEGORY])
                 else:
-                    queryset_list.append(topic_category_related_ads)
+                    queryset_list.append(topic_related_ads)
                 
                 queryset_list.append(filtered_query_set)
             else:
@@ -184,7 +184,7 @@ class HazelRecommendationEngine():
                 else:
                     query_set = self.get_highest_rated_leaves_in_topic(topic_id, topic_category_id).filter(category_relevancy_percentage__lte = 75)
                 topic_category_related_ads = admax_object.stream_ads_topic_category_wise(topic_category_id)
-                if topic_category_related_ads.count > self.MAX_ADS_PER_CATEGORY:
+                if topic_category_related_ads.count() > self.MAX_ADS_PER_CATEGORY:
                     queryset_list.append(topic_category_related_ads[:self.MAX_ADS_PER_CATEGORY])
                 else:
                     queryset_list.append(topic_category_related_ads)

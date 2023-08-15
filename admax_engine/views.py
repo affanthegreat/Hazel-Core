@@ -76,6 +76,7 @@ def create_advertisement_instance(request):
             else:
                 return throw_invalid_fields_error([field for field in valid_fields if field not in data.keys()])
         except Exception as E:
+            raise E
             return throw_error(E)
     else:
         return throw_http_method_not_supported_error()
@@ -216,5 +217,5 @@ def make_leaf_into_promoted_leaf(request):
         except Exception as E:
             return throw_error(E)
     else:
-        return throw_http_method_not_supported_error()bug
+        return throw_http_method_not_supported_error()
     

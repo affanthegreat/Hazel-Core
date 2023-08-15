@@ -46,6 +46,8 @@ class Eden_ADMAX_Engine():
         if len(data['text_content'].strip()) < 1:
             return {'status':200, 'message': f"Text content is empty"}
         leaf_creation_response = leaf_management_object.create_leaf(request,data)
+        print("+++++++++++++++++++++++++++++++++++++++++++++")
+        print(leaf_creation_response)
         leaf_id = leaf_creation_response['leaf_id']
         try:
             campaign_instance = self.fetch_campaign_instance(data['campaign_id'])
@@ -106,7 +108,6 @@ class Eden_ADMAX_Engine():
                 leaf_management_object.delete_leaf(request,advertisement_obj)
                 advertisement_obj.delete()
                 return  {'status':200, 'message': f"Advertisement deleted."}
-
         except Exception as e:
             return {'status': 200, 'message': f'Error occurred - {e}'}
 
@@ -177,11 +178,11 @@ class Eden_ADMAX_Engine():
             return -111
     
     def stream_ads_topic_wise(self,topic_id):
-        return Advertisements.objects.filter(target_topic_id__contains = topic_id).order_by('-advertisement_tier').values('leaf')
+        return Advertisements.objects.filter(target_topic_id = topic_id).order_by('-advertisement_tier').values('leaf')
     
     
     def stream_ads_topic_category_wise(self, topic_category):
-        return Advertisements.objects.filter(target_topic_category__contains = topic_category).order_by('-advertisement_tier').values('leaf')
+        return Advertisements.objects.filter(target_topic_category = topic_category).order_by('-advertisement_tier').values('leaf')
     
 
     def fetch_promoted_instance(self, leaf):

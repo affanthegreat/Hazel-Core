@@ -105,17 +105,25 @@ def start_leaf_text_ml_pipeline(sender, instance, **kwargs):
             response = json.loads(leaf_text_pipeline_object.start_leaf_text_ml_workflow(instance).content)
             if 'status' in response and response('status') == -101:
                 raise Exception(response['message'])
-            instance.leaf_topic_id = response['topic_id']
-            instance.leaf_sentiment= response['sentiment_value']
-            instance.leaf_emotion_state = response['emotion_state']
-            instance.leaf_topic_category_id = response['topic_category_id']
+            from exp_engine.exp_conx_manager import Eden_CONX_Engine
+            response['user_id'] = instance.owner.user_id
+            conx_engine_instance = Eden_CONX_Engine()
+            conx_response = conx_engine_instance.create_user_topic_relation(response)
+            if conx_response == 100 or conx_response == -111:
+                instance.leaf_topic_id = response['topic_id']
+                instance.leaf_sentiment= response['sentiment_value']
+                instance.leaf_emotion_state = response['emotion_state']
+                instance.leaf_topic_category_id = response['topic_category_id']
+            else:
+                raise Exception("Conx Failed.")
+
         except Exception as E:
             instance.delete()
             throw_model_not_saved_error()
     try:
         instance._dirty = True
         instance.save()
-    except:
+    except Exception as E:
         throw_model_not_saved_error()
     finally:
         del instance._dirty
