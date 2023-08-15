@@ -11,6 +11,7 @@ from admax_engine.models import Advertisements, AdvertisementCampaigns, Promoted
 session_management_object = EdenSessionManagement()
 leaf_management_object = EdenLeafManagement()
 
+
 class Eden_ADMAX_Engine():
     
     def meta(self):
@@ -33,51 +34,77 @@ class Eden_ADMAX_Engine():
                 campaign_object.campaign_id = self.generate_campaign_id()
                 campaign_object.created_by = user_object
                 campaign_object.campaign_name = campaign_name
-                campaign_name.save()
+                campaign_object.save()
                 return -100
             else:
                 return -122
-        except:
+        except Exception as e:
             return -111
 
     def create_advertisement_instance(self,request,data):
+        data['leaf_type'] = LeafType.Public
+        if len(data['text_content'].strip()) < 1:
+            return {'status':200, 'message': f"Text content is empty"}
         leaf_creation_response = leaf_management_object.create_leaf(request,data)
         leaf_id = leaf_creation_response['leaf_id']
         try:
-            if self.is_authorised(request):
+            campaign_instance = self.fetch_campaign_instance(data['campaign_id'])
+            if self.is_authorised(request) and campaign_instance is not None:
                 leaf_object = leaf_management_object.get_leaf_object(leaf_id)
                 advertisement_obj = Advertisements()
-              
+                advertisement_obj.advertisement_id = self.generate_campaign_id()
                 advertisement_obj.leaf = leaf_object
-                advertisement_obj.created_by = leaf_object.owner
-                advertisement_obj.target_topic_id = data['target_topic_id']
-                advertisement_obj.target_topic_category = leaf_object.leaf_topic_category_id
+                advertisement_obj.created_by = leaf_management_object.get_user_object(user_id=data['user_id'])
+                #advertisement_obj.target_topic_id = data['target_topic_id']
+                advertisement_obj.target_topic_category = data['target_topic_category_id']
                 advertisement_obj.advertisement_tier = data['advertisement_tier']
 
-                advertisement_obj.campaign.campaign_id = data['campaign_id']
-                advertisement_obj.campaign.active_ads += 1
-                advertisement_obj.campaign.total_ads += 1
+                advertisement_obj.campaign = campaign_instance
                 advertisement_obj.is_active = True
+                
                 advertisement_obj.save()
-                return {'status':200, 'message': f"User not authorised."}
+
+                campaign_instance.active_ads += 1
+                campaign_instance.total_ads += 1
+                campaign_instance.save()
+                return {'status':200, 'message': f"Advertisement is active."}
             else:
                 leaf_management_object.delete_leaf(request,leaf_id)
-                return {'status':200, 'message': f"Advertisement is active."}
+                return {'status':200, 'message': f"User not authorised. or Campaign doesnot exists {self.fetch_campaign_instance(data['campaign_id'])}"}
+                
         except Exception as e:
             leaf_management_object.delete_leaf(request,leaf_id)
-            return {'status':200, 'message': f"Advertisement could not be created. ({e}) "}
+            return {'status':200, 'message': f"Advertisement could not be created. {e}"}
         
     
     def fetch_advertisement_instance(self, user_object, leaf):
-        return Advertisements.objects.filter(created_by = user_object, leaf= leaf).get()
+        try:
+            return Advertisements.objects.filter(created_by = user_object, leaf= leaf).get()
+        except Exception as e:
+            raise e
     
     def fetch_campaign_instance(self, campaign_id):
-        return AdvertisementCampaigns.objects.filter(campaign_id=campaign_id ).get()
-    
-    def delete_ad(self,request,data): 
         try:
-            leaf_deletion_status = leaf_management_object.delete_leaf(request,data['leaf_id'])
-            if leaf_deletion_status['message'] == '-100':
+            return AdvertisementCampaigns.objects.filter(campaign_id=campaign_id ).get()
+        except Exception as e:
+            raise e
+
+    def get_campaign_id(self, campaign_name, user_id):
+        try:
+
+            return AdvertisementCampaigns.objects.filter(campaign_name= campaign_name, 
+                                                        created_by= leaf_management_object.get_user_object(user_id)).first().campaign_id
+        except Exception as e:
+            raise e
+    def get_advertisement_object_with_id(self,advertisement_id):
+        return Advertisements.objects.filter(advertisement_id= advertisement_id).first()
+    
+    def delete_ad(self,request,advertisement_id): 
+        try:
+            advertisement_obj = self.get_advertisement_object_with_id(advertisement_id)
+            if advertisement_id is not None:
+                leaf_management_object.delete_leaf(request,advertisement_obj)
+                advertisement_obj.delete()
                 return  {'status':200, 'message': f"Advertisement deleted."}
 
         except Exception as e:
@@ -89,11 +116,16 @@ class Eden_ADMAX_Engine():
             logged_in_user = leaf_management_object.get_logged_in_user(request)
             campaign_instance = self.fetch_campaign_instance(campaign_id)
             if campaign_instance.created_by == logged_in_user:
+                advertisements_query_set = Advertisements.objects.filter(campaign = campaign_instance).all()
+                for ad in advertisements_query_set:
+                    leaf_management_object.delete_leaf(request, ad.leaf.leaf_id)
+                    ad.delete()
                 campaign_instance.delete()
                 return -100
             else:
                 return -141
-        except:
+        except Exception as e:
+            raise e
             return -111
 
     def check_leaf_ad_exists(self,data):

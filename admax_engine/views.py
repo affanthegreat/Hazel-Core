@@ -4,9 +4,11 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 
+from user_engine.user_management import EdenUserManagement
 from admax_engine.admax_manager import Eden_ADMAX_Engine
 
 admax_object = Eden_ADMAX_Engine()
+user_management_object = EdenUserManagement()
 
 def check_field_validity(valid_fields, data):
     condition = True
@@ -22,7 +24,13 @@ def make_http_response(data_map):
 
 def throw_invalid_fields_error(E):
     response = {}
-    response['messaage'] = f"Valid fields not found in request body {E}"
+    response['message'] = f"Valid fields not found in request body {E}"
+    response['status'] = 200
+    return make_http_response(response) 
+
+def throw_error(E):
+    response = {}
+    response['message'] = f"{E}"
     response['status'] = 200
     return make_http_response(response) 
 
@@ -36,14 +44,18 @@ def create_advertisement_campaign(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            valid_fields = ['user_object', 'campaign_name']
+            valid_fields = ['user_id', 'campaign_name']
             if check_field_validity(valid_fields, data):
+                user_object = user_management_object.get_user_object(data['user_id'])
+                if user_object is None:
+                    return throw_error("User not found.")
+                data['user_object'] = user_object
                 pre_response = admax_object.create_advertisement_campaign(request, data)
                 return make_http_response(pre_response)
             else:
                 return throw_invalid_fields_error("")
         except Exception as E:
-            return throw_invalid_fields_error(E)
+            return throw_error(E)
     else:
         return throw_http_method_not_supported_error()
 
@@ -53,17 +65,40 @@ def create_advertisement_instance(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            valid_fields = ['campaign_id', 'leaf_id', 'target_topic_id', 'advertisement_tier']
+            valid_fields = ['campaign_id',
+                             'user_id',
+                            'target_topic_category_id',
+                            'advertisement_tier',
+                                   'text_content']
             if check_field_validity(valid_fields, data):
                 pre_response = admax_object.create_advertisement_instance(request, data)
                 return make_http_response(pre_response)
             else:
+                return throw_invalid_fields_error([field for field in valid_fields if field not in data.keys()])
+        except Exception as E:
+            return throw_error(E)
+    else:
+        return throw_http_method_not_supported_error()
+
+@csrf_exempt
+def get_campaign_id(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['campaign_name', 'user_id']
+            if check_field_validity(valid_fields, data):
+                pre_response = admax_object.get_campaign_id(data['campaign_name'], data['user_id'])
+                return make_http_response(pre_response)
+            else:
                 return throw_invalid_fields_error("")
         except Exception as E:
-            return throw_invalid_fields_error(E)
+            return throw_error(E)
     else:
         return throw_http_method_not_supported_error()
     
+
+
+
 
 @csrf_exempt
 def delete_ad(request):
@@ -77,7 +112,7 @@ def delete_ad(request):
             else:
                 return throw_invalid_fields_error("")
         except Exception as E:
-            return throw_invalid_fields_error(E)
+            return throw_error(E)
     else:
         return throw_http_method_not_supported_error()
 
@@ -94,7 +129,7 @@ def delete_campaign(request):
             else:
                 return throw_invalid_fields_error("")
         except Exception as E:
-            return throw_invalid_fields_error(E)
+            return throw_error(E)
     else:
         return throw_http_method_not_supported_error()
 
@@ -110,7 +145,7 @@ def get_ad_analytics(request):
             else:
                 return throw_invalid_fields_error("")
         except Exception as E:
-            return throw_invalid_fields_error(E)
+            return throw_error(E)
     else:
         return throw_http_method_not_supported_error()
     
@@ -127,7 +162,7 @@ def get_campaign_summary(request):
             else:
                 return throw_invalid_fields_error("")
         except Exception as E:
-            return throw_invalid_fields_error(E)
+            return throw_error(E)
     else:
         return throw_http_method_not_supported_error()
     
@@ -145,7 +180,7 @@ def create_promoted_leaf(request):
             else:
                 return throw_invalid_fields_error("")
         except Exception as E:
-            return throw_invalid_fields_error(E)
+            return throw_error(E)
     else:
         return throw_http_method_not_supported_error()
 
@@ -163,7 +198,7 @@ def remove_promoted_leaf(request):
             else:
                 return throw_invalid_fields_error("")
         except Exception as E:
-            return throw_invalid_fields_error(E)
+            return throw_error(E)
     else:
         return throw_http_method_not_supported_error()
 
@@ -179,7 +214,7 @@ def make_leaf_into_promoted_leaf(request):
             else:
                 return throw_invalid_fields_error("")
         except Exception as E:
-            return throw_invalid_fields_error(E)
+            return throw_error(E)
     else:
-        return throw_http_method_not_supported_error()
+        return throw_http_method_not_supported_error()bug
     

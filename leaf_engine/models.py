@@ -11,7 +11,6 @@ from django.dispatch import receiver
 from user_engine.models import UserProfile
 from eden_pipelines.AILib_leaf_pipeline import HazelAI_Leaf_Pipeline
 
-
 leaf_text_pipeline_object = HazelAI_Leaf_Pipeline()
 
 
