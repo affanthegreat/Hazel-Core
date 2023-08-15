@@ -9,7 +9,10 @@ from user_engine.backends import EdenSessionManagement
 from user_engine.middleware import EdenUserMiddleWare
 from user_engine.user_management import EdenUserManagement
 
+from admax_engine.admax_manager import Eden_ADMAX_Engine
+
 session_management_object = EdenSessionManagement()
+admax_instance = Eden_ADMAX_Engine()
 
 class EdenExperienceEngine():
     def __init__(self):
@@ -32,10 +35,11 @@ class EdenExperienceEngine():
         leaf_exp_points += self.exp_points_weight * experience_rating
         leaf_exp_points += self.engagement_points_weight * engagement_rating
         if leaf_object.is_promoted:
-            leaf_exp_points = self.promoted_weight * leaf_exp_points
+            promoted_instance = admax_instance.fetch_promoted_instance(leaf=leaf_object)
+            leaf_exp_points = (promoted_instance.boost_multiplier * (self.promoted_weight / 1.4) ) * leaf_exp_points
         if leaf_object.is_advertisement:
-            leaf_exp_points = self.advertisement_weight * leaf_exp_points
-        
+            advertisement_instance = admax_instance.fetch_advertisement_instance(leaf_object.owner, leaf_object)
+            leaf_exp_points = (advertisement_instance * (self.advertisement_weight / 1.4)) * leaf_exp_points
         topic_id = leaf_object.leaf_topic_id
         topic_category = leaf_object.leaf_topic_category_id
         leaf_object.topic_relevancy_percentage = (leaf_exp_points / (leaf_exp_points if self.get_highest_exp_topic_id(topic_id) == 0 

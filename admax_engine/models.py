@@ -5,6 +5,14 @@ from leaf_engine.models import Leaf
 from user_engine.models import UserProfile
 
 
+class AdvertisementCampaigns(models.Model):
+    campaign_id = models.CharField(max_length=100,primary_key=True)
+    campaign_name = models.CharField(max_length=50)
+    total_ads = models.PositiveIntegerField(default=0)
+    active_ads = models.PositiveBigIntegerField(default=0)
+    created_date = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(UserProfile, related_name='campaign_creator', on_delete=models.CASCADE)
+
 class Advertisements(models.Model):
     leaf = models.ForeignKey(Leaf, related_name='advertisement', on_delete=models.CASCADE)
     created_by = models.ForeignKey(UserProfile, related_name='ad_created_by', on_delete=models.CASCADE)
@@ -12,7 +20,8 @@ class Advertisements(models.Model):
     target_topic_id = ArrayField(models.BigIntegerField(default= -1))
     target_topic_category = models.IntegerField(max_length=3)
     advertisement_tier = models.IntegerField(default=1)
-    is_active = models.BooleanField(default=False )
+    campaign = models.ForeignKey(AdvertisementCampaigns,related_name='campaign_name', on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=False,  )
 
 
 class PromotedLeafs(models.Model):
@@ -22,3 +31,4 @@ class PromotedLeafs(models.Model):
     expiry = models.DateTimeField()
     boost_multiplier = models.DecimalField(default=1,max_digits=5,decimal_places=5)
     is_active = models.BooleanField(default=False)
+

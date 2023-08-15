@@ -20,14 +20,18 @@ from leaf_engine.communicator import EdenLeafCommunicator
 from exp_engine.models import *
 from exp_engine.exp_conx_manager import Eden_CONX_Engine
 
+from admax_engine.admax_manager import Eden_ADMAX_Engine
 
 conX_object = Eden_CONX_Engine()
+admax_object = Eden_ADMAX_Engine()
+
 
 class HazelRecommendationEngine():
 
     def meta(self):
         self.MAX_OBJECT_LIMIT = 100
         self.MAX_ADS_PER_PAGE = 30
+        self.MAX_ADS_PER_CATEGORY = 3
         self.MAX_LEAFS_PER_UNKNOWN_USER = 15
         self.VERSION = 0.1
         self.BUILD_TYPE = "ALPHA"
@@ -83,13 +87,12 @@ class HazelRecommendationEngine():
         user_interacted_leaves = self.get_leaf_user_interaction()
         user_blocked_accounts = EdenUserCommunicator().stream_user_blocked_accounts_query_set(self.user_object.user_id)
 
-        without_interacted_leaves = queryset.exclude(leaf_id__in=user_interacted_leaves.values('leaf')).order_by('-exp_points')
+        without_interacted_leaves = queryset.exclude(leaf_id__in=user_interacted_leaves.values('leaf'), is_advertisement= False).order_by('-exp_points')
         without_blocked_users = without_interacted_leaves.exclude(owner__in=user_blocked_accounts.values('blocked_profile'))
 
         without_private_leaves = without_blocked_users.exclude(~Q(owner__in =UserPrivateRelation.objects.filter(secondary_user=self.user_object).values('main_user')),
                                                                 leaf_type= LeafType.Private)
-        print("============= IN FILTER LEAVES FUNCTION ==============")
-        print(user_blocked_accounts.count(), without_interacted_leaves.count(),without_blocked_users.count(), without_private_leaves.count())
+ 
         return without_private_leaves
 
     def filter_following_leaves(self, queryset):
@@ -122,8 +125,6 @@ class HazelRecommendationEngine():
     def generate_bias_for_user_topics(self,topic_query_set):
         bias_map = {}
         for topic_obj in topic_query_set:
-            print("======================== with in bias map function ==================")
-            print(topic_obj)
             topic_id = topic_obj['topic_id']
             bias = self.calculate_favoritism_weight(topic_id, self.user_object)
             bias_map[topic_id] = bias
@@ -142,8 +143,13 @@ class HazelRecommendationEngine():
                     filtered_query_set = self.filter_leaves(queryset).filter(topic_relevenacy_percentage__gt = 75)
                 else:
                     filtered_query_set = self.filter_leaves(queryset).filter(topic_relevenacy_percentage__lte = 75)
-                print("================ WITHIN MAKE QUERYSET FUNCTION ===========================")
-                print(filtered_query_set.count())
+                
+                topic_category_related_ads = admax_object.stream_ads_topic_wise(topic_id)
+                if topic_category_related_ads.count > self.MAX_ADS_PER_CATEGORY:
+                    queryset_list.append(topic_category_related_ads[:self.MAX_ADS_PER_CATEGORY])
+                else:
+                    queryset_list.append(topic_category_related_ads)
+                
                 queryset_list.append(filtered_query_set)
             else:
                logging.info(f"No leaves found from the topic {topic_id}")
@@ -177,8 +183,11 @@ class HazelRecommendationEngine():
                     query_set = self.get_highest_rated_leaves_in_topic(topic_id,topic_category_id).filter(category_relevancy_percentage__gt = 75)
                 else:
                     query_set = self.get_highest_rated_leaves_in_topic(topic_id, topic_category_id).filter(category_relevancy_percentage__lte = 75)
-                print(F"======================= WITHIN SIMILAR TOOPIC SECTION ========================={topic_category_id}")
-                print(query_set.count())
+                topic_category_related_ads = admax_object.stream_ads_topic_category_wise(topic_category_id)
+                if topic_category_related_ads.count > self.MAX_ADS_PER_CATEGORY:
+                    queryset_list.append(topic_category_related_ads[:self.MAX_ADS_PER_CATEGORY])
+                else:
+                    queryset_list.append(topic_category_related_ads)
                 queryset_list.append(query_set)
         merged_query_set = self.merge_query_sets(queryset_list)
         return merged_query_set
@@ -214,7 +223,7 @@ class HazelRecommendationEngine():
     
     def make_query_sets_list(self):
         query_sets = set()
-        query_sets.update(self.mix_query_sets(self.make_user_following_query_sets(), "following queryset"))
+        query_sets.update(self.mix_query_sets(self.make_user_following_query_sets()))
         query_sets.update(self.user_interacted_other_user_leaves(higher_priority= True))
         query_sets.update(self.make_topic_related_query_sets(high_priority=True))
         query_sets.update(self.user_interacted_other_user_leaves(higher_priority= False))
@@ -225,17 +234,15 @@ class HazelRecommendationEngine():
         result_query_set = []
         result_query_set.append(self.make_topic_wise_query_sets(higher_priority=high_priority))
         result_query_set.append(self.make_similar_topics_query_sets(higher_priority=high_priority))
-        return self.mix_query_sets(result_query_set, name=f'high priority {high_priority}' )
+        return self.mix_query_sets(result_query_set)
 
-    def mix_query_sets(self,mul_query_sets,name):
+    def mix_query_sets(self,mul_query_sets):
         max_length = max([len(queryset) for queryset in mul_query_sets]) if len(mul_query_sets) > 0 else 0
         result_query_set = []
         for index in range(max_length):
             for queryset in mul_query_sets:
                 if index < len(queryset):
                     result_query_set.append(queryset[index])
-        print("++++++++++++++|||||||||||||||||||++++++++++++++++++")
-        print(f"{name} - {len(result_query_set)}")
         return list(result_query_set)
     
     def merge_query_sets(self,querysets):

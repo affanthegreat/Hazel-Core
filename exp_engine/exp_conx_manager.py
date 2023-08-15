@@ -72,7 +72,6 @@ class Eden_CONX_Engine():
             eum_object = EdenUserManagement()
             user = eum_object.get_user_object(data['user_id'])
             if not self.check_user_topic_relation(data['topic_id'], user) :
-                
                 user_topic_relation_object = UserTopicRelations()
                 user_topic_relation_object.topic_id = data['topic_id']
                 user_topic_relation_object.topic_category_id = data['topic_category_id']
