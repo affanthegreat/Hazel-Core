@@ -420,13 +420,16 @@ class EdenUserManagement:
             return 102
     
     def fetch_all_follow_requests(self,data):
-        user_id = data['requested_to']
+        requester = data['requester']
+        requested_to = data['requested_to']
         page_number = data['page_number']
-        if self.check_user_exists({'user_id': user_id}):
-            user_object = self.get_user_object(user_id)
-            queryset = UserFollowRequests.objects.filter(requested_to = user_object)
+        if self.check_user_exists({'user_id': requester} and self.check_user_exists({'user_id': requested_to})):
+            user_object = self.get_user_object(requester)
+            requested_to = self.get_user_object(requested_to)
+            queryset = UserFollowRequests.objects.filter(requested_to = requested_to,requester=user_object).all()
             return self.paginator(queryset,page_number)
-    
+
+
     def accept_follow_request(self,request_id):
         follow_request =  self.fetch_follow_request_obj(request_id)
         if follow_request is not None:
