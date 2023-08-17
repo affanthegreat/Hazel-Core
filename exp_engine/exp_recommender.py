@@ -90,7 +90,7 @@ class HazelRecommendationEngine():
         without_interacted_leaves = queryset.exclude(leaf_id__in=user_interacted_leaves.values('leaf'), is_advertisement= False).order_by('-exp_points')
         without_blocked_users = without_interacted_leaves.exclude(owner__in=user_blocked_accounts.values('blocked_profile'))
 
-        without_private_leaves = without_blocked_users.exclude(~Q(owner__in =UserPrivateRelation.objects.filter(secondary_user=self.user_object).values('main_user')),
+        without_private_leaves = without_blocked_users.exclude(~Q(owner__in =UserFollowing.objects.filter(slave=self.user_object).values('master')),
                                                                 leaf_type= LeafType.Private)
  
         return without_private_leaves

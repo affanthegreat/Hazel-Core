@@ -47,6 +47,9 @@ class UserBlockedAccounts(models.Model):
     blocker_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='sigma')
     blocked_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='beta')
 
-class UserPrivateRelation(models.Model):
-    main_user =  models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="truster")
-    secondary_user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="trust_worthy")
+    
+class UserFollowRequests(models.Model):
+    status = models.BooleanField(default=False)
+    id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True, default=uuid.uuid4)
+    requester = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="requester")
+    requested_to = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="requested_to")
