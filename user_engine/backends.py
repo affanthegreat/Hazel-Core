@@ -1,3 +1,4 @@
+import json
 from django.contrib.auth.backends import ModelBackend
 
 import crypt
@@ -44,6 +45,16 @@ class EdenSessionManagement():
             access_token_object.save()
             request.session["token"] = encrypted
             request.session["auth_token"] = session_id
+            return (encrypted, session_id)
+        else:
+            return (token, auth_token)
+
+    def load_session(self, request,data):
+        token = data['token']
+        auth_token = data['auth_token']
+        if token and auth_token:
+            request.session['token'] = token
+            request.session['auth_token'] = auth_token
 
     def delete_session(self, request):
         token = request.session.get('token', None)
@@ -58,6 +69,7 @@ class EdenSessionManagement():
         return crypt.crypt(session_id, key)
 
     def get_session_user(self, request):
+        self.load_session(request, json.loads(request.data))
         token = request.session.get('token', None)
         auth_token = request.session.get('auth_token', None)
         print(token, auth_token)

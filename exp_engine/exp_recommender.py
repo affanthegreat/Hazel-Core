@@ -10,7 +10,7 @@ from django.core import serializers
 from leaf_engine.models import LeafType
 
 
-from user_engine.models import UserFollowing, UserPrivateRelation, UserDetails
+from user_engine.models import UserFollowing, UserDetails
 from user_engine.user_management import EdenUserManagement
 from user_engine.communicator import EdenUserCommunicator
 

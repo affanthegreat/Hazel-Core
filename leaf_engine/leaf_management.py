@@ -1,3 +1,4 @@
+import json
 import uuid
 import logging 
 
@@ -801,6 +802,7 @@ class EdenLeafManagement:
         Returns:
             bool: True if the request is authorized, False otherwise.
         """
+        session_management_object.load_session(request,json.loads(request.body))
         return session_management_object.current_session(
             request
         ) != None and session_management_object.check_session(

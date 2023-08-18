@@ -114,8 +114,8 @@ def login(request):
             password = data["password"]
             user = authenticate(request, username=username, password=password)
             if user is not None:
-                session_management_object.create_session(request, user)
-                return make_response({"status": 200, "message": "Login successful."})
+                token, auth_token = session_management_object.create_session(request, user)
+                return make_response({"status": 200, "message": "Login successful.", 'token':token, 'auth_token': auth_token})
 
             return make_response({"status": 200, "message": "Login failed."})
 
@@ -130,7 +130,7 @@ def logout(request):
     if request.method == "POST":
         try:
             session_management_object.delete_session(request)
-            return make_response({'status':200, 'message': "Logout successful."})
+            return make_response({'status':200, 'message': "Logout successful.", })
         except:
             return make_response({'status':200, 'message': "Logout failed."})
     else:
@@ -255,7 +255,7 @@ def block_user(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            valid_fields = ['blocked']
+            valid_fields = ['blocked', 'auth_token', 'token']
             if check_field_validity(valid_fields,data):
                 data['user_id'] = get_logged_in_user(request).user_id
                 response = user_control_object.add_user_blocked(data)
@@ -271,7 +271,7 @@ def unblock_user(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            valid_fields = ['blocked']
+            valid_fields = ['blocked', 'auth_token', 'token']
             if check_field_validity(valid_fields,data):
                 data['user_id'] = get_logged_in_user(request).user_id
                 response = user_control_object.unblock_user(data)
