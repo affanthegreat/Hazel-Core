@@ -22,5 +22,6 @@ urlpatterns = [
     path('fetch_all_follow_request_view',fetch_all_follow_request_view,name='fetch_all_follow_request_view'),
     path('accept_follow_request',accept_follow_request,name='accept_follow_request'),
     path('delete_follow_request',delete_follow_request, name='delete_follow_request'),
-    path('check_user_exists',check_user_exists,name = 'check_user_exists')
+    path('check_user_exists',check_user_exists,name = 'check_user_exists'),
+    path('get_user_info', get_user_info, name='get_user_info')
 ]

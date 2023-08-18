@@ -69,10 +69,9 @@ class EdenSessionManagement():
         return crypt.crypt(session_id, key)
 
     def get_session_user(self, request):
-        self.load_session(request, json.loads(request.data))
+        self.load_session(request, json.loads(request.body))
         token = request.session.get('token', None)
         auth_token = request.session.get('auth_token', None)
-        print(token, auth_token)
         try:
             rehashed_cipher = crypt.crypt(auth_token, token)
             if token == rehashed_cipher and self.check_session(auth_token):

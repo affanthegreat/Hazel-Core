@@ -47,7 +47,6 @@ class EdenLeafManagement:
                 if middleware_status is not False:
                     new_leaf_object.save()
                 else:
-                    
                     raise Exception("Middleware failed.")
             except Exception as e:
                 return {

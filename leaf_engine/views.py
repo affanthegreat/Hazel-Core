@@ -55,7 +55,7 @@ def get_user_public_leaves_view(request):
     if request.method == "POST":
         try:    
             data = json.loads(request.body)
-            page_number = data['page_number']
+            page_number = data['page_number','auth_token','token']
             response = {}
             response_status = ELM_object.get_user_public_leaves(request, int(page_number))
             if response_status == -101:
@@ -75,7 +75,7 @@ def get_leaves_view(request):
         try:
             response = {}
             data = json.loads(request.body)
-            page_number = data['page_number']
+            page_number = data['page_number','auth_token','token']
             user_id = data['user_id']
             response_status = ELM_object.get_leaves(request, user_id, int(page_number))
             if response_status == -101:
@@ -94,7 +94,7 @@ def get_user_private_leaves_view(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            page_number = data['page_number']
+            page_number = data['page_number','auth_token','token']
             response = {}
             response_status = ELM_object.get_user_private_leaves(request, int(page_number))
             if response_status == -101:

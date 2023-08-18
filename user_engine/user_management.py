@@ -457,6 +457,33 @@ class EdenUserManagement:
     def fetch_follow_request_obj(self,request_id):
         return UserFollowRequests.objects.filter(id= request_id).first()
     
+
+    def user_obj_to_json(self, user_obj):
+        return {
+            'user_email': user_obj.user_email,
+            'user_name': user_obj.user_name,
+            'user_public_leaf_count': user_obj.user_public_leaf_count,
+            'user_private_leaf_count': user_obj.user_private_leaf_count,
+            'user_experience_points': user_obj.user_experience_points,
+            'user_verified': user_obj.user_verified,
+            'user_followers': user_obj.user_followers,
+            'user_following': user_obj.user_following,
+            'user_level': user_obj.user_level,
+            'user_universal_likes': user_obj.user_universal_likes,
+            'user_universal_dislikes': user_obj.user_universal_dislikes,
+            'user_universal_comments': user_obj.user_universal_comments,
+            'created_at': str(user_obj.created_at)
+        }
+
+    def get_user_info(self,data):
+        try:
+            user_id = self.get_user_id(data)
+            user_obj = self.get_user_object(user_id)
+            return self.user_obj_to_json(user_obj)
+        except Exception as e:
+            raise e
+            return 101
+
     def get_user_id(self,data):
         """
            Retrieves the ID of a user based on the provided username.

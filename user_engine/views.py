@@ -139,7 +139,7 @@ def logout(request):
 
 @csrf_exempt
 def current_user(request):
-    if request.method == "GET":
+    if request.method == "POST":
         user = session_management_object.get_session_user(request)
         return make_response({
             'status': 200,
@@ -387,6 +387,22 @@ def check_user_exists(request):
             return make_response({'status':200, 'message': "Error Occured"})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+@csrf_exempt
+def get_user_info(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            status = user_control_object.get_user_info(data)
+            if status:
+                return make_response(status)
+            else:
+                return make_response({'status':200, 'message': "User Does not Exists."})
+        except Exception as e:
+            return make_response({'status':200, 'message': "Error Occured"})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
 
 
 def get_logged_in_user(request):
