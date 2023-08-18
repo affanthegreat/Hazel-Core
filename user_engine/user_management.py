@@ -167,26 +167,13 @@ class EdenUserManagement:
                 try:
                     follower_relationship.save()
                     self.run_user_middleware(following_object, "update_followers", 1)
-                    response = {
-                        "status": 200,
-                        "message": f"{follower_object.user_name} added as follower to {following_object.user_name}",
-                    }
+                    return 100
                 except Exception as E:
-                    print(E)
-                    response = {"status": 200, "message": "Error while adding the follower"}
-                print(response)
-                return response
+                    return 102
             else:
-                response = {
-                    "status": 200,
-                    "message": f"{follower_object.user_name} already follows {following_object.user_name}",
-                }
-                return response
+                99
         else:
-            print(self.check_user_exists({"user_id": follower}))
-            print(self.check_user_exists({"user_id": follows}))
-            response = {"status": 200, "message": "One of the user does not exists."}
-            return response
+            return -111
 
     def check_follower(self, following_object, follower_object):
         """
@@ -408,36 +395,67 @@ class EdenUserManagement:
     
     def get_user_detail_object(self, user_id):
         return  UserDetails.objects.filter(user_id= user_id).first()
-    
-    def add_user_private_leaf_model(self,data):
-        main_user = self.get_user_object(data['main_user'])
-        secondary_user = self.get_user_object(data['secondary_user'])
-        if (main_user is not None and secondary_user is not None and 
-            not self.check_user_private_leaf_model(user_1=main_user, user_2=secondary_user)):
-            relation_obj = UserPrivateRelation()
-            relation_obj.main_user = main_user
-            relation_obj.secondary_user = secondary_user
-            relation_obj.save()
+        
+    def create_follow_request(self,data):
+        requester = data['requester']
+        requested_to = data['requested_to']
+        if self.check_user_exists({'user_id': requester}) and self.check_user_exists({'user_id': requester}):
+            follow_request = UserFollowRequests()
+            follow_request.requester = self.get_user_object(requester)
+            follow_request.requested_to = self.get_user_block_object(requested_to)
+            follow_request.save()
             return 100
         else:
             return 102
-
-    def remove_user_private_leaf_model(self,data):
-        main_user = self.get_user_object(data['main_user'])
-        secondary_user = self.get_user_object(data['secondary_user'])
-        if (main_user is not None and secondary_user is not None
-            and self.check_user_private_leaf_model(user_1=main_user, user_2=secondary_user)):
-            relation_obj = self.get_user_private_relation_obj(user_1=main_user, user_2=secondary_user)
-            relation_obj.delete()
+        
+    def remove_follow_request(self, data):
+        requester = data['requester']
+        requested_to = data['requested_to']
+        if self.check_user_exists({'user_id': requester}) and self.check_user_exists({'user_id': requester}):
+            requester = self.get_user_object(requester)
+            requested_to = self.get_user_block_object(requested_to)
+            UserFollowRequests.objects.filter(requested_to=requested_to, requester=requester).first().delete()
             return 100
         else:
             return 102
-
-    def check_user_private_leaf_model(self,user_1, user_2):
-        return UserPrivateRelation.objects.filter(main_user= user_1, secondary_user = user_2).exists()
     
-    def get_user_private_relation_obj(self, user_1, user_2):
-        return UserPrivateRelation.objects.filter(main_user= user_1, secondary_user = user_2).first()
+    def fetch_all_follow_requests(self,data):
+        requester = data['requester']
+        requested_to = data['requested_to']
+        page_number = data['page_number']
+        if self.check_user_exists({'user_id': requester} and self.check_user_exists({'user_id': requested_to})):
+            user_object = self.get_user_object(requester)
+            requested_to = self.get_user_object(requested_to)
+            queryset = UserFollowRequests.objects.filter(requested_to = requested_to,requester=user_object).all()
+            return self.paginator(queryset,page_number)
+
+
+    def accept_follow_request(self,request_id):
+        follow_request =  self.fetch_follow_request_obj(request_id)
+        if follow_request is not None:
+            data = {
+                'follower' : follow_request.requester.user_id,
+                'follows' : follow_request.requested_to.user_id
+            }
+            follow_status = self.user_follow(data)
+            if follow_status == 100:
+                follow_request.delete()
+                return 100
+            else:
+                return follow_status
+        else:
+            return 191
+    
+    
+    def deny_follow_request(self,request_id):
+        follow_request =  self.fetch_follow_request_obj(request_id)
+        if follow_request is not None:
+            follow_request.delete()
+        else:
+            return 191
+            
+    def fetch_follow_request_obj(self,request_id):
+        return UserFollowRequests.objects.filter(id= request_id).first()
     
     def get_user_id(self,data):
         """

@@ -37,7 +37,7 @@ def throw_http_method_not_supported_error():
 def create_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['text_content', 'leaf_type']
+        valid_fields = ['text_content', 'leaf_type', 'auth_token', 'token']
         if check_field_validity(valid_fields,data):
             if not data['text_content']:
                 return make_response({"status":200, "message": "Text Content cannot be empty"})
@@ -52,9 +52,10 @@ def create_leaf_view(request):
 
 @csrf_exempt
 def get_user_public_leaves_view(request):
-    if request.method == "GET":
+    if request.method == "POST":
         try:    
-            page_number = request.GET.get('page_number')
+            data = json.loads(request.body)
+            page_number = data['page_number']
             response = {}
             response_status = ELM_object.get_user_public_leaves(request, int(page_number))
             if response_status == -101:
@@ -70,11 +71,12 @@ def get_user_public_leaves_view(request):
 
 @csrf_exempt
 def get_leaves_view(request):
-    if request.method == "GET":
+    if request.method == "POST":
         try:
             response = {}
-            user_id = request.GET.get('user_id')
-            page_number = request.GET.get('page_number')
+            data = json.loads(request.body)
+            page_number = data['page_number']
+            user_id = data['user_id']
             response_status = ELM_object.get_leaves(request, user_id, int(page_number))
             if response_status == -101:
                 response['message'] = 'Auth Error.'
@@ -89,9 +91,10 @@ def get_leaves_view(request):
 
 @csrf_exempt
 def get_user_private_leaves_view(request):
-    if request.method == "GET":
+    if request.method == "POST":
         try:
-            page_number = request.GET.get('page_number')
+            data = json.loads(request.body)
+            page_number = data['page_number']
             response = {}
             response_status = ELM_object.get_user_private_leaves(request, int(page_number))
             if response_status == -101:
@@ -109,7 +112,7 @@ def get_user_private_leaves_view(request):
 def delete_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['leaf_id']
+        valid_fields = ['leaf_id','auth_token','token']
         if check_field_validity(valid_fields,data):
             response = ELM_object.delete_leaf(request, data['leaf_id'])
             return make_response(response)
@@ -123,7 +126,7 @@ def delete_leaf_view(request):
 def like_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['leaf_id']
+        valid_fields = ['leaf_id', 'auth_token', 'token']
         if check_field_validity(valid_fields,data):
             response = ELM_object.like_leaf(request, data['leaf_id'])
             print(response)
@@ -138,7 +141,7 @@ def like_leaf_view(request):
 def remove_like_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['leaf_id']
+        valid_fields = ['leaf_id', 'auth_token','token']
         if check_field_validity(valid_fields,data):
             response = ELM_object.remove_like(request, data['leaf_id'])
             return make_response(response)
@@ -152,7 +155,7 @@ def remove_like_view(request):
 def add_comment_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['leaf_id', 'comment_string']
+        valid_fields = ['leaf_id', 'comment_string', 'auth_token', 'token']
         if check_field_validity(valid_fields,data):
             response = ELM_object.add_comment(request, data['leaf_id'], data['comment_string'])
             return make_response(response)
@@ -166,7 +169,7 @@ def add_comment_view(request):
 def remove_comment_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['leaf_id']
+        valid_fields = ['leaf_id','auth_token', 'token']
         if check_field_validity(valid_fields,data):
            if ELM_object.check_leaf(data['leaf_id']):
                 response = ELM_object.remove_comment(request, data['leaf_id'])
@@ -183,7 +186,7 @@ def remove_comment_view(request):
 def remove_sub_comment_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['leaf_id', 'comment_id']
+        valid_fields = ['leaf_id', 'comment_id', 'auth_token', 'token']
         if check_field_validity(valid_fields,data):
             response = ELM_object.remove_sub_comment(request, data['leaf_id'], data['comment_id'])
             return make_response(response)
@@ -194,10 +197,11 @@ def remove_sub_comment_view(request):
 
 @csrf_exempt
 def get_all_likes(request):
-    if request.method == "GET":
+    if request.method == "POST":
         try:
-            page_number = request.GET.get('page_number')
-            leaf_id = request.GET.get('leaf_id')
+            data = json.loads(request.body)
+            page_number = data['page_number']
+            leaf_id = data['leaf_id']
             response = {}
             response = ELM_object.get_total_likes(leaf_id=leaf_id, page_number=int(page_number))
             return JsonResponse(response, safe=False)
@@ -209,10 +213,11 @@ def get_all_likes(request):
 
 @csrf_exempt
 def get_all_comments(request):
-    if request.method == "GET":
+    if request.method == "POST":
         try:
-            page_number = request.GET.get('page_number')
-            leaf_id = request.GET.get('leaf_id')
+            data = json.loads(request.body)
+            page_number = data['page_number']
+            leaf_id = data['leaf_id']
             response = ELM_object.get_total_comments(request, leaf_id,int(page_number))
             if response == -104:
                return HttpResponse(
@@ -230,7 +235,7 @@ def get_all_dislikes(request):
     if request.method == "GET":
         data = json.loads(request.body)
         response = {}
-        valid_fields = ['leaf_id','page_number']
+        valid_fields = ['leaf_id','page_number', 'auth_token', 'token']
         if check_field_validity(valid_fields,data):
             response = ELM_object.get_total_dislikes(data['leaf_id'],data['page_number'])
             return JsonResponse(response, safe=False)
@@ -244,7 +249,7 @@ def get_all_dislikes(request):
 def remove_dislike_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['leaf_id']
+        valid_fields = ['leaf_id','auth_token', 'token']
         if check_field_validity(valid_fields,data):
             response = ELM_object.remove_dislike(request, data['leaf_id'])
             return make_response(response)
@@ -258,7 +263,7 @@ def remove_dislike_view(request):
 def dislike_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['leaf_id']
+        valid_fields = ['leaf_id','auth_token', 'token']
         if check_field_validity(valid_fields,data):
             response = ELM_object.dislike_leaf(request, data['leaf_id'])
             return make_response(response)
@@ -272,7 +277,7 @@ def dislike_leaf_view(request):
 def add_sub_comment_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['leaf_id', 'comment_string','parent_comment_id']
+        valid_fields = ['leaf_id', 'comment_string','parent_comment_id','auth_token', 'token']
         if check_field_validity(valid_fields,data):
             if not ELM_object.check_leaf(data['leaf_id']):
                 return throw_invalid_fields_error()
@@ -299,7 +304,7 @@ def add_sub_comment_view(request):
 def add_leaf_view(request):
     if request.method == "POST":
         data = json.loads(request.body)
-        valid_fields = ['leaf_id']
+        valid_fields = ['leaf_id','auth_token', 'token']
         if check_field_validity(valid_fields,data):
            response = ELM_object.create_view_object(request,data['leaf_id'])
            return make_response(response)

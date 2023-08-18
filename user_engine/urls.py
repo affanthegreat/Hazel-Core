@@ -19,5 +19,10 @@ urlpatterns = [
     path('unblock_user', unblock_user, name='unblock_user'),
     path('add_user_private_relation', add_user_private_relation, name='add_user_private_relation'),
     path('remove_user_private_relation', remove_user_private_relation, name= 'remove_user_private_relation'),
+    path('make_follow_request_view', make_follow_request_view, name='make_follow_request_view'),
+    path('remove_follow_request_view', remove_follow_request_view, name='remove_follow_request_view'),
+    path('fetch_all_follow_request_view',fetch_all_follow_request_view,name='fetch_all_follow_request_view'),
+    path('accept_follow_request',accept_follow_request,name='accept_follow_request'),
+    path('delete_follow_request',delete_follow_request, name='delete_follow_request'),
     path('check_user_exists',check_user_exists,name = 'check_user_exists')
 ]

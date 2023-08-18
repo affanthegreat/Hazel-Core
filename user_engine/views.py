@@ -29,7 +29,7 @@ def check_field_validity(valid_fields, data):
 def create_user_api(request):
     if request.method == "POST":
         try:
-
+            request
             data = json.loads(request.body)
             pre_response = user_control_object.create_user(data)
             return make_response({"status": 200, "message": pre_response["issue"]})
@@ -280,6 +280,83 @@ def unblock_user(request):
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+
+@csrf_exempt
+def make_follow_request_view(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['requested_to','auth_token', 'token' ]
+            if check_field_validity(valid_fields,data):
+                data['requester'] = get_logged_in_user(request).user_id
+                response = user_control_object.create_follow_request(data)
+                return make_response({"message":str(response)})
+        except Exception as e:
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+
+@csrf_exempt
+def remove_follow_request_view(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['requested_to','auth_token', 'token' ]
+            if check_field_validity(valid_fields,data):
+                data['requester'] = get_logged_in_user(request).user_id
+                response = user_control_object.remove_follow_request(data)
+                return make_response({"message":str(response)})
+        except Exception as e:
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+@csrf_exempt
+def fetch_all_follow_request_view(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['requested_to','auth_token', 'token' ]
+            if check_field_validity(valid_fields,data):
+                data['requester'] = get_logged_in_user(request).user_id
+                response = user_control_object.fetch_all_follow_requests(data)
+                return make_response({"message":str(response)})
+        except Exception as e:
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+@csrf_exempt
+def accept_follow_request(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['request_id']
+            if check_field_validity(valid_fields,data):
+                response = user_control_object.accept_follow_request(data['request_id'])
+                return make_response({"message":str(response)})
+        except Exception as e:
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+
+@csrf_exempt
+def delete_follow_request(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['request_id']
+            if check_field_validity(valid_fields,data):
+                response = user_control_object.deny_follow_request(data['request_id'])
+                return make_response({"message":str(response)})
+        except Exception as e:
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
 
 @csrf_exempt
 def get_user_id(request):
