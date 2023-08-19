@@ -164,15 +164,16 @@ class EdenUserManagement:
             if not self.check_follower(following_object, follower_object):
                 follower_relationship.slave = follower_object
                 follower_relationship.master = following_object
-                print(follower_object, follower_object)
                 try:
                     follower_relationship.save()
                     self.run_user_middleware(following_object, "update_followers", 1)
+                    self.run_user_middleware(follower_object, "update_following", 1)
+                    print("USER SUCCESSFULLY FOLLOWED")
                     return 100
                 except Exception as E:
                     return 102
             else:
-                99
+                return 99
         else:
             return -111
 
@@ -259,7 +260,8 @@ class EdenUserManagement:
                 followers_query_set = UserFollowing.objects.filter(
                     master=user_profile, slave=sub_user
                 ).order_by("-created_at").all()
-            response = self.paginator(followers_query_set,page_number)
+            qs = UserProfile.objects.filter(user_id__in = followers_query_set.values('slave')).all()
+            response = self.paginator(qs,page_number)
             return response
         else:
             return {'message': "User doesn't exist."}
@@ -278,7 +280,9 @@ class EdenUserManagement:
         user_profile = data["user_id"]
         page_number = data['page_number'] if 'page_number' in data else 1
         if self.check_user_exists(data):
-            following_query_set = UserFollowing.objects.filter(slave=user_profile).order_by("-created_at").all()
+            following_query_set = UserProfile.objects.filter(user_id__in = UserFollowing.objects.filter(slave=user_profile).values('master')).all()
+            print("=============")
+            print(following_query_set.count())
             response = self.paginator(following_query_set,page_number)
             return response
 
@@ -435,7 +439,6 @@ class EdenUserManagement:
         requester = data['requester']
         requested_to = data['requested_to']
         if self.check_user_exists({'user_id': requested_to}) and self.check_user_exists({'user_id': requester}):
-            print("HEEEEEEEERE")
             requester = self.get_user_object(requester)
             requested_to = self.get_user_object(requested_to)
             UserFollowRequests.objects.filter(requested_to=requested_to, requester=requester).first().delete()
@@ -447,35 +450,41 @@ class EdenUserManagement:
             return 102
     
     def fetch_all_follow_requests(self,data):
-        requested_to = data['requested_to']
+        requested_to = data['user_id']
         page_number = data['page_number']
         if self.check_user_exists({'user_id': requested_to}):
             requested_to = self.get_user_object(requested_to)
-            queryset = UserFollowRequests.objects.filter(requested_to = requested_to).order_by('-created_at').all()
+            queryset = UserProfile.objects.filter(user_id__in= UserFollowRequests.objects.filter(requested_to = requested_to).values('requester')).all()
             return self.paginator(queryset,page_number)
+        else:
+            return 101
 
 
-    def accept_follow_request(self,request_id):
-        follow_request =  self.fetch_follow_request_obj(request_id)
-        if follow_request is not None:
+    def accept_follow_request(self,data):
+        if  self.check_user_exists({'user_id': data['user_id']}) and data['current_user'] is not None :
+            requester = self.get_user_object(data['user_id'])
+            requested_to =  data['current_user']
             data = {
-                'follower' : follow_request.requester.user_id,
-                'follows' : follow_request.requested_to.user_id
+                'follower' : data['user_id'],
+                'follows' : data['current_user'].user_id
             }
             follow_status = self.user_follow(data)
-            if follow_status == 100:
-                follow_request.delete()
-                return 100
+            if follow_status == 100 or follow_status == 99:
+                UserFollowRequests.objects.filter(requested_to=requested_to, requester=requester).first().delete()
             else:
-                return follow_status
+                return 99
         else:
             return 191
     
     
-    def deny_follow_request(self,request_id):
-        follow_request =  self.fetch_follow_request_obj(request_id)
-        if follow_request is not None:
-            follow_request.delete()
+    def deny_follow_request(self,data):
+
+        if self.check_user_exists({'user_id': data['user_id']}) and data['current_user'] is not None :
+            try:
+               requester_obj = self.get_user_object(data['user_id'])
+               UserFollowRequests.objects.filter(requester= requester_obj, requested_to=data['current_user']).delete()
+            except:
+               return 191
         else:
             return 191
             
@@ -589,6 +598,7 @@ class EdenUserManagement:
                 'data': [ self.user_obj_to_json(obj) for obj in  list(pagination_obj.page(page_number).object_list)],
             }
         except Exception as E:
+            raise E
             response = {
                     "message": "Cannot load page."
                 }

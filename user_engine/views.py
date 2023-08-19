@@ -95,9 +95,10 @@ def get_followers(request):
 
 @csrf_exempt
 def get_following(request):
-    if request.method == "GET":
+    if request.method == "POST":
         try:
             data = json.loads(request.body)
+            print(data)
             pre_response = user_control_object.get_user_following(data)
             print(pre_response)
             response = JsonResponse(pre_response, safe=False)
@@ -132,10 +133,11 @@ def login(request):
 def logout(request):
     if request.method == "POST":
         try:
-            session_management_object.load_session(request, json.loads(request.data))
+            session_management_object.load_session(request, json.loads(request.body))
             session_management_object.delete_session(request)
             return make_response({'status':200, 'message': "Logout successful.", })
-        except:
+        except Exception as e:
+            raise e
             return make_response({'status':200, 'message': "Logout failed."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -321,6 +323,7 @@ def remove_follow_request_view(request):
             if check_field_validity(valid_fields,data):
                 data['requester'] = get_logged_in_user(request).user_id
                 response = user_control_object.remove_follow_request(data)
+                
                 return make_response({"message":str(response)})
         except Exception as e:
             return make_response({"status": 200, "message": "Cannot unload data."})
@@ -332,10 +335,10 @@ def fetch_all_follow_request_view(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            valid_fields = ['requested_to']
+            valid_fields = ['user_id', 'page_number']
             if check_field_validity(valid_fields,data):
                 response = user_control_object.fetch_all_follow_requests(data)
-                return make_response({"message":str(response)})
+                return make_response(response)
         except Exception as e:
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
@@ -346,10 +349,13 @@ def accept_follow_request(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            valid_fields = ['request_id']
+            valid_fields = ['user_id','auth_token', 'token']
             if check_field_validity(valid_fields,data):
-                response = user_control_object.accept_follow_request(data['request_id'])
+                data['current_user'] = get_logged_in_user(request)
+                response = user_control_object.accept_follow_request(data)
                 return make_response({"message":str(response)})
+            else:
+                return make_response(99)
         except Exception as e:
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
@@ -361,7 +367,7 @@ def delete_follow_request(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            valid_fields = ['request_id']
+            valid_fields = ['user_id','auth_token', 'token']
             if check_field_validity(valid_fields,data):
                 response = user_control_object.deny_follow_request(data['request_id'])
                 return make_response({"message":str(response)})
