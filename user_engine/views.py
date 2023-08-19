@@ -79,13 +79,15 @@ def unfollow_user_api(request):
 
 @csrf_exempt
 def get_followers(request):
-    if request.method == "GET":
+    if request.method == "POST":
         try:
             data = json.loads(request.body)
             pre_response = user_control_object.get_user_followers(data)
-            response = JsonResponse(pre_response, safe=False)
+            print(pre_response)
+            response = make_response(pre_response)
             return response
         except Exception as e:
+            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -97,6 +99,7 @@ def get_following(request):
         try:
             data = json.loads(request.body)
             pre_response = user_control_object.get_user_following(data)
+            print(pre_response)
             response = JsonResponse(pre_response, safe=False)
             return response
         except Exception as e:
@@ -129,6 +132,7 @@ def login(request):
 def logout(request):
     if request.method == "POST":
         try:
+            session_management_object.load_session(request, json.loads(request.data))
             session_management_object.delete_session(request)
             return make_response({'status':200, 'message': "Logout successful.", })
         except:
@@ -145,6 +149,16 @@ def current_user(request):
             'status': 200,
             'user_name': user.user_name if user is not None else None
         })
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+    
+
+@csrf_exempt
+def check_follow(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        response = user_control_object.check_follow(data['user_id'], data['search_profile_id'])
+        return make_response(response)
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
 
@@ -186,7 +200,7 @@ def get_user_details(request):
                     "user_dob": str(user_data.user_dob)
                 })
         except Exception as e:
-            raise e
+
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -318,9 +332,8 @@ def fetch_all_follow_request_view(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            valid_fields = ['requested_to','auth_token', 'token' ]
+            valid_fields = ['requested_to']
             if check_field_validity(valid_fields,data):
-                data['requester'] = get_logged_in_user(request).user_id
                 response = user_control_object.fetch_all_follow_requests(data)
                 return make_response({"message":str(response)})
         except Exception as e:
@@ -403,6 +416,21 @@ def get_user_info(request):
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
 
+@csrf_exempt
+def search_users(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            status = user_control_object.get_searched_users(data['search_query'], data['page_number'])
+            if status:
+                return make_response(status)
+            else:
+                return make_response({'status':200, 'message': "User Does not Exists."})
+        except Exception as e:
+            raise e
+            return make_response({'status':200, 'message': "Error Occured"})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
 
 
 def get_logged_in_user(request):

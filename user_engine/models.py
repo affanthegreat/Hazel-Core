@@ -54,3 +54,4 @@ class UserFollowRequests(models.Model):
     id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True, default=uuid.uuid4)
     requester = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="requester")
     requested_to = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="requested_to")
+    created_at = models.DateTimeField(auto_now_add=True)

@@ -3,6 +3,7 @@ import json
 import logging
 from datetime import datetime
 
+from django.db.models import Q
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 
@@ -253,15 +254,15 @@ class EdenUserManagement:
             if sub_user == None:
                 followers_query_set = UserFollowing.objects.filter(
                     master=user_profile
-                ).order_by("created_at").all()
+                ).order_by("-created_at").all()
             else:
                 followers_query_set = UserFollowing.objects.filter(
                     master=user_profile, slave=sub_user
-                ).order_by("created_at").all()
+                ).order_by("-created_at").all()
             response = self.paginator(followers_query_set,page_number)
             return response
         else:
-            return {"User doesn't exist."}
+            return {'message': "User doesn't exist."}
 
     def get_user_following(self, data):
         """
@@ -277,9 +278,23 @@ class EdenUserManagement:
         user_profile = data["user_id"]
         page_number = data['page_number'] if 'page_number' in data else 1
         if self.check_user_exists(data):
-            following_query_set = UserFollowing.objects.filter(slave=user_profile).order_by("created_at").all()
+            following_query_set = UserFollowing.objects.filter(slave=user_profile).order_by("-created_at").all()
             response = self.paginator(following_query_set,page_number)
             return response
+
+    def check_follow(self, user_id, search_profile_id):
+        user_1, user_2 = self.get_user_object(search_profile_id), self.get_user_object(user_id)
+        follow_request_status = self.check_follow_request(user_2, user_1)
+        following_status = self.check_following(user_1, user_2)
+
+        return {
+            'follow_request_status': follow_request_status,
+            'following_status': following_status
+        }
+
+    
+    def check_follow_request(self, user_1, user_2):
+        return UserFollowRequests.objects.filter(requester= user_1, requested_to = user_2).exists()
 
     def password_reset(self, data) -> bool:
         """
@@ -399,34 +414,44 @@ class EdenUserManagement:
     def create_follow_request(self,data):
         requester = data['requester']
         requested_to = data['requested_to']
-        if self.check_user_exists({'user_id': requester}) and self.check_user_exists({'user_id': requester}):
+        if self.check_user_exists({'user_id': requested_to}) and self.check_user_exists({'user_id': requester}):
             follow_request = UserFollowRequests()
-            follow_request.requester = self.get_user_object(requester)
-            follow_request.requested_to = self.get_user_block_object(requested_to)
-            follow_request.save()
-            return 100
+            user_1 = self.get_user_object(requester)
+            user_2 = self.get_user_object(requested_to)
+            if not self.check_follow_request(user_1,user_2):
+                follow_request.requester = user_1
+                follow_request.requested_to = user_2
+                follow_request.save()
+                return 100
+            else:
+                return 112
+            
         else:
+            print(self.check_user_exists({'user_id': requested_to}))
+            print(self.check_user_exists({'user_id': requester}))
             return 102
         
     def remove_follow_request(self, data):
         requester = data['requester']
         requested_to = data['requested_to']
-        if self.check_user_exists({'user_id': requester}) and self.check_user_exists({'user_id': requester}):
+        if self.check_user_exists({'user_id': requested_to}) and self.check_user_exists({'user_id': requester}):
+            print("HEEEEEEEERE")
             requester = self.get_user_object(requester)
-            requested_to = self.get_user_block_object(requested_to)
+            requested_to = self.get_user_object(requested_to)
             UserFollowRequests.objects.filter(requested_to=requested_to, requester=requester).first().delete()
+            print(UserFollowRequests.objects.all().count())
             return 100
         else:
+            print(self.check_user_exists({'user_id': requested_to}))
+            print(self.check_user_exists({'user_id': requester}))
             return 102
     
     def fetch_all_follow_requests(self,data):
-        requester = data['requester']
         requested_to = data['requested_to']
         page_number = data['page_number']
-        if self.check_user_exists({'user_id': requester} and self.check_user_exists({'user_id': requested_to})):
-            user_object = self.get_user_object(requester)
+        if self.check_user_exists({'user_id': requested_to}):
             requested_to = self.get_user_object(requested_to)
-            queryset = UserFollowRequests.objects.filter(requested_to = requested_to,requester=user_object).all()
+            queryset = UserFollowRequests.objects.filter(requested_to = requested_to).order_by('-created_at').all()
             return self.paginator(queryset,page_number)
 
 
@@ -460,6 +485,7 @@ class EdenUserManagement:
 
     def user_obj_to_json(self, user_obj):
         return {
+            'user_id': user_obj.user_id,
             'user_email': user_obj.user_email,
             'user_name': user_obj.user_name,
             'user_public_leaf_count': user_obj.user_public_leaf_count,
@@ -513,6 +539,9 @@ class EdenUserManagement:
            """
         return UserProfile.objects.filter(user_id=user_id).first()
     
+    def get_searched_users(self, user_name, page_number):
+        return self.paginator(UserProfile.objects.filter(user_name__contains = user_name).defer('created_at', 'previous_experience_generation_date').order_by('-user_experience_points'), page_number)
+    
     def run_user_middleware(self, user_object, operation, value):
         """
           Runs a middleware operation on a user object.
@@ -557,7 +586,7 @@ class EdenUserManagement:
             response = {
                 'page_number': page_number,
                 'total_pages': total_pages,
-                'data': list(pagination_obj.page(page_number).object_list.values()),
+                'data': [ self.user_obj_to_json(obj) for obj in  list(pagination_obj.page(page_number).object_list)],
             }
         except Exception as E:
             response = {
