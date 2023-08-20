@@ -293,13 +293,21 @@ class EdenUserManagement:
         follow_request_status = self.check_follow_request(user_2, user_1)
         following_status = self.check_following(user_2, user_1)
         follower_status = self.check_following(user_1, user_2)
+        block_status = self.check_block_status(user_2,user_1)
+        blocked_by_status =  self.check_block_status(user_1,user_2)
         return {
             'follow_request_status': follow_request_status,
             'following_status': following_status,
-            'follower_status' :follower_status
+            'follower_status' :follower_status,
+            'block_status': block_status,
+            'blocked_by_status': blocked_by_status
         }
 
     
+    def check_block_status(self, blocker, blocked):
+        return UserBlockedAccounts.objects.filter(blocker_profile= blocker, blocked_profile=blocked).exists()
+
+
     def check_follow_request(self, user_1, user_2):
         return UserFollowRequests.objects.filter(requester= user_1, requested_to = user_2).exists()
 
@@ -387,8 +395,33 @@ class EdenUserManagement:
                 user_block_obj.blocker_profile = user_object
                 user_block_obj.blocked_profile = self.get_user_object(blocked)
                 user_block_obj.save()
+                blocker = user_object
+                blocked_user_object = self.get_user_object(blocked)
+                qs_1 = UserFollowing.objects.filter(master= blocker, slave=blocked_user_object)
+                qs_2 = UserFollowing.objects.filter(master= blocked_user_object, slave=blocker)
+                qs_3 = UserFollowRequests.objects.filter(requester = blocker, requested_to = blocked_user_object)
+                qs_4 = UserFollowRequests.objects.filter(requested_to = blocker, requester = blocked_user_object)
+                if qs_1.exists():
+                    print("qs_1")
+                    qs_1.delete()
+                    self.run_user_middleware(blocker, "update_followers", -1)
+                    self.run_user_middleware(blocked_user_object, "update_following", -1)
+                if qs_2.exists():
+                    print("qs_2")
+                    qs_2.delete()
+                    self.run_user_middleware(blocked_user_object, "update_followers", -1)
+                    self.run_user_middleware(blocker, "update_following", -1)
+                if qs_3.exists():
+                    print("qs_3")
+                    qs_3.delete()
+                if qs_4.exists():
+                    print("qs_4")
+                    qs_4.delete()
+
+                print("blocked.")
                 return 100
             else:
+                print("already blocked.")
                 return 102
         except:
             return -111

@@ -71,7 +71,8 @@ def unfollow_user_api(request):
             data = json.loads(request.body)
             pre_response = user_control_object.user_unfollow(data)
             return make_response({"status": 200, "message": str(pre_response['message'])})
-        except:
+        except Exception as e:
+            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
 
     return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -293,6 +294,7 @@ def unblock_user(request):
             if check_field_validity(valid_fields,data):
                 data['user_id'] = get_logged_in_user(request).user_id
                 response = user_control_object.unblock_user(data)
+                print(response)
                 return make_response({"message":str(response)})
         except Exception as e:
             return make_response({"status": 200, "message": "Cannot unload data."})
