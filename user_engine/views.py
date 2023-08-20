@@ -120,10 +120,12 @@ def login(request):
             if user is not None:
                 token, auth_token = session_management_object.create_session(request, user)
                 return make_response({"status": 200, "message": "Login successful.", 'token':token, 'auth_token': auth_token})
-
-            return make_response({"status": 200, "message": "Login failed."})
+            else:
+                data['user_password']  = password
+                return make_response(user_control_object.validate_user(data))
 
         except Exception as e:
+            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})

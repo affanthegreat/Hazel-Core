@@ -226,6 +226,8 @@ class EdenUserManagement:
             following_object = self.get_user_object(follows)
             if self.check_follower(following_object, follower_object):
                 UserFollowing.objects.filter(master=following_object, slave=follower_object).first().delete()
+                self.run_user_middleware(following_object, "update_followers", -1)
+                self.run_user_middleware(follower_object, "update_following", -1)
                 return {"status": 200, "message": f"{follower_object.user_name} successfully unfollowed {following_object.user_name}"}
             else:
                 return {"status": 200, "message": f"{follower_object.user_name} doesn't follow {following_object.user_name}"}
@@ -289,11 +291,12 @@ class EdenUserManagement:
     def check_follow(self, user_id, search_profile_id):
         user_1, user_2 = self.get_user_object(search_profile_id), self.get_user_object(user_id)
         follow_request_status = self.check_follow_request(user_2, user_1)
-        following_status = self.check_following(user_1, user_2)
-
+        following_status = self.check_following(user_2, user_1)
+        follower_status = self.check_following(user_1, user_2)
         return {
             'follow_request_status': follow_request_status,
-            'following_status': following_status
+            'following_status': following_status,
+            'follower_status' :follower_status
         }
 
     
