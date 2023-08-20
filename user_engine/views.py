@@ -122,11 +122,15 @@ def login(request):
                 token, auth_token = session_management_object.create_session(request, user)
                 return make_response({"status": 200, "message": "Login successful.", 'token':token, 'auth_token': auth_token})
             else:
+                data['user_id'] = user_control_object.get_user_id(data)
                 data['user_password']  = password
-                return make_response(user_control_object.validate_user(data))
+                if user_control_object.check_user_exists(data):
+                    if not user_control_object.validate_user(data):
+                        return make_response({"message":"invalid login details"})
+                else:
+                    return make_response({"message": "User does not exists"})
 
         except Exception as e:
-            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
