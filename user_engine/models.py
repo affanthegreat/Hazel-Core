@@ -34,10 +34,12 @@ class UserAccessToken(models.Model):
     creation_date = models.DateTimeField(default=datetime.datetime.now())
 
 class UserDetails(models.Model):
-    user_ip_location = models.CharField(max_length=40,null= False)
+    user_country = models.CharField(max_length=100,null=False)
+    user_state = models.CharField(max_length=100, null=False)
+    user_region = models.CharField(max_length=100, name=False)
     user_city = models.CharField(max_length=100, null= False)
     user_gender = models.CharField(max_length=15, null = False)
-    user_dob = models.DateField(null=False)
+    user_age = models.PositiveIntegerField(default=1)
     user_full_name = models.CharField(max_length=100,null=False)
     user_id = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='detail')
     user_phone_number = models.CharField(max_length=15,null=False,unique= True)

@@ -196,20 +196,22 @@ def get_user_details(request):
             data = json.loads(request.body)
             valid_fields = ['user_id']
             if check_field_validity(valid_fields,data):
-                user_data = user_control_object.get_user_detail_object(data['user_id'])
+                user_data = user_control_object.get_user_detail_object(user_control_object.get_user_object(data['user_id']))
                 return make_response({
                     'user_id':user_data.user_id.user_id,
                     "user_full_name": user_data.user_full_name, 
                     "user_phone_number": user_data.user_phone_number,
                     "user_address":user_data.user_address, 
                     "user_phone_id":user_data.user_phone_id,
-                     "user_ip_location": user_data.user_ip_location,
                     "user_city": user_data.user_city,
+                    'user_state': user_data.user_state,
+                    'user_country': user_data.user_country,
+                    'user_region': user_data.user_region,
                     "user_gender": user_data.user_gender,
-                    "user_dob": str(user_data.user_dob)
+                    "user_age": user_data.user_age
                 })
         except Exception as e:
-
+            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -219,23 +221,8 @@ def modify_user_details(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            valid_fields = ['user_id',
-                            "user_full_name", 
-                            "user_phone_number",
-                            "user_address", 
-                            "user_phone_id",
-                            "user_ip_location",
-                            "user_city",
-                            "user_gender",
-                            "user_dob"
-                            ]
-            if check_field_validity(valid_fields,data):
-                user_control_object.add_user_details(data)
-                return make_response({"message": "Sucess"})
-            else:
-                print(valid_fields)
-                print(data.keys())
-                return make_response({"status": 200, "message": "Cannot unload data."})
+            status = user_control_object.add_user_details(data)
+            return make_response({"message":status})
         except Exception as e:
             raise e
             return make_response({"status": 200, "message": "Cannot unload data."})

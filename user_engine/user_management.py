@@ -283,8 +283,6 @@ class EdenUserManagement:
         page_number = data['page_number'] if 'page_number' in data else 1
         if self.check_user_exists(data):
             following_query_set = UserProfile.objects.filter(user_id__in = UserFollowing.objects.filter(slave=user_profile).values('master')).all()
-            print("=============")
-            print(following_query_set.count())
             response = self.paginator(following_query_set,page_number)
             return response
 
@@ -348,40 +346,45 @@ class EdenUserManagement:
             response['message'] = "User doesn't exist"
         return response
 
+    def generate_id(self):
 
+        session_id = str(uuid.uuid4()).upper().replace("-", "")
+        return session_id
+    
     def add_user_details(self, data):
         user_id = data['user_id']
         if self.get_user_object(user_id):
             user_detail_object = self.get_user_detail_object(user_id)
-            print(data['user_dob'])
             if user_detail_object:
                 user_detail_object.user_full_name = data['user_full_name'] if 'user_full_name' in data else user_detail_object.user_full_name
                 user_detail_object.user_phone_number = data['user_phone_number'] if 'user_phone_number' in data else user_detail_object.user_phone_number
                 user_detail_object.user_address = data['user_address'] if 'user_address' in data else user_detail_object.user_address
-                user_detail_object.user_phone_id = data['user_phone_id'] if 'user_phone_id' in data else user_detail_object.user_phone_id
-
-                user_detail_object.user_ip_location = data['user_ip_location'] if 'user_ip_location' in data else user_detail_object.user_ip_location
                 user_detail_object.user_city = data['user_city'] if 'user_city' in data else user_detail_object.user_city
+                user_detail_object.user_country = data['user_country'] if 'user_country' in data else user_detail_object.user_country
+                user_detail_object.user_region = data['user_region'] if 'user_region' in data else user_detail_object.user_region
+                user_detail_object.user_state = data['user_state'] if 'user_state' in data else user_detail_object.user_state
                 user_detail_object.user_gender = data['user_gender'] if 'user_gender' in data else user_detail_object.user_gender
-                year, month, day = [int(i) for i in data['user_dob'].split("-")]
-                user_detail_object.user_dob = datetime.datetime(year=year,month=month,day=day) if 'dob' in data else user_detail_object.user_dob
+                user_detail_object.user_age = data['user_age'] if 'user_age' in data else user_detail_object.user_age
+
             else:
                 user_detail_object = UserDetails()
                 user_detail_object.user_id = self.get_user_object(user_id)
                 user_detail_object.user_full_name = data['user_full_name']
                 user_detail_object.user_phone_number = data['user_phone_number']
                 user_detail_object.user_address = data['user_address']
-                user_detail_object.user_phone_id = data['user_phone_id']
-
-                user_detail_object.user_ip_location = data['user_ip_location']
                 user_detail_object.user_city = data['user_city']
+                user_detail_object.user_country = data['user_country']
+                user_detail_object.user_phone_id =  self.generate_id()
+                user_detail_object.user_region = data['user_region']
                 user_detail_object.user_gender = data['user_gender']
-                year, month, day = [int(i) for i in data['user_dob'].split("-")]
-                user_detail_object.user_dob = datetime.datetime(year=year,month=month,day=day)
+                user_detail_object.user_state = data['user_state']
+                user_detail_object.user_age = data['user_age']
             try:
                 user_detail_object.save()
                 return 100
-            except:
+            except Exception as e:
+                print(data)
+                raise e
                 return -105
         else:
             return -103
