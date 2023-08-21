@@ -89,6 +89,7 @@ class LeafViewedBy(models.Model):
     )
     view_date = models.DateTimeField(auto_now_add=True)
 
+
 def throw_model_not_saved_error():
     logging.error("Model couldn't be saved.")
     raise Exception("Model not saved.")

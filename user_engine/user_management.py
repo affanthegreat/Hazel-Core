@@ -262,7 +262,7 @@ class EdenUserManagement:
                 followers_query_set = UserFollowing.objects.filter(
                     master=user_profile, slave=sub_user
                 ).order_by("-created_at").all()
-            qs = UserProfile.objects.filter(user_id__in = followers_query_set.values('slave')).all()
+            qs = UserProfile.objects.filter(user_id__in = followers_query_set.values('slave')).order_by("-created_at").all()
             response = self.paginator(qs,page_number)
             return response
         else:
@@ -282,7 +282,7 @@ class EdenUserManagement:
         user_profile = data["user_id"]
         page_number = data['page_number'] if 'page_number' in data else 1
         if self.check_user_exists(data):
-            following_query_set = UserProfile.objects.filter(user_id__in = UserFollowing.objects.filter(slave=user_profile).values('master')).all()
+            following_query_set = UserProfile.objects.filter(user_id__in = UserFollowing.objects.filter(slave=user_profile).values('master')).order_by("-created_at").all()
             response = self.paginator(following_query_set,page_number)
             return response
 
@@ -384,7 +384,6 @@ class EdenUserManagement:
                 return 100
             except Exception as e:
                 print(data)
-                raise e
                 return -105
         else:
             return -103
@@ -447,6 +446,12 @@ class EdenUserManagement:
                 return 102
         except Exception as e:
             return -111
+    
+    def fetch_all_block_objects(self, data):
+        if self.check_user_exists(data):
+            user_obj = self.get_user_object(data['user_id'])
+            qs = UserProfile.objects.filter(user_id__in = UserBlockedAccounts.objects.filter(blocker_profile= user_obj).values('blocked_profile')).all()
+            return self.paginator(qs,data['page_number'])
         
     def get_user_block_object(self,blocked, blocker):
         return UserBlockedAccounts.objects.filter(blocker_profile = blocker, blocked_profile= blocked).first()

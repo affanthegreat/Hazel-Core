@@ -42,8 +42,8 @@ class EdenExperienceEngine():
             leaf_exp_points = (advertisement_instance * (self.advertisement_weight / 1.4)) * leaf_exp_points
         topic_id = leaf_object.leaf_topic_id
         topic_category = leaf_object.leaf_topic_category_id
-        leaf_object.topic_relevancy_percentage = (leaf_exp_points / (leaf_exp_points if self.get_highest_exp_topic_id(topic_id) == 0 
-                                                                     else self.get_highest_exp_topic_id(topic_id)))   * 100
+        leaf_object.topic_relevancy_percentage = (leaf_exp_points / ( float(leaf_exp_points) if self.get_highest_exp_topic_id(topic_id) == 0 
+                                                                     else float(self.get_highest_exp_topic_id(topic_id))))   * 100
         leaf_object.category_relevancy_percentage = (leaf_exp_points / (leaf_exp_points if self.get_highest_exp_topic_category(topic_category) 
                                                                         else self.get_highest_exp_topic_category(topic_category)))  * 100
         leaf_object.save()

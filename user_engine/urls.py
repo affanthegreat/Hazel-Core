@@ -17,6 +17,7 @@ urlpatterns = [
     path('modify_user_details',modify_user_details, name = 'modify_user_details'),
     path('block_user',block_user, name='block_user'),
     path('unblock_user', unblock_user, name='unblock_user'),
+    path('fetch_blocked_accounts', fetch_blocked_accounts, name='fetch_blocked_accounts'),
     path('make_follow_request_view', make_follow_request_view, name='make_follow_request_view'),
     path('remove_follow_request_view', remove_follow_request_view, name='remove_follow_request_view'),
     path('fetch_all_follow_request_view',fetch_all_follow_request_view,name='fetch_all_follow_request_view'),

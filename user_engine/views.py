@@ -88,7 +88,6 @@ def get_followers(request):
             response = make_response(pre_response)
             return response
         except Exception as e:
-            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -224,7 +223,6 @@ def modify_user_details(request):
             status = user_control_object.add_user_details(data)
             return make_response({"message":status})
         except Exception as e:
-            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -294,6 +292,23 @@ def unblock_user(request):
 
 
 @csrf_exempt
+def fetch_blocked_accounts(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['user_id','page_number']
+            if check_field_validity(valid_fields,data):
+                response = user_control_object.fetch_all_block_objects(data)
+                print("something")
+                print(response)
+                return make_response(response)
+        except Exception as e:
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+
+@csrf_exempt
 def make_follow_request_view(request):
     if request.method == "POST":
         try:
@@ -321,6 +336,7 @@ def remove_follow_request_view(request):
                 
                 return make_response({"message":str(response)})
         except Exception as e:
+
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})

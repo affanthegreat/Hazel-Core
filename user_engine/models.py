@@ -27,6 +27,13 @@ class UserFollowing(models.Model):
     master = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="master")
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["slave", "master"]),
+            models.Index(fields=["master", "slave"]),
+        ]
+
+
 
 class UserAccessToken(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="holy")
@@ -50,6 +57,12 @@ class UserBlockedAccounts(models.Model):
     blocker_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='sigma')
     blocked_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='beta')
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["blocker_profile", "blocked_profile"]),
+            models.Index(fields=["blocked_profile", "blocker_profile"]),
+        ]
+
     
 class UserFollowRequests(models.Model):
     status = models.BooleanField(default=False)
@@ -57,3 +70,9 @@ class UserFollowRequests(models.Model):
     requester = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="requester")
     requested_to = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="requested_to")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["requester", "requested_to"]),
+            models.Index(fields=["requested_to", "requester"]),
+        ]
