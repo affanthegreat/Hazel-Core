@@ -90,6 +90,36 @@ class LeafViewedBy(models.Model):
     view_date = models.DateTimeField(auto_now_add=True)
 
 
+class LeafHashtags(models.Model):
+    hashtag_string = models.CharField(max_length=100, null= False)
+    associated_leaf = models.ForeignKey(Leaf, related_name="hashtaged_leaf", on_delete=models.CASCADE)
+    created_date = models.DateTimeField(auto_now_add=True)
+
+
+class LeafUserMentions(models.Model):
+    mentioned_user = models.ForeignKey(
+        UserProfile, related_name="mentioned_user", on_delete=models.DO_NOTHING
+    )
+    mentioned_in_leaf = models.ForeignKey(Leaf, related_name="mentioned_leaf", on_delete=models.CASCADE)
+    
+    
+class CommentUserMentions(models.Model):
+    mentioned_user = models.ForeignKey(
+        UserProfile, related_name="mentioned_comment_userr", on_delete=models.DO_NOTHING
+    )
+    mentioned_in_comments = models.ForeignKey(LeafComments, related_name="mentioned_comment", on_delete=models.CASCADE)
+   
+   
+class LeafExpLogs(models.Model):
+    exp_points_per_day = models.DecimalField(default=0,max_digits=15,decimal_places=6)
+    linked_leaf =  models.ForeignKey(Leaf, related_name="linked_leaf", on_delete=models.CASCADE)
+    time_of_logging = models.DateTimeField(auto_now_add=True)
+
+class LeafHashtagsLog(models.Model):
+    period_usage = models.BigIntegerField(default=0)
+    hashtag = models.CharField(max_length=100, unique=True)
+    time_of_logging = models.DateTimeField(auto_now_add=True)
+
 def throw_model_not_saved_error():
     logging.error("Model couldn't be saved.")
     raise Exception("Model not saved.")

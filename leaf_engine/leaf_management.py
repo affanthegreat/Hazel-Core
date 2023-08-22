@@ -9,13 +9,16 @@ from exp_engine.middleware import EdenUserTopicRelationMiddleWare
 from exp_engine.models import InteractionType
 
 from leaf_engine.middleware import EdenLeafMiddleware
-from leaf_engine.models import Leaf, LeafComments, LeafDisLikes, LeafLikes, LeafType, LeafViewedBy
+from leaf_engine.models import Leaf, LeafComments, LeafDisLikes, LeafHashtags, LeafLikes, LeafType, LeafUserMentions, LeafViewedBy
 
 from user_engine.backends import EdenSessionManagement
 from user_engine.models import UserProfile
 from user_engine.middleware import EdenUserMiddleWare
 from user_engine.user_management import EdenUserManagement
+from user_engine.user_management import EdenUserManagement
 
+
+eum_object = EdenUserManagement()        
 session_management_object = EdenSessionManagement()
 
 
@@ -28,7 +31,51 @@ class EdenLeafManagement:
     def __init__(self) -> None:
         self.MAX_OBJECT_LIMIT = 30
         pass
-
+    
+    def filter_mentions_and_hashtags(self,leaf_id,txt):
+        words = txt.split(" ")
+        mentions = []
+        hashtags = []
+        for word in words:
+            if word[0] == "@":
+                mentions.append(word)
+            elif word[0] == "#":
+                hashtags.append(word)
+        if(hashtags):
+            self.start_hashtags_pipeline(leaf_id, hashtags)
+        if(mentions):
+            self.start_mentions_pipeline(leaf_id, mentions)
+    
+    def start_mentions_pipeline(self,leaf_id, mentions):
+        status = True
+        for mention in mentions:
+            valid_user_status = eum_object.check_user_exists({'user_name': mention})
+            if valid_user_status:
+                leaf_user_mention_obj = LeafUserMentions()
+                leaf_user_mention_obj.mentioned_user = self.get_user_object(eum_object.get_user_id({'user_name':mention}))
+                leaf_user_mention_obj.mentioned_in_leaf = self.get_leaf_object(leaf_id)
+                leaf_user_mention_obj.save()
+            else:
+                status = False
+        return status
+    
+    
+    def start_hashtags_pipeline(self,leaf_id,hashtags):
+        status = True
+        for hashtag in hashtags:
+            try:
+                leaf_hashtag_obj = LeafHashtags()
+                leaf_hashtag_obj.associated_leaf = self.get_leaf_object(leaf_id)
+                leaf_hashtag_obj.hashtag_string = hashtag
+                leaf_hashtag_obj.save()
+            except:
+                status = False
+        return status
+                
+    
+    def fetch_hashtag_log(self, hashtag):
+        return LeafHashtags.objects.filter(hashtag = hashtag).first()
+    
     def create_leaf(self, request, data):
 
         response = {}
