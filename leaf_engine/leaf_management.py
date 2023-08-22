@@ -151,24 +151,29 @@ class EdenLeafManagement:
                 like_object = LeafLikes()
                 like_object.leaf = self.get_leaf_object(leaf_id)
                 like_object.liked_by = user_object
+                
                 try:
-                    
+                    middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", 1)
                     exp_engine_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                     conX_status = self.run_conX_engine(leaf_id,'like',user_object)
                     user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "like",
                                                 user_object,
                                                     1)
-                    if (
-                        exp_engine_status == 100 
-                        and conX_status == 100
-                        and user_topic_status == 100):
-                            self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", 1)
+                    if (middleware_status == 100 and exp_engine_status == 100 
+                        and conX_status == 100 and user_topic_status == 100):
                             like_object.save()
                             return -100
                     else:
+                        if middleware_status == 100:
+                            middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1)
                         return -121
                 except Exception as e:
+                    try:
+                        if middleware_status == 100:
+                            middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1)
+                    except:
+                        pass
                     return -122
             else:
                 return -103
@@ -188,7 +193,7 @@ class EdenLeafManagement:
                 dislike_object.leaf = self.get_leaf_object(leaf_id)
                 dislike_object.disliked_by = user_object
                 try:
-                    
+                    middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1)
                     exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                     conX_status = self.run_conX_engine(leaf_id,'dislike',user_object)
                     user_topic_status = self.run_user_topic_middleware(leaf_id,
@@ -196,16 +201,22 @@ class EdenLeafManagement:
                                                 self.get_user_object(user_object.user_id),
                                                     1)
                     
-                    if (
+                    if (middleware_status == 100 and
                         exp_status == 100
                         and conX_status == 100
                         and user_topic_status == 100):
-                        self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1)
                         dislike_object.save()
                         return -100
                     else:
+                        if middleware_status == 100:
+                            middleware_status =self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1)
                         return -121
                 except:
+                    try:
+                        if middleware_status == 100:
+                            middleware_status =self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1)
+                    except:
+                        pass
                     return -122
             else:
                 return -103
@@ -220,21 +231,27 @@ class EdenLeafManagement:
             if self.check_leaf(leaf_id) and like_status["message"]:
                 like_object = self.get_like_object(leaf_id, user_object.user_id)
                 try:
-                   
+                    middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1)
                     exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                     user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "like",
                                                 self.get_user_object(user_object.user_id),
                                                     -1)
-                    if (
+                    if (middleware_status == 100 and
                         exp_status == 100 and
                         user_topic_status == 100):
-                        middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1)
                         like_object.delete()
                         return -100
                     else:
+                        if middleware_status== 100:
+                            self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", 1)
                         return -121
                 except:
+                    try:
+                        if middleware_status== 100:
+                            self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", 1)
+                    except:
+                        pass
                     return -122      
             else:
                 return -103
@@ -261,21 +278,27 @@ class EdenLeafManagement:
             if self.check_leaf(leaf_id) and like_status["message"]:
                 dislike_object = self.get_dislike_object(leaf_id, user_object.user_id)
                 try:
-                   
+                    middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1)
                     exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                     user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "dislike",
                                                 self.get_user_object(user_object.user_id),
                                                     -1)
-                    if (
+                    if (middleware_status == 100 and
                         exp_status == 100 and 
                         user_topic_status == 100):
-                        middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1)
                         dislike_object.delete()
                         return -100
                     else:
+                        if middleware_status == 100:
+                             self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1)
                         return -121
                 except:
+                    try:
+                        if middleware_status == 100:
+                             self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", 1)
+                    except:
+                        pass
                     return -122
             else:
                 return -103
@@ -367,9 +390,16 @@ class EdenLeafManagement:
                                 response['message'] = -100
                                 return response
                             else:
+                                if(middleware_status == 100):
+                                    middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
                                 response['message'] = -121
                                 return response
                         except Exception as e:
+                            try:
+                                if(middleware_status == 100):
+                                    middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", -1)
+                            except:
+                                pass
                             leaf_comment_object.delete()
                             response['message'] = -122
                             return response
@@ -400,7 +430,7 @@ class EdenLeafManagement:
                     )
                     
                     try:
-                        
+                        middleware_status = self.run_leaf_middleware(leaf_object, "update_comments", -1)
                         exp_status = self.run_exp_engine_per_leaf(leaf_object)
                         user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "comment",
@@ -410,11 +440,17 @@ class EdenLeafManagement:
                            exp_status == 100 and
                            user_topic_status ==100):
                             comment_object.delete()
-                            middleware_status = self.run_leaf_middleware(leaf_object, "update_comments", -1)
                             return -100
                         else:
+                            if(middleware_status == 100):
+                                self.run_leaf_middleware(leaf_object, "update_comments", 1)
                             return -121
                     except Exception as e:
+                        try:
+                            if(middleware_status == 100):
+                                self.run_leaf_middleware(leaf_object, "update_comments", 1)
+                        except:
+                            pass
                         return -121
                     
             except Exception as E:
@@ -427,6 +463,7 @@ class EdenLeafManagement:
         if self.check_comment(leaf_id,comment_id):
             leaf_object = self.get_leaf_object(leaf_id)
             try:
+                middleware_status = self.run_leaf_middleware(leaf_object, "update_comments", -1)
                 exp_status = self.run_exp_engine_per_leaf(leaf_object)
                 user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "sub_comment",
@@ -435,12 +472,19 @@ class EdenLeafManagement:
                 if(middleware_status == 100 and
                    exp_status == 100 and
                    user_topic_status == 100):
-                    middleware_status = self.run_leaf_middleware(leaf_object, "update_comments", -1)
+                    
                     LeafComments.objects.filter(comment_id= comment_id).first().delete()
                     return -100
                 else:
+                    if(middleware_status == 100):
+                        self.run_leaf_middleware(leaf_object, "update_comments", 1)
                     return -121
             except:
+                try:
+                    if(middleware_status == 100):
+                        self.run_leaf_middleware(leaf_object, "update_comments", 1)
+                except:
+                    pass
                 return -122
         else:
             return -111

@@ -21,7 +21,7 @@ urlpatterns = [
     path('remove_sub_comment',remove_sub_comment_view, name = "remove_sub_comment"), 
     path('add_view',add_leaf_view, name="add_view"),
     path("check_like", check_like, name="check_like"),
-    path("check_dislike", check_like, name="check_like")
+    path("check_dislike", check_dislike, name="check_like")
 ]
 
 
