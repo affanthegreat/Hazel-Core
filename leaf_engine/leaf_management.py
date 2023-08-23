@@ -383,6 +383,32 @@ class EdenLeafManagement:
         else:
             return -104
 
+
+    def construct_comment_tree(self, sorted_comments):
+        comment_tree = {}
+
+        for comment in sorted_comments:
+            comment_id = comment['comment_id']
+            parent_comment_id = comment['parent_comment_id']
+            comment_depth = comment['comment_depth']
+
+            comment_node = {
+                'comment': comment,
+                'children': []
+            }
+
+            if comment_id not in comment_tree:
+                comment_tree[comment_id] = comment_node
+
+            if parent_comment_id is not None:
+                if parent_comment_id in comment_tree:
+                    comment_tree[parent_comment_id]['children'].append(comment_tree[comment_id])
+
+        root_comments = [comment_tree[comment_id] for comment_id, node in comment_tree.items() if node['comment']['comment_depth'] == 1]
+        return root_comments
+
+
+
     def get_total_comments(self, request, leaf_id, page_number):
         """
         Return the total number of comments for the given leaf_id.
@@ -400,7 +426,7 @@ class EdenLeafManagement:
 
         """
         if self.check_leaf(leaf_id):
-            return self.paginator(LeafComments.objects.filter(leaf_id=leaf_id).order_by('-created_date').all(), page_number)
+            return self.paginator(LeafComments.objects.filter(leaf_id=leaf_id).order_by('root_comment','comment_depth','-created_date' ).all(), page_number)
         else:
             return -104
 
