@@ -41,6 +41,7 @@ class UserAccessToken(models.Model):
     creation_date = models.DateTimeField(default=datetime.datetime.now())
 
 class UserDetails(models.Model):
+    user_bio = models.CharField(max_length=120, null=False)
     user_country = models.CharField(max_length=100,null=False)
     user_state = models.CharField(max_length=100, null=False)
     user_region = models.CharField(max_length=100, name=False)

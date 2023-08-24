@@ -22,6 +22,7 @@ class EdenUserManagement:
     def is_valid_email(self,email):
         pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
         return re.match(pattern, email) is not None
+    
 
     def make_password(self, txt) -> str:
         """
@@ -365,7 +366,7 @@ class EdenUserManagement:
                 user_detail_object.user_state = data['user_state'] if 'user_state' in data else user_detail_object.user_state
                 user_detail_object.user_gender = data['user_gender'] if 'user_gender' in data else user_detail_object.user_gender
                 user_detail_object.user_age = data['user_age'] if 'user_age' in data else user_detail_object.user_age
-
+                user_detail_object.user_bio = data['user_bio'] if 'user_bio' in data else user_detail_object.user_bio
             else:
                 user_detail_object = UserDetails()
                 user_detail_object.user_id = self.get_user_object(user_id)
@@ -379,11 +380,12 @@ class EdenUserManagement:
                 user_detail_object.user_gender = data['user_gender']
                 user_detail_object.user_state = data['user_state']
                 user_detail_object.user_age = data['user_age']
+                user_detail_object.user_bio = data['user_bio']
             try:
                 user_detail_object.save()
                 return 100
             except Exception as e:
-                print(data)
+                raise e
                 return -105
         else:
             return -103
@@ -485,6 +487,24 @@ class EdenUserManagement:
         if self.check_user_exists({'user_id': requested_to}) and self.check_user_exists({'user_id': requester}):
             requester = self.get_user_object(requester)
             requested_to = self.get_user_object(requested_to)
+            print(requester.user_name)
+            print(requested_to.user_name)
+            UserFollowRequests.objects.filter(requested_to=requested_to, requester=requester).first().delete()
+            print(UserFollowRequests.objects.all().count())
+            return 100
+        else:
+            print(self.check_user_exists({'user_id': requested_to}))
+            print(self.check_user_exists({'user_id': requester}))
+            return 102
+    
+    def deny_follow_request(self, data):
+        requester = data['requester']
+        requested_to = data['requested_to']
+        if self.check_user_exists({'user_id': requested_to}) and self.check_user_exists({'user_id': requester}):
+            requester = self.get_user_object(requester)
+            requested_to = self.get_user_object(requested_to)
+            print(requester.user_name)
+            print(requested_to.user_name)
             UserFollowRequests.objects.filter(requested_to=requested_to, requester=requester).first().delete()
             print(UserFollowRequests.objects.all().count())
             return 100
@@ -520,17 +540,6 @@ class EdenUserManagement:
         else:
             return 191
     
-    
-    def deny_follow_request(self,data):
-
-        if self.check_user_exists({'user_id': data['user_id']}) and data['current_user'] is not None :
-            try:
-               requester_obj = self.get_user_object(data['user_id'])
-               UserFollowRequests.objects.filter(requester= requester_obj, requested_to=data['current_user']).delete()
-            except:
-               return 191
-        else:
-            return 191
             
     def fetch_follow_request_obj(self,request_id):
         return UserFollowRequests.objects.filter(id= request_id).first()
@@ -554,11 +563,32 @@ class EdenUserManagement:
             'created_at': str(user_obj.created_at)
         }
 
+
+    def user_details_to_json(self, user_detail_obj):
+        return {
+                'user_id':user_detail_obj.user_id.user_id,
+                "user_full_name": user_detail_obj.user_full_name, 
+                "user_phone_number": user_detail_obj.user_phone_number,
+                "user_address":user_detail_obj.user_address, 
+                "user_phone_id":user_detail_obj.user_phone_id,
+                "user_city": user_detail_obj.user_city,
+                'user_state': user_detail_obj.user_state,
+                'user_country': user_detail_obj.user_country,
+                'user_region': user_detail_obj.user_region,
+                "user_gender": user_detail_obj.user_gender,
+                "user_age": user_detail_obj.user_age,
+                'user_bio': user_detail_obj.user_bio
+                }
+    
     def get_user_info(self,data):
         try:
             user_id = self.get_user_id(data)
             user_obj = self.get_user_object(user_id)
-            return self.user_obj_to_json(user_obj)
+            user_detail_obj = self.get_user_detail_object(user_id)
+            map1 = self.user_obj_to_json(user_obj)
+            map2 = self.user_details_to_json(user_detail_obj)
+            result =  map1.update(map2)
+            return map1
         except Exception as e:
             raise e
             return 101
@@ -636,13 +666,21 @@ class EdenUserManagement:
                 "message": f"Page number does not exists. (total pages available : {total_pages})"
             }
         try:
+            data = []
+            for obj in  list(pagination_obj.page(page_number).object_list):
+                user_id = obj.user_id
+                user_detail_obj = self.get_user_detail_object(user_id)
+                map1 = self.user_obj_to_json(obj)
+                map2 = self.user_details_to_json(user_detail_obj)
+                result = map1.update(map2)
+                data.append(map1)
+
             response = {
                 'page_number': page_number,
                 'total_pages': total_pages,
-                'data': [ self.user_obj_to_json(obj) for obj in  list(pagination_obj.page(page_number).object_list)],
+                'data': data,
             }
         except Exception as E:
-            raise E
             response = {
                     "message": "Cannot load page."
                 }

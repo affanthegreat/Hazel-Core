@@ -208,10 +208,10 @@ def get_user_details(request):
                     'user_country': user_data.user_country,
                     'user_region': user_data.user_region,
                     "user_gender": user_data.user_gender,
-                    "user_age": user_data.user_age
+                    "user_age": user_data.user_age,
+                    'user_bio': user_data.user_bio
                 })
         except Exception as e:
-            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -225,6 +225,7 @@ def modify_user_details(request):
             status = user_control_object.add_user_details(data)
             return make_response({"message":status})
         except Exception as e:
+            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -338,10 +339,26 @@ def remove_follow_request_view(request):
                 
                 return make_response({"message":str(response)})
         except Exception as e:
-
+            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+@csrf_exempt
+def deny_follow_request_view(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            valid_fields = ['requested_to','requester', 'auth_token', 'token' ]
+            if check_field_validity(valid_fields,data):
+                response = user_control_object.deny_follow_request(data)
+                return make_response({"message":str(response)})
+        except Exception as e:
+            raise e
+            return make_response({"status": 200, "message": "Cannot unload data."})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
 
 @csrf_exempt
 def fetch_all_follow_request_view(request):
@@ -426,6 +443,7 @@ def get_user_info(request):
         try:
             data = json.loads(request.body)
             status = user_control_object.get_user_info(data)
+            print(status)
             if status:
                 return make_response(status)
             else:

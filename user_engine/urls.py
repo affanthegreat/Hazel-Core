@@ -20,6 +20,7 @@ urlpatterns = [
     path('fetch_blocked_accounts', fetch_blocked_accounts, name='fetch_blocked_accounts'),
     path('make_follow_request_view', make_follow_request_view, name='make_follow_request_view'),
     path('remove_follow_request_view', remove_follow_request_view, name='remove_follow_request_view'),
+    path('deny_follow_request_view', deny_follow_request_view, name='remove_follow_request_view'),
     path('fetch_all_follow_request_view',fetch_all_follow_request_view,name='fetch_all_follow_request_view'),
     path('accept_follow_request',accept_follow_request,name='accept_follow_request'),
     path('delete_follow_request',delete_follow_request, name='delete_follow_request'),

@@ -146,10 +146,12 @@ class EdenLeafManagement:
         user_management_instance = EdenUserManagement()
         if user_management_instance.check_user_exists({'user_id': user_id}):
             following_object = user_management_instance.get_user_object(user_id)
-            if user_management_instance.check_following(following_object, follower_user):
+            if user_management_instance.check_following( follower_user, following_object):
                 query_set = Leaf.objects.filter(owner=following_object).order_by('-created_date').all()
             else:
                 query_set = Leaf.objects.filter(owner=following_object, leaf_type=LeafType.Public).order_by('-created_date').all()
+            print("==============")
+            print(query_set.count())
             if require_pagination: 
                 return self.paginator(query_set,page_number)
             else:
@@ -190,8 +192,6 @@ class EdenLeafManagement:
     def like_leaf(self, request, leaf_id):
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            print("====STATUS===")
-            print(self.check_like(leaf_id, user_object.user_id))
             if (
                 self.check_leaf(leaf_id)
                 and not self.check_like(leaf_id, user_object.user_id)
@@ -234,7 +234,6 @@ class EdenLeafManagement:
 
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            print(self.check_dislike(leaf_id, user_object.user_id))
             if (
                 self.check_leaf(leaf_id)
                 and not self.check_dislike(leaf_id, user_object.user_id)
@@ -278,8 +277,6 @@ class EdenLeafManagement:
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_like(leaf_id, user_object.user_id)
-            print("====STATUS===")
-            print(like_status)
             if self.check_leaf(leaf_id) and like_status:
                 like_object = self.get_like_object(leaf_id, user_object.user_id)
                 try:
@@ -326,8 +323,6 @@ class EdenLeafManagement:
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_dislike(leaf_id, user_object.user_id)
-            print("====STATUS===")
-            print(like_status)
             if self.check_leaf(leaf_id) and like_status:
                 dislike_object = self.get_dislike_object(leaf_id, user_object.user_id)
                 try:
@@ -944,9 +939,6 @@ class EdenLeafManagement:
     def paginator(self,query_set,page_number):
         pagination_obj = Paginator(query_set,self.MAX_OBJECT_LIMIT)
         total_pages = pagination_obj.page_range[-1]
-        print("==============")
-        print(query_set.count())
-        print(total_pages)
         if page_number > total_pages:
             return {
                 'status': -131,
