@@ -339,7 +339,6 @@ def remove_follow_request_view(request):
                 
                 return make_response({"message":str(response)})
         except Exception as e:
-            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -354,7 +353,6 @@ def deny_follow_request_view(request):
                 response = user_control_object.deny_follow_request(data)
                 return make_response({"message":str(response)})
         except Exception as e:
-            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -464,7 +462,6 @@ def search_users(request):
             else:
                 return make_response({'status':200, 'message': "User Does not Exists."})
         except Exception as e:
-            raise e
             return make_response({'status':200, 'message': "Error Occured"})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})

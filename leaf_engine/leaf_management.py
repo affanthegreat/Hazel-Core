@@ -42,9 +42,10 @@ class EdenLeafManagement:
             elif word[0] == "#":
                 hashtags.append(word)
         if(hashtags):
-            self.start_hashtags_pipeline(leaf_id, hashtags)
+            hashtags_status = self.start_hashtags_pipeline(leaf_id, hashtags)
         if(mentions):
-            self.start_mentions_pipeline(leaf_id, mentions)
+            mentions_pipeline = self.start_mentions_pipeline(leaf_id, mentions)
+        return (hashtags_status, mentions_pipeline)
     
     def start_mentions_pipeline(self,leaf_id, mentions):
         status = True
@@ -91,8 +92,10 @@ class EdenLeafManagement:
             else:
                 middleware_status = self.run_user_middleware(self.get_logged_in_user(request), "update_public_leaf", 1)
             try:
-                if middleware_status is not False:
+                hashtags_status, mentions_pipeline = self.filter_mentions_and_hashtags(new_leaf_object.leaf_id, txt= data['text_content'])
+                if hashtags_status and mentions_pipeline and middleware_status is not False:
                     new_leaf_object.save()
+
                 else:
                     if LeafType(data['leaf_type']) == LeafType.Private:
                         middleware_status = self.run_user_middleware(self.get_logged_in_user(request), "update_private_leaf", -1)
