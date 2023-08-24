@@ -57,6 +57,8 @@ class LeafLikes(models.Model):
         UserProfile, related_name="liked_user", on_delete=models.DO_NOTHING
     )
     created_date = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        unique_together = ("leaf", "liked_by"),
 
 class LeafDisLikes(models.Model):
     dislike_id = models.CharField(max_length=100, blank=True, unique=True,primary_key=True ,default=uuid.uuid4)
@@ -67,6 +69,8 @@ class LeafDisLikes(models.Model):
         UserProfile, related_name="disliked_user", on_delete=models.DO_NOTHING
     )
     created_date = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        unique_together =  ("leaf", "disliked_by")
 
 
 class LeafComments(models.Model):

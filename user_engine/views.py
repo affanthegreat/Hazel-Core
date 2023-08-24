@@ -195,6 +195,7 @@ def get_user_details(request):
             data = json.loads(request.body)
             valid_fields = ['user_id']
             if check_field_validity(valid_fields,data):
+                print(data['user_id'])
                 user_data = user_control_object.get_user_detail_object(user_control_object.get_user_object(data['user_id']))
                 return make_response({
                     'user_id':user_data.user_id.user_id,
@@ -220,6 +221,7 @@ def modify_user_details(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
+            print(data)
             status = user_control_object.add_user_details(data)
             return make_response({"message":status})
         except Exception as e:

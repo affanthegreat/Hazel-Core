@@ -29,7 +29,7 @@ class EdenLeafManagement:
         return session_id
 
     def __init__(self) -> None:
-        self.MAX_OBJECT_LIMIT = 30
+        self.MAX_OBJECT_LIMIT = 50
         pass
     
     def filter_mentions_and_hashtags(self,leaf_id,txt):
@@ -188,13 +188,16 @@ class EdenLeafManagement:
             return response
 
     def like_leaf(self, request, leaf_id):
-
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
+            print("====STATUS===")
+            print(self.check_like(leaf_id, user_object.user_id))
             if (
                 self.check_leaf(leaf_id)
-                and not self.check_like(leaf_id, user_object.user_id)["message"]
-            ):
+                and not self.check_like(leaf_id, user_object.user_id)
+            ):     
+                
+                
                 like_object = LeafLikes()
                 like_object.leaf = self.get_leaf_object(leaf_id)
                 like_object.liked_by = user_object
@@ -231,10 +234,10 @@ class EdenLeafManagement:
 
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
-            print(self.check_dislike(leaf_id, user_object.user_id)["message"])
+            print(self.check_dislike(leaf_id, user_object.user_id))
             if (
                 self.check_leaf(leaf_id)
-                and not self.check_dislike(leaf_id, user_object.user_id)["message"]
+                and not self.check_dislike(leaf_id, user_object.user_id)
             ):
                 dislike_object = LeafDisLikes()
                 dislike_object.leaf = self.get_leaf_object(leaf_id)
@@ -275,7 +278,9 @@ class EdenLeafManagement:
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_like(leaf_id, user_object.user_id)
-            if self.check_leaf(leaf_id) and like_status["message"]:
+            print("====STATUS===")
+            print(like_status)
+            if self.check_leaf(leaf_id) and like_status:
                 like_object = self.get_like_object(leaf_id, user_object.user_id)
                 try:
                     middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_likes", -1)
@@ -321,8 +326,9 @@ class EdenLeafManagement:
         if self.is_authorised(request):
             user_object = self.get_logged_in_user(request)
             like_status = self.check_dislike(leaf_id, user_object.user_id)
+            print("====STATUS===")
             print(like_status)
-            if self.check_leaf(leaf_id) and like_status["message"]:
+            if self.check_leaf(leaf_id) and like_status:
                 dislike_object = self.get_dislike_object(leaf_id, user_object.user_id)
                 try:
                     middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_dislikes", -1)
@@ -426,7 +432,8 @@ class EdenLeafManagement:
 
         """
         if self.check_leaf(leaf_id):
-            return self.paginator(LeafComments.objects.filter(leaf_id=leaf_id).order_by('root_comment','comment_depth','-created_date' ).all(), page_number)
+            root_comments = LeafComments.objects.filter(leaf_id=leaf_id).values('root_comment').order_by('-created_date')
+            return self.paginator(LeafComments.objects.filter(root_comment_id__in = root_comments).order_by('comment_depth').all(), page_number)
         else:
             return -104
 
@@ -804,25 +811,12 @@ class EdenLeafManagement:
             - -100: The user doesn't exist.
         """
         user_object = self.get_user_object(user_id)
-        leaf_valid = self.check_leaf(leaf_id)
-        response = {}
-        if user_object is not None and leaf_valid:
-            leaf_object = self.get_leaf_object(leaf_id)
-            leaf_like_object = LeafLikes.objects.filter(
+        leaf_object = self.get_leaf_object(leaf_id)
+        return LeafLikes.objects.filter(
                 leaf=leaf_object, liked_by=user_object.user_id
-            ).first()
-            response["status"] = -100
-            response["message"] = leaf_like_object != None
-            response["code"] = True
-        else:
-            response["status"] = -100
-            response["code"] = False
-            if not leaf_valid:
-                response["message"] = "Leaf doesn't exist."
-            else:
-                response["message"] = "User doesn't exist"
-        print(response)
-        return response
+            ).exists()
+
+
 
     def check_dislike(self, leaf_id, user_id):
         """
@@ -842,26 +836,10 @@ class EdenLeafManagement:
         - None.
         """
         user_object = self.get_user_object(user_id)
-        leaf_valid = self.check_leaf(leaf_id)
-        response = {}
-        if user_object is not None and leaf_valid:
-            leaf_object = self.get_leaf_object(leaf_id)
-            leaf_like_object = LeafDisLikes.objects.filter(
-                leaf=leaf_object, disliked_by=user_object.user_id
-            ).first()
-            print(leaf_like_object)
-            response["status"] = -100
-            response["message"] = leaf_like_object != None
-            response["code"] = True
-
-        else:
-            response["status"] = -100
-            response["code"] = False
-            if not leaf_valid:
-                response["message"] = "Leaf doesn't exist."
-            else:
-                response["message"] = "User doesn't exist"
-        return response
+        return LeafDisLikes.objects.filter(
+            leaf= self.get_leaf_object(leaf_id), 
+            disliked_by = user_object
+        ).exists()
 
     def get_leaf_object(self, leaf_id):
         """
@@ -899,7 +877,7 @@ class EdenLeafManagement:
         Returns:
             LeafLikes or None: The like object with the given leaf_id and user_id, or None if the leaf does not exist or the user has not liked it.
         """
-        leaf_info = self.check_like(leaf_id, user_id)["message"]
+        leaf_info = self.check_like(leaf_id, user_id)
         if leaf_info:
             user_object = self.get_user_object(user_id)
             leaf_object = self.get_leaf_object(leaf_id)
@@ -917,7 +895,7 @@ class EdenLeafManagement:
         Returns:
             LeafDisLikes or None: The dislike object with the given leaf_id and user_id, or None if the leaf does not exist or the user has not disliked it.
         """
-        leaf_info = self.check_dislike(leaf_id, user_id)["message"]
+        leaf_info = self.check_dislike(leaf_id, user_id)
         if leaf_info:
             user_object = self.get_user_object(user_id)
             leaf_object = self.get_leaf_object(leaf_id)
@@ -966,6 +944,9 @@ class EdenLeafManagement:
     def paginator(self,query_set,page_number):
         pagination_obj = Paginator(query_set,self.MAX_OBJECT_LIMIT)
         total_pages = pagination_obj.page_range[-1]
+        print("==============")
+        print(query_set.count())
+        print(total_pages)
         if page_number > total_pages:
             return {
                 'status': -131,

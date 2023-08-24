@@ -3,7 +3,7 @@ from django.shortcuts import render
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from leaf_engine.models import LeafType
+from leaf_engine.models import LeafComments, LeafType
 
 from .leaf_management import EdenLeafManagement
 
@@ -143,6 +143,7 @@ def check_like(request):
         valid_fields = ['leaf_id', 'user_id']
         if check_field_validity(valid_fields,data):
             response = ELM_object.check_like(data['leaf_id'], data['user_id'])
+            print("Does like exists? ", response)
             return make_response(response)
         else:
             return throw_invalid_fields_error()
@@ -318,6 +319,7 @@ def add_sub_comment_view(request):
                 comment_id = object_creation_status['leaf_comment_id']
                 parent_comment_id = data['parent_comment_id']
                 response = ELM_object.add_sub_comment_db(comment_id,parent_comment_id)
+                print(LeafComments.objects.count())
                 return make_response(response)
             else:
                 return make_response(-103)
