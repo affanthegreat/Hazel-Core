@@ -590,8 +590,21 @@ class EdenUserManagement:
             result =  map1.update(map2)
             return map1
         except Exception as e:
-            raise e
+
             return 101
+
+    def get_user_info_id(self,data):
+        try:
+            user_id = data['user_id']
+            user_obj = self.get_user_object(user_id)
+            user_detail_obj = self.get_user_detail_object(user_id)
+            map1 = self.user_obj_to_json(user_obj)
+            map2 = self.user_details_to_json(user_detail_obj)
+            result =  map1.update(map2)
+            return map1
+        except Exception as e:
+            return 101
+
 
     def get_user_id(self,data):
         """

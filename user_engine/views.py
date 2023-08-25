@@ -450,6 +450,26 @@ def get_user_info(request):
             return make_response({'status':200, 'message': "Error Occured"})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
+    
+
+@csrf_exempt
+def get_user_info_id(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            status = user_control_object.get_user_info_id(data)
+            print(status)
+            if status:
+                return make_response(status)
+            else:
+                return make_response({'status':200, 'message': "User Does not Exists."})
+        except Exception as e:
+            raise e
+            return make_response({'status':200, 'message': "Error Occured"})
+    else:
+        return make_response({"status": 200, "message": "HTTP method is not supported."})
+
+
 
 @csrf_exempt
 def search_users(request):

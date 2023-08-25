@@ -3,7 +3,7 @@ import uuid
 import logging 
 
 from django.core.paginator import Paginator
-
+from django.db.models import Count
 
 from exp_engine.middleware import EdenUserTopicRelationMiddleWare
 from exp_engine.models import InteractionType
@@ -29,7 +29,7 @@ class EdenLeafManagement:
         return session_id
 
     def __init__(self) -> None:
-        self.MAX_OBJECT_LIMIT = 50
+        self.MAX_OBJECT_LIMIT = 150
         pass
     
     def filter_mentions_and_hashtags(self,leaf_id,txt):
@@ -414,24 +414,16 @@ class EdenLeafManagement:
 
 
     def get_total_comments(self, request, leaf_id, page_number):
-        """
-        Return the total number of comments for the given leaf_id.
-
-        If the given leaf_id exists in the database, return the queryset containing all the LeafComments objects
-        associated with the leaf_id. Otherwise, return -104.
-
-        Parameters:
-        - request (HttpRequest): The HTTP request object.
-        - leaf_id (int): The ID of the leaf for which total comments need to be calculated.
-
-        Returns:
-        If leaf_id exists in the database, return the queryset containing all the LeafComments objects
-        associated with the leaf_id. Otherwise, return -104.
-
-        """
         if self.check_leaf(leaf_id):
             root_comments = LeafComments.objects.filter(leaf_id=leaf_id).values('root_comment').order_by('-created_date')
             return self.paginator(LeafComments.objects.filter(root_comment_id__in = root_comments).order_by('comment_depth').all(), page_number)
+        else:
+            return -104
+    
+    def get_top_comments(self, request, leaf_id):
+        if self.check_leaf(leaf_id):
+            root_comments = LeafComments.objects.filter(leaf_id=leaf_id,).values('root_comment').annotate(root_comments_count = Count('root_comment')).order_by('-root_comments_count').values('root_comment')[:2]
+            return self.paginator(LeafComments.objects.filter(root_comment_id__in = root_comments, comment_depth__lte= 3).order_by('-comment_depth').all(), 1)
         else:
             return -104
 

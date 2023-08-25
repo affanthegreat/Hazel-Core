@@ -17,6 +17,7 @@ urlpatterns = [
     path('dislike_leaf', dislike_leaf_view, name= 'dislike_leaf'), 
     path('remove_dislike', remove_dislike_view, name= "remove_dislike"), 
     path('get_leaves', get_leaves_view, name="get_leaves"), 
+    path('get_top_comments', get_top_comments,name="get_top_leaves"),
     path('add_sub_comment',add_sub_comment_view, name="add_sub_comment"), 
     path('remove_sub_comment',remove_sub_comment_view, name = "remove_sub_comment"), 
     path('add_view',add_leaf_view, name="add_view"),

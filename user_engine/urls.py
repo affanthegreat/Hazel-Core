@@ -26,6 +26,7 @@ urlpatterns = [
     path('delete_follow_request',delete_follow_request, name='delete_follow_request'),
     path('check_user_exists',check_user_exists,name = 'check_user_exists'),
     path('get_user_info', get_user_info, name='get_user_info'),
+    path('get_user_info_id', get_user_info_id, name='get_user_info'),
     path('search_users', search_users,name='search_users'),
     path('check_follow', check_follow, name='check_follow')
 ]

@@ -261,6 +261,24 @@ def get_all_comments(request):
        return throw_http_method_not_supported_error()
 
 
+
+@csrf_exempt
+def get_top_comments(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            leaf_id = data['leaf_id']
+            response = ELM_object.get_top_comments(request, leaf_id)
+            if response == -104:
+               return HttpResponse(
+                    content=json.dumps({"status": 200, "message": "No comments found."})
+                )
+            return JsonResponse(response, safe=False)
+        except Exception as e:
+           return make_response({'message': str(e)})
+    else:
+       return throw_http_method_not_supported_error()
+
 @csrf_exempt
 def get_all_dislikes(request):
     if request.method == "GET":
