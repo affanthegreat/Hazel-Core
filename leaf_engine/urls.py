@@ -25,7 +25,8 @@ urlpatterns = [
     path("check_dislike", check_dislike, name="check_like"),
     path("delete_comment_by_id", delete_comment_by_id, name="delete_comment_by_id"),
     path("vote_comment", vote_comment, name="vote_comment"),
-    path("get_vote", get_vote, name='get_vote')
+    path("get_vote", get_vote, name='get_vote'),
+    path("remove_vote_comment", remove_vote_comment, name="remove_vote_comment")
 ]
 
 

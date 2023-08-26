@@ -269,12 +269,15 @@ def get_top_comments(request):
             data = json.loads(request.body)
             leaf_id = data['leaf_id']
             response = ELM_object.get_top_comments(request, leaf_id)
+            print("---------")
+            print(response)
             if response == -104:
                return HttpResponse(
                     content=json.dumps({"status": 200, "message": "No comments found."})
                 )
             return JsonResponse(response, safe=False)
         except Exception as e:
+           raise e
            return make_response({'message': str(e)})
     else:
        return throw_http_method_not_supported_error()
@@ -392,6 +395,18 @@ def vote_comment(request):
     else:
        return throw_http_method_not_supported_error()
 
+@csrf_exempt
+def remove_vote_comment(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        valid_fields = ['comment_id','auth_token', 'token']
+        if check_field_validity(valid_fields,data):
+           response = ELM_object.remove_vote(request, data['comment_id'])
+           return make_response(response)
+        else:
+            return throw_invalid_fields_error()
+    else:
+       return throw_http_method_not_supported_error()
     
 
 @csrf_exempt
@@ -401,8 +416,8 @@ def get_vote(request):
         valid_fields = ['comment_id', 'user_id']
         if check_field_validity(valid_fields,data):
             user_obj = ELM_object.get_user_object(data['user_id'])
-            comment_obj = ELM_object.get_comment_object(data['comment_id'])
-            if ELM_object.check_vote(comment_obj, user_obj):
+            comment_obj = ELM_object.get_comment_object_id(data['comment_id'])
+            if ELM_object.check_vote( user_obj, comment_obj):
                 vote = CommentVotes.objects.filter(comment=comment_obj, voted_by = user_obj).first()
                 vote_data = {
                     'comment_id': vote.comment.comment_id,

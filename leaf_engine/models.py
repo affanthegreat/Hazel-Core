@@ -108,6 +108,8 @@ class CommentVotes(models.Model):
     comment = models.ForeignKey(LeafComments, related_name="voted_comment", on_delete=models.CASCADE)
     voted_by = models.ForeignKey(UserProfile, related_name="voter", on_delete= models.CASCADE)
     vote_type =  models.CharField(choices=CommentVoteType.choices, max_length=30)
+    class Meta:
+        unique_together = ("comment", "voted_by"),
 
 class LeafHashtags(models.Model):
     hashtag_string = models.CharField(max_length=100, null= False)

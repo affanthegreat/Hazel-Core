@@ -314,6 +314,8 @@ class EdenLeafManagement:
             user_object = self.get_logged_in_user(request)
             if self.check_comment_by_id(comment_id):
                 comment_obj = self.get_leaf_comment_object_with_id(comment_id)
+                print('AT START')
+                print(comment_obj.votes)
                 if not self.check_vote(user_obj=user_object,comment_obj=comment_obj):
                     vote_obj = CommentVotes()
                     vote_obj.comment = comment_obj
@@ -322,16 +324,54 @@ class EdenLeafManagement:
                     vote_obj.save()
                     if vote_action == "upvote":
                         comment_obj.votes += 1
-                        comment_obj.save()
                     else:
                         comment_obj.votes -= 1
-                        comment_obj.save()
+                    print('END')
+                    print(comment_obj.votes)
+                    comment_obj.save()
+                    return 100
                 else:
+                    vote_obj = CommentVotes.objects.filter(comment=comment_obj, voted_by = user_object).first()
+                    if vote_obj.vote_type != vote_action:
+                        
+                        print('BEFORE')
+                        print(comment_obj.votes)
+                        if  vote_obj.vote_type == "upvote":
+                            comment_obj.votes -= 1
+                        else:
+                            comment_obj.votes += 1
+                        print('AFTER')
+                        print(comment_obj.votes)
+                        vote_obj.delete()
+                        comment_obj.save()
+                        return self.comment_vote(request, comment_id, vote_action)
                     return 103
             else:
                 return 109
         else:
             -111
+    
+    def remove_vote(self,request,comment_id):
+        if self.is_authorised(request):
+            user_object = self.get_logged_in_user(request)
+            if self.check_comment_by_id(comment_id):
+                comment_obj = self.get_leaf_comment_object_with_id(comment_id)
+                obj = CommentVotes.objects.filter(comment=comment_obj, voted_by = user_object).first()
+                vote_action = obj.vote_type
+                obj.delete()
+                if vote_action == "upvote":
+                    comment_obj.votes -= 1
+                else:
+                    comment_obj.votes += 1
+                print("+++++++++++")
+                print(comment_obj.votes)
+                comment_obj.save()
+                return 100
+            else:
+                return 109
+        else:
+            return -111
+
 
 
     def check_vote(self,user_obj, comment_obj):
@@ -477,15 +517,18 @@ class EdenLeafManagement:
 
     def get_total_comments(self, request, leaf_id, page_number):
         if self.check_leaf(leaf_id):
-            root_comments = LeafComments.objects.filter(leaf_id=leaf_id).values('root_comment').order_by('-created_date')
+            root_comments = LeafComments.objects.filter(leaf_id=leaf_id).values('root_comment').order_by('created_date')
             return self.paginator(LeafComments.objects.filter(root_comment_id__in = root_comments).order_by('comment_depth').all(), page_number)
         else:
             return -104
     
     def get_top_comments(self, request, leaf_id):
         if self.check_leaf(leaf_id):
-            root_comments = LeafComments.objects.filter(leaf_id=leaf_id,).values('root_comment').annotate(root_comments_count = Count('root_comment')).order_by('-root_comments_count').values('root_comment')[:2]
-            return self.paginator(LeafComments.objects.filter(omment_id__in = root_comments, comment_depth__lte= 3).order_by('-comment_depth').all(), 1)
+            leaf_owner = self.get_leaf_object(leaf_id).owner
+            threads = LeafComments.objects.filter(leaf_id = leaf_id, commented_by = leaf_owner, comment_depth=1).order_by('created_date').all()
+            print("=====IN TOP COMMENTS=====")
+            print(threads.count())
+            return self.paginator(threads, 1)
         else:
             return -104
 
@@ -919,6 +962,10 @@ class EdenLeafManagement:
         """
         if self.check_leaf(leaf_id):
             return LeafComments.objects.filter(leaf_id=leaf_id).first()
+    
+    def get_comment_object_id(self, comment_id):
+        if self.check_comment_by_id(comment_id):
+            return LeafComments.objects.filter(comment_id= comment_id).first()
 
     def get_like_object(self, leaf_id, user_id):
         """Return the like object with the given leaf_id and user_id if the leaf exists and the user has liked it, otherwise return None.
