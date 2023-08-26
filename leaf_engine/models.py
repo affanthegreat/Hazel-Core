@@ -22,6 +22,12 @@ class LeafType(models.TextChoices):
     Private = "private", "private"
 
 
+class CommentVoteType(models.TextChoices):
+    Upvote = "upvote", "upvote"
+    Downvote = "downvote", "downvote"
+
+
+
 class Leaf(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(
@@ -79,10 +85,11 @@ class LeafComments(models.Model):
         Leaf, related_name="creator_leaf", on_delete=models.CASCADE
     )
     commented_by = models.ForeignKey(
-        UserProfile, related_name="commented_user", on_delete=models.DO_NOTHING
+        UserProfile, related_name="commented_user", on_delete=models.CASCADE
     )
     comment = models.CharField(max_length=100, null=False)
     comment_depth = models.IntegerField(default=1,null=False)
+    votes = models.BigIntegerField(default=0)
     comment_sentiment = models.DecimalField(default=-69,max_digits=6,decimal_places=6)
     comment_emotion = models.CharField(max_length=40,default="NULL")
     root_comment = models.ForeignKey('self',null=True, blank= True, on_delete=models.CASCADE, related_name='main_comment' )
@@ -92,10 +99,15 @@ class LeafComments(models.Model):
 class LeafViewedBy(models.Model):
     leaf = models.ForeignKey(Leaf, related_name="viewed_leaf", on_delete=models.CASCADE)
     viewed_by = models.ForeignKey(
-        UserProfile, related_name="viewer", on_delete=models.DO_NOTHING
+        UserProfile, related_name="viewer", on_delete=models.CASCADE
     )
     view_date = models.DateTimeField(auto_now_add=True)
 
+
+class CommentVotes(models.Model):
+    comment = models.ForeignKey(LeafComments, related_name="voted_comment", on_delete=models.CASCADE)
+    voted_by = models.ForeignKey(UserProfile, related_name="voter", on_delete= models.CASCADE)
+    vote_type =  models.CharField(choices=CommentVoteType.choices, max_length=30)
 
 class LeafHashtags(models.Model):
     hashtag_string = models.CharField(max_length=100, null= False)
@@ -105,14 +117,14 @@ class LeafHashtags(models.Model):
 
 class LeafUserMentions(models.Model):
     mentioned_user = models.ForeignKey(
-        UserProfile, related_name="mentioned_user", on_delete=models.DO_NOTHING
+        UserProfile, related_name="mentioned_user", on_delete=models.CASCADE
     )
     mentioned_in_leaf = models.ForeignKey(Leaf, related_name="mentioned_leaf", on_delete=models.CASCADE)
     
     
 class CommentUserMentions(models.Model):
     mentioned_user = models.ForeignKey(
-        UserProfile, related_name="mentioned_comment_userr", on_delete=models.DO_NOTHING
+        UserProfile, related_name="mentioned_comment_userr", on_delete=models.CASCADE
     )
     mentioned_in_comments = models.ForeignKey(LeafComments, related_name="mentioned_comment", on_delete=models.CASCADE)
    

@@ -23,8 +23,8 @@ class UserProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 class UserFollowing(models.Model):
-    slave = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="slave")
-    master = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="master")
+    slave = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="slave")
+    master = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="master")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -33,10 +33,8 @@ class UserFollowing(models.Model):
             models.Index(fields=["master", "slave"]),
         ]
 
-
-
 class UserAccessToken(models.Model):
-    user = models.ForeignKey(UserProfile, on_delete=models.DO_NOTHING, related_name="holy")
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name="holy")
     user_session_id = models.CharField(max_length=100, unique=True)
     creation_date = models.DateTimeField(default=datetime.datetime.now())
 
@@ -49,14 +47,14 @@ class UserDetails(models.Model):
     user_gender = models.CharField(max_length=15, null = False)
     user_age = models.PositiveIntegerField(default=1)
     user_full_name = models.CharField(max_length=100,null=False)
-    user_id = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='detail')
+    user_id = models.ForeignKey(UserProfile,on_delete=models.CASCADE,related_name='detail')
     user_phone_number = models.CharField(max_length=15,null=False,unique= True)
     user_address = models.CharField(max_length=50,null=False)
     user_phone_id = models.CharField(max_length=120,unique= True,null=False)
 
 class UserBlockedAccounts(models.Model):
-    blocker_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='sigma')
-    blocked_profile = models.ForeignKey(UserProfile,on_delete=models.DO_NOTHING,related_name='beta')
+    blocker_profile = models.ForeignKey(UserProfile,on_delete=models.CASCADE,related_name='sigma')
+    blocked_profile = models.ForeignKey(UserProfile,on_delete=models.CASCADE,related_name='beta')
 
     class Meta:
         indexes = [

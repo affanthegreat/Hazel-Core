@@ -385,9 +385,9 @@ class EdenUserManagement:
                 user_detail_object.save()
                 return 100
             except Exception as e:
-                raise e
                 return -105
         else:
+            raise Exception()
             return -103
         
     def add_user_blocked(self,data):
@@ -581,17 +581,19 @@ class EdenUserManagement:
                 }
     
     def get_user_info(self,data):
-        try:
-            user_id = self.get_user_id(data)
-            user_obj = self.get_user_object(user_id)
-            user_detail_obj = self.get_user_detail_object(user_id)
-            map1 = self.user_obj_to_json(user_obj)
+        user_id = self.get_user_id(data)
+        user_obj = self.get_user_object(user_id)
+        user_detail_obj = self.get_user_detail_object(user_id)
+        map1 = self.user_obj_to_json(user_obj)
+        if(user_detail_obj is not None):
+            print("detail object found")
             map2 = self.user_details_to_json(user_detail_obj)
             result =  map1.update(map2)
             return map1
-        except Exception as e:
+        print(UserDetails.objects.filter(user_id= user_obj).first())
+        print("Detail object is not none")
+        return map1
 
-            return 101
 
     def get_user_info_id(self,data):
         try:

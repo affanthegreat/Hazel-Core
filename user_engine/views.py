@@ -119,7 +119,8 @@ def login(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 token, auth_token = session_management_object.create_session(request, user)
-                return make_response({"status": 200, "message": "Login successful.", 'token':token, 'auth_token': auth_token})
+                response = {"status": 200, "message": "Login successful.", 'token':token, 'auth_token': auth_token}
+                return make_response(response)
             else:
                 data['user_id'] = user_control_object.get_user_id(data)
                 data['user_password']  = password
@@ -143,7 +144,6 @@ def logout(request):
             session_management_object.delete_session(request)
             return make_response({'status':200, 'message': "Logout successful.", })
         except Exception as e:
-            raise e
             return make_response({'status':200, 'message': "Logout failed."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -221,11 +221,9 @@ def modify_user_details(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            print(data)
             status = user_control_object.add_user_details(data)
             return make_response({"message":status})
         except Exception as e:
-            raise e
             return make_response({"status": 200, "message": "Cannot unload data."})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})
@@ -447,6 +445,7 @@ def get_user_info(request):
             else:
                 return make_response({'status':200, 'message': "User Does not Exists."})
         except Exception as e:
+            raise e
             return make_response({'status':200, 'message': "Error Occured"})
     else:
         return make_response({"status": 200, "message": "HTTP method is not supported."})

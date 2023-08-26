@@ -22,7 +22,10 @@ urlpatterns = [
     path('remove_sub_comment',remove_sub_comment_view, name = "remove_sub_comment"), 
     path('add_view',add_leaf_view, name="add_view"),
     path("check_like", check_like, name="check_like"),
-    path("check_dislike", check_dislike, name="check_like")
+    path("check_dislike", check_dislike, name="check_like"),
+    path("delete_comment_by_id", delete_comment_by_id, name="delete_comment_by_id"),
+    path("vote_comment", vote_comment, name="vote_comment"),
+    path("get_vote", get_vote, name='get_vote')
 ]
 
 

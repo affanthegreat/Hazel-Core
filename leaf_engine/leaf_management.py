@@ -3,16 +3,16 @@ import uuid
 import logging 
 
 from django.core.paginator import Paginator
-from django.db.models import Count
+from django.db.models import Count, Q
 
 from exp_engine.middleware import EdenUserTopicRelationMiddleWare
 from exp_engine.models import InteractionType
 
 from leaf_engine.middleware import EdenLeafMiddleware
-from leaf_engine.models import Leaf, LeafComments, LeafDisLikes, LeafHashtags, LeafLikes, LeafType, LeafUserMentions, LeafViewedBy
+from leaf_engine.models import CommentVotes, Leaf, LeafComments, LeafDisLikes, LeafHashtags, LeafLikes, LeafType, LeafUserMentions, LeafViewedBy
 
 from user_engine.backends import EdenSessionManagement
-from user_engine.models import UserProfile
+from user_engine.models import UserFollowing, UserProfile
 from user_engine.middleware import EdenUserMiddleWare
 from user_engine.user_management import EdenUserManagement
 from user_engine.user_management import EdenUserManagement
@@ -38,27 +38,32 @@ class EdenLeafManagement:
         hashtags = []
         for word in words:
             if word[0] == "@":
-                mentions.append(word)
+                mentions.append(word[1:len(word)])
             elif word[0] == "#":
-                hashtags.append(word)
+                hashtags.append(word[1:len(word)])
+        hashtags_status = True 
+        mentions_pipeline = True
         if(hashtags):
             hashtags_status = self.start_hashtags_pipeline(leaf_id, hashtags)
         if(mentions):
             mentions_pipeline = self.start_mentions_pipeline(leaf_id, mentions)
-        return (hashtags_status, mentions_pipeline)
+        print(hashtags_status)
+        print(mentions_pipeline)
+        return hashtags_status and mentions_pipeline
     
     def start_mentions_pipeline(self,leaf_id, mentions):
-        status = True
-        for mention in mentions:
-            valid_user_status = eum_object.check_user_exists({'user_name': mention})
-            if valid_user_status:
+        try:
+            status = True
+            for mention in mentions:
                 leaf_user_mention_obj = LeafUserMentions()
                 leaf_user_mention_obj.mentioned_user = self.get_user_object(eum_object.get_user_id({'user_name':mention}))
                 leaf_user_mention_obj.mentioned_in_leaf = self.get_leaf_object(leaf_id)
                 leaf_user_mention_obj.save()
-            else:
-                status = False
-        return status
+            return status
+        except Exception as e:
+            print(e)
+            raise e
+            return False
     
     
     def start_hashtags_pipeline(self,leaf_id,hashtags):
@@ -69,7 +74,9 @@ class EdenLeafManagement:
                 leaf_hashtag_obj.associated_leaf = self.get_leaf_object(leaf_id)
                 leaf_hashtag_obj.hashtag_string = hashtag
                 leaf_hashtag_obj.save()
-            except:
+            except Exception as e:
+                print(e)
+                raise e
                 status = False
         return status
                 
@@ -92,10 +99,16 @@ class EdenLeafManagement:
             else:
                 middleware_status = self.run_user_middleware(self.get_logged_in_user(request), "update_public_leaf", 1)
             try:
-                hashtags_status, mentions_pipeline = self.filter_mentions_and_hashtags(new_leaf_object.leaf_id, txt= data['text_content'])
-                if hashtags_status and mentions_pipeline and middleware_status is not False:
+                if middleware_status is not False:
                     new_leaf_object.save()
-
+                    text_middleware = self.filter_mentions_and_hashtags(new_leaf_object.leaf_id, txt= data['text_content'])
+                    if not text_middleware:
+                        if LeafType(data['leaf_type']) == LeafType.Private:
+                            middleware_status = self.run_user_middleware(self.get_logged_in_user(request), "update_private_leaf", -1)
+                        else:
+                            middleware_status = self.run_user_middleware(self.get_logged_in_user(request), "update_public_leaf", -1)
+                        new_leaf_object.delete()
+                        raise Exception('Text pipeline failed')
                 else:
                     if LeafType(data['leaf_type']) == LeafType.Private:
                         middleware_status = self.run_user_middleware(self.get_logged_in_user(request), "update_private_leaf", -1)
@@ -147,20 +160,35 @@ class EdenLeafManagement:
 
         follower_user = self.get_logged_in_user(request)
         user_management_instance = EdenUserManagement()
+      
         if user_management_instance.check_user_exists({'user_id': user_id}):
             following_object = user_management_instance.get_user_object(user_id)
             if user_management_instance.check_following( follower_user, following_object):
                 query_set = Leaf.objects.filter(owner=following_object).order_by('-created_date').all()
             else:
                 query_set = Leaf.objects.filter(owner=following_object, leaf_type=LeafType.Public).order_by('-created_date').all()
-            print("==============")
-            print(query_set.count())
             if require_pagination: 
                 return self.paginator(query_set,page_number)
             else:
                 return query_set
         else:
             return -101
+    
+    def get_leaves_hastag(self, request,hashtag , page_number, require_pagination = True):
+
+        logged_in_user = self.get_logged_in_user(request)
+        if logged_in_user is not None:
+            hashtag_qs = LeafHashtags.objects.filter(hashtag=hashtag).values('associated_leaf')
+            if hashtag_qs.exists():
+                following_qs = UserFollowing.objects.filter(slave = logged_in_user).values('master')
+                hashtag_leaves = Leaf.objects.filter(leaf_id__in = hashtag_qs)
+                without_private_leaf = hashtag_leaves.exclude(owner__in= Q(following_qs), leaf_type= LeafType.Private)
+                return self.paginator(without_private_leaf,page_number=page_number)
+            else:
+                return -111
+        else:
+            return -101
+
 
     def get_user_private_leaves(self, request, page_number,require_pagination= True):
 
@@ -180,16 +208,21 @@ class EdenLeafManagement:
             response = {}
             user_object = self.get_logged_in_user(request)
             leaf_object = self.get_leaf_object(leaf_id)
+            leaf_type = leaf_object.leaf_type
             leaf_exp_points = leaf_object.exp_points
             if leaf_object is None:
                 return {'message': "Leaf not found."}
             if leaf_object.owner == user_object:
                 leaf_object.delete()
                 user_object.user_experience_points -= leaf_exp_points
+                if leaf_type == "public":
+                    user_object.user_public_leaf_count -= 1
+                else:
+                    user_object.user_private_leaf_count -= 1
                 user_object.save()
-                response["message"] = "-100"
+                response["message"] = -100
             else:
-                response["message"] = "-102"
+                response["message"] = -102
             return response
 
     def like_leaf(self, request, leaf_id):
@@ -274,6 +307,35 @@ class EdenLeafManagement:
                 return -103
         else:
             return -111
+    
+
+    def comment_vote(self,request, comment_id, vote_action):
+        if self.is_authorised(request):
+            user_object = self.get_logged_in_user(request)
+            if self.check_comment_by_id(comment_id):
+                comment_obj = self.get_leaf_comment_object_with_id(comment_id)
+                if not self.check_vote(user_obj=user_object,comment_obj=comment_obj):
+                    vote_obj = CommentVotes()
+                    vote_obj.comment = comment_obj
+                    vote_obj.voted_by = user_object
+                    vote_obj.vote_type = vote_action
+                    vote_obj.save()
+                    if vote_action == "upvote":
+                        comment_obj.votes += 1
+                        comment_obj.save()
+                    else:
+                        comment_obj.votes -= 1
+                        comment_obj.save()
+                else:
+                    return 103
+            else:
+                return 109
+        else:
+            -111
+
+
+    def check_vote(self,user_obj, comment_obj):
+        return CommentVotes.objects.filter(comment=comment_obj, voted_by = user_obj).exists()
 
     def remove_like(self, request, leaf_id):
 
@@ -423,7 +485,7 @@ class EdenLeafManagement:
     def get_top_comments(self, request, leaf_id):
         if self.check_leaf(leaf_id):
             root_comments = LeafComments.objects.filter(leaf_id=leaf_id,).values('root_comment').annotate(root_comments_count = Count('root_comment')).order_by('-root_comments_count').values('root_comment')[:2]
-            return self.paginator(LeafComments.objects.filter(root_comment_id__in = root_comments, comment_depth__lte= 3).order_by('-comment_depth').all(), 1)
+            return self.paginator(LeafComments.objects.filter(omment_id__in = root_comments, comment_depth__lte= 3).order_by('-comment_depth').all(), 1)
         else:
             return -104
 
@@ -448,6 +510,7 @@ class EdenLeafManagement:
                             middleware_status = self.run_leaf_middleware(self.get_leaf_object(leaf_id), "update_comments", 1)
                             exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(leaf_id))
                             conx_status = self.run_conX_engine(leaf_id,'comment', user_object)
+                            text_pipeline = self.filter_mentions_and_hashtags(leaf_id=leaf_id,txt= comment_string)
                             user_topic_status = self.run_user_topic_middleware(leaf_id,
                                                 "comment",
                                                 user_object,
@@ -456,7 +519,7 @@ class EdenLeafManagement:
                             if(middleware_status == 100 and 
                                exp_status == 100 and
                                conx_status == 100 and 
-                               user_topic_status):
+                               user_topic_status and text_pipeline):
                                 response['message'] = -100
                                 return response
                             else:
@@ -636,6 +699,7 @@ class EdenLeafManagement:
         comment_object = LeafComments.objects.filter(comment_id=leaf_comment_id).first()
         parent_object = LeafComments.objects.filter(comment_id=leaf_comment_parent_id).first()
         if parent_object is None:
+            comment_object.delete()
             return -103
         if comment_object is None:
             return -115
@@ -655,7 +719,6 @@ class EdenLeafManagement:
         
                 exp_status = self.run_exp_engine_per_leaf(self.get_leaf_object(comment_object.leaf_id))
                 conx_status = self.run_conX_engine(comment_object.leaf_id,"sub_comment",comment_object.commented_by)
-
                 root_leaf_object = self.get_leaf_object(comment_object.leaf_id)
                 user_topic_status = self.run_user_topic_middleware(comment_object.leaf_id,
                                                "sub_comment",
