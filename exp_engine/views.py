@@ -73,7 +73,7 @@ def get_recommended_posts(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            valid_fields = ['page_number']
+            valid_fields = ['page_number', 'token', 'auth_token']
             if check_field_validity(valid_fields, data):
                 user_object = get_logged_in_user(request)
                 response = recommendation_engine.initiate(user_object.user_id, data['page_number'])

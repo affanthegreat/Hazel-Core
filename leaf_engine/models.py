@@ -132,13 +132,24 @@ class CommentUserMentions(models.Model):
    
    
 class LeafExpLogs(models.Model):
-    exp_points_per_day = models.DecimalField(default=0,max_digits=15,decimal_places=6)
+    day_difference = models.DecimalField(default=0,max_digits=15,decimal_places=6)
+    weekly_difference = models.DecimalField(default=0,max_digits=15,decimal_places=6)
+    monthly_difference = models.DecimalField(default=0,max_digits=15,decimal_places=6)
+    day_start_date = models.DateTimeField(null=True)
+    week_start_date = models.DateField(null=True)
+    month_start_date = models.DateField(null=True)
     linked_leaf =  models.ForeignKey(Leaf, related_name="linked_leaf", on_delete=models.CASCADE)
-    time_of_logging = models.DateTimeField(auto_now_add=True)
 
 class LeafHashtagsLog(models.Model):
-    period_usage = models.BigIntegerField(default=0)
-    hashtag = models.CharField(max_length=100, unique=True)
+    day_difference = models.BigIntegerField(default=0)
+    weekly_difference = models.BigIntegerField(default=0)
+    monthly_difference = models.BigIntegerField(default=0)
+    day_start_date = models.DateTimeField(null=True)
+    week_start_date = models.DateField(null=True)
+    month_start_date = models.DateField(null=True)
+    daily_rank = models.BigIntegerField()
+    weekly_rank = models.BigIntegerField()
+    monthly_rank = models.BigIntegerField()
     time_of_logging = models.DateTimeField(auto_now_add=True)
 
 def throw_model_not_saved_error():

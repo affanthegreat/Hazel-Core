@@ -33,15 +33,15 @@ class HazelRecommendationEngine():
         self.MAX_ADS_PER_PAGE = 30
         self.MAX_ADS_PER_CATEGORY = 3
         self.MAX_LEAFS_PER_UNKNOWN_USER = 15
-        self.VERSION = 0.1
-        self.BUILD_TYPE = "ALPHA"
+        self.VERSION = 0.6
+        self.BUILD_TYPE = "BETA"
         self.MAX_TOPICS_AT_ONE_TIME = 25
 
     def __init__(self) -> None:
         self.meta()
         self.priority_weights()
         self.parameters()
-        logging.info("Hazel Recommendation Engine")
+        logging.info(f"Hazel Recommendation Engine V{self.VERSION} {self.BUILD_TYPE}")
 
     def priority_weights(self):
         self.topic_likes_weight = 0.2

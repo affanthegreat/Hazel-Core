@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 
 from leaf_engine.leaf_management import EdenLeafManagement
-from leaf_engine.models import Leaf, LeafType
+from leaf_engine.models import Leaf, LeafComments, LeafType
 from leaf_engine.middleware import EdenLeafMiddleware
 from user_engine.backends import EdenSessionManagement
 from user_engine.middleware import EdenUserMiddleWare
@@ -32,18 +32,22 @@ class EdenExperienceEngine():
     
     def generate_exp_points(self, leaf_object, engagement_rating, experience_rating):
         leaf_exp_points = 0
-        leaf_exp_points += self.exp_points_weight * experience_rating
-        leaf_exp_points += self.engagement_points_weight * engagement_rating
+        leaf_exp_points += (self.exp_points_weight) * experience_rating
+
         if leaf_object.is_promoted:
             promoted_instance = admax_instance.fetch_promoted_instance(leaf=leaf_object)
             leaf_exp_points = (promoted_instance.boost_multiplier * (self.promoted_weight / 1.4) ) * leaf_exp_points
+
         if leaf_object.is_advertisement:
             advertisement_instance = admax_instance.fetch_advertisement_instance(leaf_object.owner, leaf_object)
             leaf_exp_points = (advertisement_instance * (self.advertisement_weight / 1.4)) * leaf_exp_points
+
         topic_id = leaf_object.leaf_topic_id
         topic_category = leaf_object.leaf_topic_category_id
+
         leaf_object.topic_relevancy_percentage = (leaf_exp_points / ( float(leaf_exp_points) if self.get_highest_exp_topic_id(topic_id) == 0 
                                                                      else float(self.get_highest_exp_topic_id(topic_id))))   * 100
+        
         leaf_object.category_relevancy_percentage = (leaf_exp_points / (leaf_exp_points if self.get_highest_exp_topic_category(topic_category) 
                                                                         else self.get_highest_exp_topic_category(topic_category)))  * 100
         leaf_object.save()
@@ -68,21 +72,20 @@ class EdenExperienceEngine():
             total_user_exp += (self.engagement_points_weight * engagement_map[leaf_id])
         return total_user_exp
 
-    def get_experience_points_for_level(self, level, base_points=100, multiplier=2):
-        if level == 0:
-            return 0
-        previous_level_points = self.get_experience_points_for_level(level - 1, base_points, multiplier)
-        return previous_level_points * multiplier if previous_level_points > 0 else base_points
+    def get_experience_points_for_level(self,level, base_points=50, multiplier=2):
+        return base_points * (multiplier ** level)
 
-    def generate_level(self, user_exp_points, base_points=750, multiplier=2):
-
-        if user_exp_points < self.get_experience_points_for_level(1, base_points, multiplier):
-            return 0
-        level = 1
-        while experience_points >= self.get_experience_points_for_level(level, base_points, multiplier):
-            experience_points -= self.get_experience_points_for_level(level, base_points, multiplier)
+    def generate_level(self,user_exp_points, base_points=50, multiplier=2):
+        if user_exp_points < base_points:
+            return 1
+        
+        level = 2
+        initial_level_points = self.get_experience_points_for_level(level, base_points, multiplier)
+        while user_exp_points >= initial_level_points:
             level += 1
-        return level - 1
+            initial_level_points = self.get_experience_points_for_level(level, base_points, multiplier)
+        
+        return level
 
     def filter_metrics(self, metric_map):
         leaf_engagement_map = {}
@@ -220,9 +223,10 @@ class EdenAnalyticsEngine():
         if leaf_object.view_count == 0:
             return 0
         else:
+            user_made_leaf_comments = LeafComments.objects.filter(leaf=leaf_object, commented_by = leaf_object.owner).count()
             likes = leaf_object.likes_count
             dislikes = leaf_object.dislikes_count
-            comments = leaf_object.comments_count
+            comments = (leaf_object.comments_count - user_made_leaf_comments)
             views = leaf_object.view_count
             return (likes + comments + (0.75 * dislikes)) / views
 
@@ -232,15 +236,17 @@ class EdenAnalyticsEngine():
         user_followers = user_object.user_followers
         user_following = user_object.user_following
 
+        user_made_leaf_comments = LeafComments.objects.filter(leaf=leaf_object, commented_by = leaf_object.owner).count()
+
         if leaf_object.leaf_type == LeafType.Private.value:
             experience_points += (leaf_object.likes_count * self.private_like_weight)
             experience_points += (leaf_object.dislikes_count * self.private_dislike_weight)
-            experience_points += (leaf_object.comments_count * self.private_comment_weight)
+            experience_points += ((leaf_object.comments_count - user_made_leaf_comments) * self.private_comment_weight)
             experience_points += (leaf_object.view_count * self.private_view_weight)
         else:
             experience_points += (leaf_object.likes_count * self.public_like_weight)
             experience_points += (leaf_object.dislikes_count * self.public_dislike_weight)
-            experience_points += (leaf_object.comments_count * self.public_comment_weight)
+            experience_points += (1(leaf_object.comments_count - user_made_leaf_comments) * self.public_comment_weight)
             experience_points += (leaf_object.view_count * self.public_view_weight)
 
         return experience_points * (1 + (user_followers / 100) + (user_following) / 100)
